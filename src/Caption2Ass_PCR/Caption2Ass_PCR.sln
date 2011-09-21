@@ -1,7 +1,7 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Caption2Ass", "Caption2Ass.vcproj", "{35A21733-362A-4CF2-9FD7-9CDABC5E773B}"
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C++ Express 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Caption2Ass_PCR", "Caption2Ass_PCR.vcxproj", "{35A21733-362A-4CF2-9FD7-9CDABC5E773B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

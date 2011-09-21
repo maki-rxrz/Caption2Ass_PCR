@@ -3,6 +3,7 @@
 #include <tchar.h>
 #include "CaptionDllUtil.h"
 #include "CaptionDef.h"
+extern BOOL bChangedDll;
 
 CCaptionDllUtil::CCaptionDllUtil(void)
 {
@@ -33,7 +34,7 @@ BOOL CCaptionDllUtil::LoadDll(void)
 	m_hModule = ::LoadLibrary(_T("Caption.dll"));
 
 	if ( m_hModule == NULL ){
-		//AfxMessageBox( L"Caption.dll の?ードに失敗しました");
+		//AfxMessageBox( L"Caption.dll のロードに失敗しました");
 		return FALSE;
 	}
 
