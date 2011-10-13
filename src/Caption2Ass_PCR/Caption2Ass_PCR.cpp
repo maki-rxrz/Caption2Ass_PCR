@@ -45,6 +45,7 @@ typedef struct _SRT_LINE {
 	WORD				outCharVInterval;
 	WORD				outPosX;
 	WORD				outPosY;
+	BOOL				outornament;
 // mark10als
 	std::string			str;
 } SRT_LINE, *PSRT_LINE;
@@ -138,10 +139,22 @@ void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS)
 			fprintf(fp,"%d\r\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\r\n", srtIndex, sH, sM, sS, sMs, eH, eM, eS, eMs);
 		}
 
+// mark10als
 		// ‚Ó‚è‚ª‚È Skip
 		if ((*it)->outCharSizeMode == STR_SMALL)
 			continue;
+		if ((*it)->outornament) {
+			if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff ) {
+				fprintf(fp,"<font color=\"#%02x%02x%02x\">", (*it)->outCharColor.ucR, (*it)->outCharColor.ucG, (*it)->outCharColor.ucB);
+			}
+		}
 		fwrite((*it)->str.c_str(), (*it)->str.size(),1, fp);
+		if ((*it)->outornament) {
+			if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff ) {
+				fprintf(fp,"</font>");
+			}
+		}
+// mark10als
 		fprintf(fp, "\r\n");
 
 //		delete (*it);
@@ -166,6 +179,7 @@ TCHAR *pTargetFileName = NULL;
 // mark10als
 long delayTime = 0;
 BOOL bLogMode = FALSE;
+BOOL bsrtornament = FALSE;
 TCHAR *pTargetFileName2 = NULL;
 extern long assSWF0offset = 0;
 extern long assSWF5offset = 0;
@@ -308,6 +322,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	else if (format == FORMAT_TAW) {
 		_tMyPrintf(_T("[Format] %s\r\n"), _T("srt for TAW"));
+		bsrtornament = FALSE;
 	}
 	else if (format == FORMAT_DUAL) {
 		_tMyPrintf(_T("[Format] %s\r\n"), _T("ass & srt"));
@@ -428,14 +443,22 @@ int _tmain(int argc, _TCHAR* argv[])
 			void parse_PMT(BYTE *pbPacket);
 
 			parse_PMT(&pbPacket[0]);
+// mark10als
+			if (fp3) {
+				if (lastPTS == 0) {
+					fprintf(fp3, "PMT, PCR, Caption : %04x, %04x, %04x\r\n", PMTPid, PCRPid, CaptionPid);
+				}
+			}
+// mark10als
 
 			continue; // next packet
 		}
 
 		long long PCR = 0;
 
-		if (packet.PID == PCRPid) {
 // mark10als
+//		if (packet.PID == PCRPid) {
+		if (PCRPid != 0 && packet.PID == PCRPid) {
 			DWORD bADP = (((DWORD)pbPacket[3] & 0x30) >> 4);
 			if (!(bADP & 0x2)) {
 				continue; // next packet
@@ -451,7 +474,10 @@ int _tmain(int argc, _TCHAR* argv[])
 			 *  +--------+-------+-------+
 			 */
 
-			PCR =(	(DWORD)pbPacket[6] << 25) | 
+// mod
+//			PCR =(	(DWORD)pbPacket[6] << 25) | 
+			PCR =(	(long long)pbPacket[6] << 25) | 
+// mod
 					((DWORD)pbPacket[7] << 17) | 
 					((DWORD)pbPacket[8] << 9) | 
 					((DWORD)pbPacket[9] << 1) | 
@@ -491,7 +517,10 @@ int _tmain(int argc, _TCHAR* argv[])
 					fprintf(fp3, "====== PCR less than lastPCR ======\r\n");
 					fprintf(fp3, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n", PCR, startPCR, lastPCR, basePCR);
 				}
-				basePCR = basePCR + lastPCR;
+// mod
+//				basePCR = basePCR + lastPCR;
+				basePCR = basePCR + (0x1FFFFFFFF / 90);
+// mod
 				lastPCR = PCR;
 			} else {
 				lastPCR = PCR;
@@ -520,15 +549,22 @@ int _tmain(int argc, _TCHAR* argv[])
 				if (fp3) {
 					fprintf(fp3, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ", PTS, lastPTS, basePTS, startPCR);
 				}
-				if ((PTS > 0) && (lastPTS == 0)) {
-					startPCR = lastPCR - startPCR;
-					startPCR = PTS - startPCR;
+// mod
+//				if ((PTS > 0) && (lastPTS == 0)) {
+//					startPCR = lastPCR - startPCR;
+//					startPCR = PTS - startPCR;
+				if ((PTS > 0) && (lastPTS == 0) && (PTS < lastPCR)) {
+					startPCR = lastPCR - (0x1FFFFFFFF / 90);
+// mod
 				}
 				if (PTS == 0) {
 					PTS = lastPTS;
 				}
 				if (PTS < lastPTS) {
-					basePTS = basePTS + lastPTS;
+// mod
+//					basePTS = basePTS + lastPTS;
+					basePTS = basePTS + (0x1FFFFFFFF / 90);
+// mod
 					lastPTS = PTS;
 				} else {
 					lastPTS = PTS;
@@ -766,6 +802,7 @@ int _tmain(int argc, _TCHAR* argv[])
 						pSrtLine->outCharVInterval = workCharVInterval;
 						pSrtLine->outPosX = workPosX;
 						pSrtLine->outPosY = workPosY;
+						pSrtLine->outornament = bsrtornament;
 // mark10als
 						pSrtLine->str = strUTF8;
 						if (pSrtLine->str == ""){

@@ -66,7 +66,10 @@ long long GetPTS(PBYTE pbPacket)
 			pbPacket[i+3] == 0xBD) {
 				PBYTE pData = &pbPacket[i+9];
 
-				PTS = (DWORD)(((DWORD)(*pData) & 0xE) >> 1) << 30;
+// mod
+//				PTS = (DWORD)(((DWORD)(*pData) & 0xE) >> 1) << 30;
+				PTS = (long long)(((DWORD)(*pData) & 0xE) >> 1) << 30;
+// mod
 				pData++;
 
 				PTS += (DWORD)(*pData) << 22;
@@ -120,9 +123,11 @@ void parse_PMT(BYTE *pbPacket)
 {
 	PMT_HEADER *pmt = (PMT_HEADER *)(pbPacket + sizeof(_Packet_Header)+1);
 
-	if (PCRPid == 0) {
-		PCRPid = swap16(pmt->pcrpid) & 0x1FFF;
-	}
+// mark10als
+//	if (PCRPid == 0) {
+//		PCRPid = swap16(pmt->pcrpid) & 0x1FFF;
+//	}
+// mark10als
 
 	INT length = swap16(pmt->program_info_length) & 0x0FFF;
 	BYTE *pData = (BYTE *)&pmt->program_info_length + 2;
@@ -133,6 +138,11 @@ void parse_PMT(BYTE *pbPacket)
 
 		if (pmt_pid->StreamTypeID == 0x6) {
 			CaptionPid = (swap16(pmt_pid->EsPID) & 0x1FFF);
+// mark10als
+		if (PCRPid == 0) {
+			PCRPid = swap16(pmt->pcrpid) & 0x1FFF;
+		}
+// mark10als
 			break;
 		}
 		pData += ((swap16(pmt_pid->DescLen)&0x0FFF) + sizeof(PMT_PID_Desc));

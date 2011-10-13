@@ -25,6 +25,7 @@ extern USHORT PMTPid;
 // mark10als
 extern long delayTime;
 extern BOOL bLogMode;
+extern BOOL bsrtornament;
 extern TCHAR *passType;
 // mark10als
 
@@ -37,12 +38,14 @@ ERROR_PARAM:
 		_tMyPrintf(_T("-format {srt|ass|taw|dual}. Ex: -format srt\r\n"));
 		_tMyPrintf(_T("-delay TIME   TIME is mili-sec. Ex: -delay 500\r\n"));
 		_tMyPrintf(_T("-asstype TYPE . Ex: -asstype Default\r\n"));
+		_tMyPrintf(_T("-srtornament. set ornament to srt-file\r\n"));
 		_tMyPrintf(_T("-log. make log-file\r\n"));
 
 		return FALSE;
 	}
 	_tcscpy(passType, _T("Default"));
 	bLogMode = FALSE;
+	bsrtornament = FALSE;
 	for (int i = 1; i< argc; i++) {
 		if (_tcsicmp(argv[i], _T("-PMT_PID")) == 0) {
 			i++;
@@ -115,6 +118,10 @@ ERROR_PARAM:
 		}
 		else if (_tcsicmp(argv[i], _T("-log")) == 0) {
 			bLogMode = TRUE;
+			continue;
+		}
+		else if (_tcsicmp(argv[i], _T("-srtornament")) == 0) {
+			bsrtornament = TRUE;
 			continue;
 		}
 // mark10als
