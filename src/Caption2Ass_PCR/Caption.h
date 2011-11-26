@@ -5,6 +5,10 @@
 
 typedef DWORD (WINAPI* InitializeCP)();
 
+// mark10als
+typedef DWORD (WINAPI* InitializeUNICODECP)();
+// mark10als
+
 typedef DWORD (WINAPI* UnInitializeCP)();
 
 typedef DWORD (WINAPI* AddTSPacketCP)(BYTE* pbPacket);

@@ -124,9 +124,9 @@ void parse_PMT(BYTE *pbPacket)
 	PMT_HEADER *pmt = (PMT_HEADER *)(pbPacket + sizeof(_Packet_Header)+1);
 
 // mark10als
-//	if (PCRPid == 0) {
-//		PCRPid = swap16(pmt->pcrpid) & 0x1FFF;
-//	}
+	if (PCRPid == 0) {
+		PCRPid = swap16(pmt->pcrpid) & 0x1FFF;
+	}
 // mark10als
 
 	INT length = swap16(pmt->program_info_length) & 0x0FFF;
@@ -139,9 +139,9 @@ void parse_PMT(BYTE *pbPacket)
 		if (pmt_pid->StreamTypeID == 0x6) {
 			CaptionPid = (swap16(pmt_pid->EsPID) & 0x1FFF);
 // mark10als
-		if (PCRPid == 0) {
-			PCRPid = swap16(pmt->pcrpid) & 0x1FFF;
-		}
+//		if (PCRPid == 0) {
+//			PCRPid = swap16(pmt->pcrpid) & 0x1FFF;
+//		}
 // mark10als
 			break;
 		}

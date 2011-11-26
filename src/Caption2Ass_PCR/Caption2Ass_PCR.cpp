@@ -68,7 +68,7 @@ void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS)
 // mark10als
 //		if (i == 0) {
 // mark10als
-			(*it)->endTime = PTS;
+			(*it)->endTime = (DWORD)PTS;
 
 			unsigned short sH, sM, sS, sMs, eH, eM, eS, eMs;
 
@@ -122,7 +122,7 @@ void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS)
 	for(int i = 0; it != list->end(); it++, i++) {
 
 		if (i == 0) {
-			(*it)->endTime = PTS;
+			(*it)->endTime = (DWORD)PTS;
 
 			unsigned short sH, sM, sS, sMs, eH, eM, eS, eMs;
 
@@ -179,6 +179,7 @@ TCHAR *pTargetFileName = NULL;
 // mark10als
 long delayTime = 0;
 BOOL bLogMode = FALSE;
+BOOL bUnicode = FALSE;
 BOOL bsrtornament = FALSE;
 TCHAR *pTargetFileName2 = NULL;
 extern long assSWF0offset = 0;
@@ -267,13 +268,21 @@ int _tmain(int argc, _TCHAR* argv[])
 	// Initialize Caption Utility.
 	CCaptionDllUtil capUtil;
 
-	if (capUtil.Initialize() != NO_ERR) {
 // mark10als
-		_tMyPrintf(_T("Load Caption.dll failed\r\n"));
-//		_tMyPrintf(_T("Load Caption_PCR.dll failed\r\n"));
-// mark10als
-		return 1;
+	if (!capUtil.CheckUNICODE() || (format == FORMAT_TAW)) {
+		if (capUtil.Initialize() != NO_ERR) {
+			_tMyPrintf(_T("Load Caption.dll failed\r\n"));
+			return 1;
+		}
+		bUnicode = FALSE;
+	} else {
+		if (capUtil.InitializeUNICODE() != NO_ERR) {
+			_tMyPrintf(_T("Load Caption.dll failed\r\n"));
+			return 1;
+		}
+		bUnicode = TRUE;
 	}
+// mark10als
 	
 	// Initialize ASS filename.
 	if (!pTargetFileName) {
@@ -399,6 +408,10 @@ int _tmain(int argc, _TCHAR* argv[])
 		assHeaderWrite(fp2);
 		fwrite(tag, 3, 1, fp4);
 	}
+	if ((fp3) && (bUnicode)) {
+		unsigned char tag[] = {0xEF, 0xBB, 0xBF};
+		fwrite(tag, 3, 1, fp3);
+	}
 // mark10als
 
 	if (!FindStartOffset(fp)) {
@@ -440,6 +453,12 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		// PMT
 		if (PMTPid != 0 && packet.PID == PMTPid) {
+// mark10als
+			if(0x2b == (pbPacket[5] << 4) + ((pbPacket[6] & 0xf0) >> 4)){
+			} else {
+				continue; // next packet
+			}
+// mark10als
 			void parse_PMT(BYTE *pbPacket);
 
 			parse_PMT(&pbPacket[0]);
@@ -749,7 +768,7 @@ int _tmain(int argc, _TCHAR* argv[])
 							if (it2->emCharSizeMode == STR_SMALL) {
 								workPosY += (int)(10 * ratioY);
 							}
-							if( it2->emCharSizeMode == STR_MEDIUM ){
+							if (( it2->emCharSizeMode == STR_MEDIUM ) &&  (!bUnicode)){
 								// ‘SŠp -> ”¼Šp
 								it2->strDecode = GetHalfChar(it2->strDecode);
 							}
@@ -775,7 +794,7 @@ int _tmain(int argc, _TCHAR* argv[])
 //							WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8_2, 1024, NULL, NULL);
 
 //							strcat(strUTF8, strUTF8_2);
-							if (format == FORMAT_TAW) {
+							if ((format == FORMAT_TAW) || (bUnicode)) {
 								strcat(strUTF8, it2->strDecode.c_str());
 							} else {
 								// CP 932 to UTF-8
@@ -789,7 +808,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 						PSRT_LINE pSrtLine = new SRT_LINE();
 						pSrtLine->index = 0;	//useless
-						pSrtLine->startTime = PTS - startPCR;
+						pSrtLine->startTime = (DWORD)(PTS - startPCR);
 						pSrtLine->endTime = 0;
 // mark10als
 						pSrtLine->outCharSizeMode = workCharSizeMode;

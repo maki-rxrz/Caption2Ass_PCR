@@ -89,11 +89,34 @@ BOOL CCaptionDllUtil::UnLoadDll(void)
 	return TRUE;
 }
 
+// mark10als
+BOOL CCaptionDllUtil::CheckUNICODE()
+{
+	pfnInitializeUNICODE = NULL;
+	if ( m_hModule == NULL ){
+		if ( LoadDll() == FALSE ){
+			return FALSE;
+		}
+	}
+	pfnInitializeUNICODE = ( InitializeUNICODECP ) ::GetProcAddress( m_hModule , "InitializeUNICODE");
+	if ( !pfnInitializeUNICODE ){
+		return FALSE;
+	}
+	return TRUE;
+}
+DWORD CCaptionDllUtil::InitializeUNICODE()
+{
+	return pfnInitializeUNICODE();
+}
+
+// mark10als
 DWORD CCaptionDllUtil::Initialize()
 {
-	if ( LoadDll() == FALSE ){
-		return ERR_INIT;
-	}
+// mark10als
+//	if ( LoadDll() == FALSE ){
+//		return ERR_INIT;
+//	}
+// mark10als
 	return pfnInitializeCP();
 }
 

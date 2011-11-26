@@ -122,6 +122,10 @@ public:
 	~CCaptionDllUtil(void);
 
 	DWORD Initialize();
+// mark10als
+	BOOL CheckUNICODE();
+	DWORD InitializeUNICODE();
+// mark10als
 	DWORD UnInitialize();
 	DWORD AddTSPacket(BYTE* pbPacket);
 	DWORD Clear();
@@ -134,6 +138,7 @@ protected:
 	HMODULE m_hModule;
 
 	InitializeCP pfnInitializeCP;
+	InitializeUNICODECP pfnInitializeUNICODE;
 	UnInitializeCP pfnUnInitializeCP;
 	AddTSPacketCP pfnAddTSPacketCP;
 	ClearCP pfnClearCP;
@@ -144,4 +149,7 @@ protected:
 protected:
 	BOOL LoadDll(void);
 	BOOL UnLoadDll(void);
+// mark10als
+//	BOOL CheckUNICODE(void);
+// mark10als
 };
