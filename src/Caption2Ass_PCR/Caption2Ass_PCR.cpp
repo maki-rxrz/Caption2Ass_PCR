@@ -59,6 +59,30 @@ void assHeaderWrite(FILE *fp);
 BOOL FindStartOffset(FILE *fp);
 BOOL resync(BYTE *pbPacket, FILE *fp);
 long long GetPTS(BYTE *pbPacket);
+// mark10als
+long delayTime = 0;
+BOOL bLogMode = FALSE;
+BOOL bUnicode = FALSE;
+BOOL bsrtornament = FALSE;
+TCHAR *pTargetFileName2 = NULL;
+extern long assSWF0offset = 0;
+extern long assSWF5offset = 0;
+extern long assSWF7offset = 0;
+extern long assSWF9offset = 0;
+extern long assSWF11offset = 0;
+extern TCHAR *passType = NULL;
+extern TCHAR *passComment1 = NULL;
+extern TCHAR *passComment2 = NULL;
+extern TCHAR *passComment3 = NULL;
+extern long assPlayResX = 0;
+extern long assPlayResY = 0;
+extern TCHAR *passDefaultFontname = NULL;
+extern long assDefaultFontsize = 0;
+extern TCHAR *passRubiFontname = NULL;
+extern long assRubiFontsize = 0;
+extern TCHAR *passDefaultStyle = NULL;
+extern TCHAR *passRubiStyle = NULL;
+// mark10als
 
 void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS)
 {
@@ -91,10 +115,19 @@ void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS)
 				fprintf(fp,"Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Default,,0000,0000,0000,,{\\pos(%d,%d)", sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX, (*it)->outPosY);
 			}
 			if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff ) {
-				fprintf(fp,"\\c&H%06x&}", (*it)->outCharColor);
-			} else {
-				fprintf(fp,"}");
+				fprintf(fp,"\\c&H%06x&", (*it)->outCharColor);
 			}
+			if ((bUnicode) && (((*it)->outCharH + (*it)->outCharVInterval) != 60)) {
+				int iFontSize = 0;
+			//	if ((*it)->outCharSizeMode == STR_SMALL) {
+			//		iFontSize = (assRubiFontsize * ((*it)->outCharH + (*it)->outCharVInterval)) / 60;
+			//	} else {
+			//		iFontSize = (assDefaultFontsize * ((*it)->outCharH + (*it)->outCharVInterval)) / 60;
+			//	}
+				iFontSize = (100 * ((*it)->outCharH + (*it)->outCharVInterval)) / 60;
+				fprintf(fp,"\\fscy%d", iFontSize);
+			}
+			fprintf(fp,"}");
 //		}
 // mark10als
 
@@ -176,30 +209,6 @@ USHORT PCRPid = 0;
 DWORD format = FORMAT_ASS;
 TCHAR *pFileName = NULL;
 TCHAR *pTargetFileName = NULL;
-// mark10als
-long delayTime = 0;
-BOOL bLogMode = FALSE;
-BOOL bUnicode = FALSE;
-BOOL bsrtornament = FALSE;
-TCHAR *pTargetFileName2 = NULL;
-extern long assSWF0offset = 0;
-extern long assSWF5offset = 0;
-extern long assSWF7offset = 0;
-extern long assSWF9offset = 0;
-extern long assSWF11offset = 0;
-extern TCHAR *passType = NULL;
-extern TCHAR *passComment1 = NULL;
-extern TCHAR *passComment2 = NULL;
-extern TCHAR *passComment3 = NULL;
-extern long assPlayResX = 0;
-extern long assPlayResY = 0;
-extern TCHAR *passDefaultFontname = NULL;
-extern long assDefaultFontsize = 0;
-extern TCHAR *passRubiFontname = NULL;
-extern long assRubiFontsize = 0;
-extern TCHAR *passDefaultStyle = NULL;
-extern TCHAR *passRubiStyle = NULL;
-// mark10als
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -714,6 +723,17 @@ int _tmain(int argc, _TCHAR* argv[])
 								ratioY = (float)(assPlayResY) / (float)(540);
 							}
 						}
+						if (bUnicode) {
+							if ((it->wPosX < 2000) || (it->wPosY < 2000)) {
+								offsetPosX = it->wClientX;
+								offsetPosY = it->wClientY;
+							} else {
+								offsetPosX = 0;
+								offsetPosY = 0;
+								it->wPosX -= 2000;
+								it->wPosY -= 2000;
+							}
+						}
 
 // mark10als
 						for(;it2 != it->CharList.end(); it2++) {
@@ -726,19 +746,21 @@ int _tmain(int argc, _TCHAR* argv[])
 							workCharH = it2->wCharH;
 							workCharHInterval = it2->wCharHInterval;
 							workCharVInterval = it2->wCharVInterval;
-							if (wLastSWFMode == 9) {
-								amariPosX = it->wPosX % 18;
-								amariPosY = it->wPosY % 15;
-							} else {
-								amariPosX = it->wPosX % ((workCharW + workCharHInterval) / 2);
-								amariPosY = it->wPosY % ((workCharH + workCharVInterval) / 2);
-							}
-							if ((amariPosX == 0) || (amariPosY == 0)) {
-								offsetPosX = it->wClientX;
-								offsetPosY = it->wClientY +10;
-							} else {
-								offsetPosX = 0;
-								offsetPosY = 0;
+							if (!bUnicode) {
+								if (wLastSWFMode == 9) {
+									amariPosX = it->wPosX % 18;
+									amariPosY = it->wPosY % 15;
+								} else {
+									amariPosX = it->wPosX % ((workCharW + workCharHInterval) / 2);
+									amariPosY = it->wPosY % ((workCharH + workCharVInterval) / 2);
+								}
+								if ((amariPosX == 0) || (amariPosY == 0)) {
+									offsetPosX = it->wClientX;
+									offsetPosY = it->wClientY +10;
+								} else {
+									offsetPosX = 0;
+									offsetPosY = 0;
+								}
 							}
 							if (wLastSWFMode == 0) {
 								workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
@@ -751,7 +773,11 @@ int _tmain(int argc, _TCHAR* argv[])
 								workPosY = (int)((float)( it->wPosY + offsetPosY +0 + assSWF7offset ) * ratioY);
 							} else if (wLastSWFMode == 9) {
 								workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
-								workPosY = (int)((float)( it->wPosY + offsetPosY -50 + assSWF9offset ) * ratioY);
+								if (bUnicode) {
+									workPosY = (int)((float)( it->wPosY + offsetPosY + assSWF9offset ) * ratioY);
+								} else {
+									workPosY = (int)((float)( it->wPosY + offsetPosY -50 + assSWF9offset ) * ratioY);
+								}
 							} else if (wLastSWFMode == 11) {
 								workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
 								workPosY = (int)((float)( it->wPosY + offsetPosY - 0 + assSWF11offset ) * ratioY);
@@ -765,7 +791,7 @@ int _tmain(int argc, _TCHAR* argv[])
 //							if (it2->emCharSizeMode == STR_SMALL)
 //								continue;
 							// ‚Ó‚è‚ª‚È Skip ‚Í o—ÍŽž‚É
-							if (it2->emCharSizeMode == STR_SMALL) {
+							if ((it2->emCharSizeMode == STR_SMALL) &&  (!bUnicode)) {
 								workPosY += (int)(10 * ratioY);
 							}
 							if (( it2->emCharSizeMode == STR_MEDIUM ) &&  (!bUnicode)){
