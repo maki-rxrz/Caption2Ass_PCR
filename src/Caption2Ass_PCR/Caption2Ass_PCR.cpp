@@ -65,6 +65,7 @@ BOOL bLogMode = FALSE;
 BOOL bUnicode = FALSE;
 BOOL bsrtornament = FALSE;
 TCHAR *pTargetFileName2 = NULL;
+TCHAR *pLogFileName = NULL;
 extern long assSWF0offset = 0;
 extern long assSWF5offset = 0;
 extern long assSWF7offset = 0;
@@ -84,6 +85,7 @@ extern TCHAR *passDefaultStyle = NULL;
 extern TCHAR *passRubiStyle = NULL;
 // mark10als
 
+DWORD assIndex = 1; // index for ASS
 void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS)
 {
 	SRT_LIST::iterator it = list->begin();
@@ -141,7 +143,8 @@ void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS)
 	}
 
 // mark10als
-//	if (list->size() > 0)
+	if (list->size() > 0)
+		assIndex++;
 //		fprintf(fp, "\r\n");
 // mark10als
 
@@ -294,28 +297,31 @@ int _tmain(int argc, _TCHAR* argv[])
 // mark10als
 	
 	// Initialize ASS filename.
-	if (!pTargetFileName) {
+	int result = 1;
+	if (pTargetFileName) {
+		TCHAR *pExt = PathFindExtension(pTargetFileName);
+		result = _tcsicmp(pExt, _T(".ts"));
+	}
+	if ((!pTargetFileName) || ( result == 0 )) {
 		pTargetFileName = new TCHAR[MAX_PATH];
 		memset(pTargetFileName, 0, sizeof(TCHAR) * MAX_PATH);
 
 		_tcscat(pTargetFileName, pFileName);
 
-		TCHAR *pExt = PathFindExtension(pTargetFileName);
+	//	TCHAR *pExt = PathFindExtension(pTargetFileName);
 
 // mark10als
 //		if (format == FORMAT_ASS)
 //			_tcscpy(pExt, _T(".ass"));
 //		else if (format == FORMAT_SRT)
 //			_tcscpy(pExt, _T(".srt"));
-		if ( (format == FORMAT_ASS) || (format == FORMAT_DUAL) )
-			_tcscpy(pExt, _T(".ass"));
-		else
-			_tcscpy(pExt, _T(".srt"));
+	}
+	if ( (format == FORMAT_ASS) || (format == FORMAT_DUAL) ) {
+		TCHAR *pExt = PathFindExtension(pTargetFileName);
+		_tcscpy(pExt, _T(".ass"));
 	} else {
-		if (format == FORMAT_DUAL) {
-			TCHAR *pExt = PathFindExtension(pTargetFileName);
-			_tcscpy(pExt, _T(".ass"));
-		}
+		TCHAR *pExt = PathFindExtension(pTargetFileName);
+		_tcscpy(pExt, _T(".srt"));
 // mark10als
 	}
 // mark10als
@@ -375,11 +381,14 @@ int _tmain(int argc, _TCHAR* argv[])
 //	BOOL bLogMode = FALSE;
 
 	if (bLogMode) {
-		TCHAR *pExt = PathFindExtension(pTargetFileName);
+		pLogFileName = new TCHAR[MAX_PATH];
+		memset(pLogFileName, 0, sizeof(TCHAR) * MAX_PATH);
+		_tcscat(pLogFileName, pTargetFileName);
+		TCHAR *pExt = PathFindExtension(pLogFileName);
 		_tcscpy(pExt, _T("_Caption.log"));
-		fp3 = _tfopen(pTargetFileName, _T("wb"));
+		fp3 = _tfopen(pLogFileName, _T("wb"));
 		if (!fp3) {
-			_tMyPrintf(_T("Open Log File: %s failed\r\n"), pTargetFileName2);
+			_tMyPrintf(_T("Open Log File: %s failed\r\n"), pLogFileName);
 			goto EXIT;
 		}
 	} else {
@@ -878,6 +887,13 @@ EXIT:
 		if (fp4)
 			fclose(fp4);
 	}
+	if ((assIndex == 1) && (srtIndex == 1)){
+		Sleep(2000);
+		remove( pTargetFileName );
+		if (format == FORMAT_DUAL) {
+			remove( pTargetFileName2 );
+		}
+	}
 // mark10als
 
 //#ifdef _DEBUG
@@ -886,5 +902,6 @@ EXIT:
 			fclose(fp3);
 	}
 //#endif
+	//	Sleep(20000);
 	return 0;
 }
