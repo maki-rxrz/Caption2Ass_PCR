@@ -154,6 +154,7 @@ void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS)
 DWORD srtIndex = 1; // index for SRT
 void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS)
 {
+	BOOL bNoSRT = TRUE;
 	SRT_LIST::iterator it = list->begin();
 	for(int i = 0; it != list->end(); it++, i++) {
 
@@ -179,6 +180,7 @@ void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS)
 		// ‚Ó‚è‚ª‚È Skip
 		if ((*it)->outCharSizeMode == STR_SMALL)
 			continue;
+		bNoSRT = FALSE;
 		if ((*it)->outornament) {
 			if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff ) {
 				fprintf(fp,"<font color=\"#%02x%02x%02x\">", (*it)->outCharColor.ucR, (*it)->outCharColor.ucG, (*it)->outCharColor.ucB);
@@ -197,6 +199,9 @@ void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS)
 	}
 
 	if (list->size() > 0) {
+		if (bNoSRT){
+			fprintf(fp, "\r\n");
+		}
 		fprintf(fp, "\r\n");
 		srtIndex++;
 	}

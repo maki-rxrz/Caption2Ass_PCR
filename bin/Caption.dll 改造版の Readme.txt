@@ -20,9 +20,13 @@
 「字幕抽出ツール C-Cats」からコピーさせて頂きました
 
 ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
+【動作環境】
+・Windows XP SP3で開発(たぶんVistaや７でも動くと思います)
+・Visual C++ 2010 SP1 再頒布可能パッケージ
+・.NET Framework 4(同梱のCaption.dllに必要)
+
 
 【使用方法】
-（注意）.NET Framework 2.0以上必須。
 ・Caption2Ass_PCR.exe と 「Caption.dll ユニコード化改造版」を
   同じフォルダーに置く。
 ・Gaijiフォルダ下に「外字代用」のiniファィルがあると、変換テーブルとして
