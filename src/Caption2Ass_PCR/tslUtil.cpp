@@ -137,6 +137,18 @@ void parse_PMT(BYTE *pbPacket)
 		PMT_PID_Desc *pmt_pid = (PMT_PID_Desc*)&pData[0];
 
 		if (pmt_pid->StreamTypeID == 0x6) {
+// mark10als
+			BOOL bcomponent_tag = FALSE;
+			INT iDescLen = swap16(pmt_pid->DescLen) & 0x0FFF;
+			for(int i = 0; i < iDescLen -2; i++) {
+				if (pData[i+5] == 0x52 && pData[i+6] == 0x01 && pData[i+7] == 0x30 ) {
+					bcomponent_tag = TRUE;
+					break;
+				}
+			}
+			if (bcomponent_tag){
+	//	if ((pmt_pid->StreamTypeID == 0x6) && (pmt_pid->component_tag == 0x30)) {
+// mark10als
 			CaptionPid = (swap16(pmt_pid->EsPID) & 0x1FFF);
 // mark10als
 //		if (PCRPid == 0) {
@@ -144,8 +156,10 @@ void parse_PMT(BYTE *pbPacket)
 //		}
 // mark10als
 			break;
+			}
 		}
-		pData += ((swap16(pmt_pid->DescLen)&0x0FFF) + sizeof(PMT_PID_Desc));
+	//	pData += ((swap16(pmt_pid->DescLen)&0x0FFF) + sizeof(PMT_PID_Desc));
+		pData += ((swap16(pmt_pid->DescLen)&0x0FFF) + 5);
 	}
 }
 

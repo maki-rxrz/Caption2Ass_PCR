@@ -26,7 +26,9 @@ extern USHORT PMTPid;
 extern long delayTime;
 extern BOOL bLogMode;
 extern BOOL bsrtornament;
+extern BOOL bnorubi;
 extern TCHAR *passType;
+extern DWORD detectLength;
 // mark10als
 
 BOOL ParseCmd(int argc, char **argv)
@@ -38,14 +40,17 @@ ERROR_PARAM:
 		_tMyPrintf(_T("-format {srt|ass|taw|dual}. Ex: -format srt\r\n"));
 		_tMyPrintf(_T("-delay TIME   TIME is mili-sec. Ex: -delay 500\r\n"));
 		_tMyPrintf(_T("-asstype TYPE . Ex: -asstype Default\r\n"));
+		_tMyPrintf(_T("-norubi. not-out RUBI to ass-file\r\n"));
 		_tMyPrintf(_T("-srtornament. set ornament to srt-file\r\n"));
 		_tMyPrintf(_T("-log. make log-file\r\n"));
+		_tMyPrintf(_T("-detect_length LENGTH. Ex: -detect_length 100\r\n"));
 
 		return FALSE;
 	}
-	_tcscpy(passType, _T("Default"));
+	_tcscpy_s(passType, 256, _T("Default"));
 	bLogMode = FALSE;
 	bsrtornament = FALSE;
+	bnorubi = FALSE;
 	for (int i = 1; i< argc; i++) {
 		if (_tcsicmp(argv[i], _T("-PMT_PID")) == 0) {
 			i++;
@@ -124,6 +129,20 @@ ERROR_PARAM:
 			bsrtornament = TRUE;
 			continue;
 		}
+		else if (_tcsicmp(argv[i], _T("-norubi")) == 0) {
+			bnorubi = TRUE;
+			continue;
+		}
+		else if(_tcsicmp(argv[i], _T("-detect_length")) == 0) {
+			i++;
+			if(i > argc)
+				goto ERROR_PARAM;
+
+			if(_stscanf_s(argv[i], _T("%d"), &detectLength) < 0)
+				goto ERROR_PARAM;
+			detectLength *= 10000;
+			continue;
+		}
 // mark10als
 
 		if (!pFileName) {
@@ -164,7 +183,7 @@ VOID _tMyPrintf(
 
 		if (ret == S_OK) {
 			DWORD ws;
-			WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), buf, _tcsclen(buf), &ws, NULL);
+			WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), buf, _tcslen(buf), &ws, NULL);
 
 		}
 	}

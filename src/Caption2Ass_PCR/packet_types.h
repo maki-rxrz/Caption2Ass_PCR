@@ -59,6 +59,11 @@ typedef struct PMT_PID_Desc {
 	BYTE	StreamTypeID;
 	WORD	EsPID;					// +1,2	
 	WORD	DescLen;				// +3,4
+// mark10als
+	BYTE	descriptor_tag;
+	BYTE	descriptor_length;
+	BYTE	component_tag;
+// mark10als
 } PMT_PI_Desc;
 
 #pragma pack(pop)

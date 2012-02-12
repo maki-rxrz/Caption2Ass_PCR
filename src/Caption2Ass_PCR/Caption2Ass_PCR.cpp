@@ -61,9 +61,13 @@ BOOL resync(BYTE *pbPacket, FILE *fp);
 long long GetPTS(BYTE *pbPacket);
 // mark10als
 long delayTime = 0;
+DWORD detectLength = 300*10000;
+DWORD packetCount = 0;
 BOOL bLogMode = FALSE;
 BOOL bUnicode = FALSE;
 BOOL bsrtornament = FALSE;
+BOOL bnorubi = FALSE;
+BOOL bCreateOutput = FALSE;
 TCHAR *pTargetFileName2 = NULL;
 TCHAR *pLogFileName = NULL;
 extern long assSWF0offset = 0;
@@ -133,8 +137,12 @@ void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS)
 //		}
 // mark10als
 
-		fwrite((*it)->str.c_str(), (*it)->str.size(),1, fp);
-		fprintf(fp, "\\N");
+		if (((*it)->outCharSizeMode == STR_SMALL) && (bnorubi)) {
+			fprintf(fp, "\\N");
+		} else {
+			fwrite((*it)->str.c_str(), (*it)->str.size(),1, fp);
+			fprintf(fp, "\\N");
+		}
 // mark10als
 		fprintf(fp, "\r\n");
 // mark10als
@@ -340,9 +348,9 @@ int _tmain(int argc, _TCHAR* argv[])
 // mark10als
 
 	_tMyPrintf(_T("[Source] %s\r\n"), pFileName);
-	printf("[Source] %s\r\n", pFileName);
+	//printf("[Source] %s\r\n", pFileName);
 	_tMyPrintf(_T("[Target] %s\r\n"), pTargetFileName);
-	printf("[Target] %s\r\n", pTargetFileName);
+	//printf("[Target] %s\r\n", pTargetFileName);
 	if (format == FORMAT_SRT) {
 		_tMyPrintf(_T("[Format] %s\r\n"), _T("srt"));
 	}
@@ -447,6 +455,36 @@ int _tmain(int argc, _TCHAR* argv[])
 	
 	// Main loop
 	while (fread(pbPacket, 188, 1, fp) == 1) {
+		packetCount++;
+		if (detectLength > 0) {
+			if (packetCount > detectLength && !bCreateOutput) {
+				_tMyPrintf(_T("Programe has deteced %dw packets, but can't find caption. Now it exits.\r\n"), packetCount/10000);
+				break;
+			}
+		}
+		if (fp3) {
+			if (packetCount < 100000) {
+				if ((packetCount % 10000) == 0) {
+					fprintf(fp3, "Process  %dw packets.\r\n", packetCount/10000);
+				}
+			}
+			else if (packetCount < 1000000) {
+				if ((packetCount % 100000) == 0) {
+					fprintf(fp3, "Process  %dw packets.\r\n", packetCount/10000);
+				}
+			}
+			else if (packetCount < 10000000) {
+				if ((packetCount % 1000000) == 0) {
+					fprintf(fp3, "Process  %dw packets.\r\n", packetCount/10000);
+				}
+			}
+			else {
+				if ((packetCount % 10000000) == 0) {
+					fprintf(fp3, "Process  %dw packets.\r\n", packetCount/10000);
+				}
+			}
+		}
+
 		Packet_Header packet;
 		void parse_Packet_Header(Packet_Header *packet_header, BYTE *pbPacket);
 
@@ -690,6 +728,7 @@ int _tmain(int argc, _TCHAR* argv[])
 					CHAR strUTF8[1024] = {0};
 
 					if (it->bClear) {
+						bCreateOutput = TRUE;
 						if (format == FORMAT_ASS)
 							DumpAssLine(fp2, &srtList, (PTS + it->dwWaitTime) - startPCR);
 						else if (format == FORMAT_SRT)
