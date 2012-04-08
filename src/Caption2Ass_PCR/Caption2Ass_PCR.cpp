@@ -633,8 +633,10 @@ int _tmain(int argc, _TCHAR* argv[])
 //				if ((PTS > 0) && (lastPTS == 0)) {
 //					startPCR = lastPCR - startPCR;
 //					startPCR = PTS - startPCR;
-				if ((PTS > 0) && (lastPTS == 0) && (PTS < lastPCR)) {
-					startPCR = lastPCR - (0x1FFFFFFFF / 90);
+//				if ((PTS > 0) && (lastPTS == 0) && (PTS < lastPCR)) {
+//					startPCR = lastPCR - (0x1FFFFFFFF / 90);
+				if ((PTS > 0) && (lastPTS == 0) && (PTS < lastPCR) && ((lastPCR - PTS) > (0x0FFFFFFFF / 90))) {
+					startPCR = startPCR - (0x1FFFFFFFF / 90);
 // mod
 				}
 				if (PTS == 0) {
