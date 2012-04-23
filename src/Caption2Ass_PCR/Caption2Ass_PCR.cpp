@@ -267,6 +267,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	memset(passDefaultFontname, 0, sizeof(TCHAR) * 256);
 	passRubiFontname = new TCHAR[256];
 	memset(passRubiFontname, 0, sizeof(TCHAR) * 256);
+	int sidebar_size = 0;
 // mark10als
 
 	SRT_LIST srtList;
@@ -444,6 +445,10 @@ int _tmain(int argc, _TCHAR* argv[])
 		fwrite(tag, 3, 1, fp3);
 	}
 // mark10als
+	if ((assPlayResX * 3)==(assPlayResY * 4)){
+		sidebar_size = (((assPlayResY * 16) / 9) - assPlayResX) / 2;
+		assPlayResX = (assPlayResY * 16) / 9;
+	}
 
 	if (!FindStartOffset(fp)) {
 		_tMyPrintf(_T("Invalid TS File.\r\n"));
@@ -839,6 +844,10 @@ int _tmain(int argc, _TCHAR* argv[])
 							} else {
 								workPosX = it->wPosX + offsetPosX;
 								workPosY = it->wPosY + offsetPosY;
+							}
+							workPosX -= sidebar_size;
+							if (workPosX < 0){
+								workPosX = 0;
 							}
 // mark10als
 // mark10als

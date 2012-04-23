@@ -129,6 +129,14 @@ Special thanks to
 皆さんのおかげでつくれました
 
 【Caption2Ass_PCRの変更履歴】
+2012-04-24
+0,2,0,6
+・16:9→4:3の座標変換を追加した
+．PlayResXとPlayResYが４対３の比率の場合に座標変換を行う
+．同梱の「Caption2Ass_PCR.ini」のセクション[Default43]
+．をオプション「-asstype」で指定します
+
+
 2012-04-09
 0,2,0,5
 「【開発】 TS関連ソフトウェア総合スレ Part10」
