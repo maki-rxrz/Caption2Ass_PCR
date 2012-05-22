@@ -12,6 +12,9 @@ extern long assPlayResY;
 extern TCHAR *passDefaultFontname;
 extern long assDefaultFontsize;
 extern TCHAR *passDefaultStyle;
+extern TCHAR *passBoxFontname;
+extern long assBoxFontsize;
+extern TCHAR *passBoxStyle;
 extern TCHAR *passRubiFontname;
 extern long assRubiFontsize;
 extern TCHAR *passRubiStyle;
@@ -26,7 +29,8 @@ void assHeaderWrite(FILE *fp)
 	fprintf(fp, "PlayResX: %d\r\n", assPlayResX);
 	fprintf(fp, "PlayResY: %d\r\n", assPlayResY);
 	fprintf(fp, "%s", ASS_HEADER2);
-	fprintf(fp, "Style: %s,%s,%d,%s\r\n//\r\n", _T("Default"), passDefaultFontname, assDefaultFontsize, passDefaultStyle);
+	fprintf(fp, "Style: %s,%s,%d,%s\r\n", _T("Default"), passDefaultFontname, assDefaultFontsize, passDefaultStyle);
+	fprintf(fp, "Style: %s,%s,%d,%s\r\n", _T("Box"), passBoxFontname, assBoxFontsize, passBoxStyle);
 	fprintf(fp, "Style: %s,%s,%d,%s\r\n//\r\n", _T("Rubi"), passRubiFontname, assRubiFontsize, passRubiStyle);
 	fprintf(fp, "%s", ASS_HEADER3);
 

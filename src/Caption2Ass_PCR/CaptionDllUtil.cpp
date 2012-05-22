@@ -243,6 +243,7 @@ DWORD CCaptionDllUtil::GetCaptionData(unsigned char ucLangTag, vector<CAPTION_DA
 				ItemChar.bBold = pListDll[i].pstCharList[j].bBold;
 				ItemChar.bItalic = pListDll[i].pstCharList[j].bItalic;
 				ItemChar.bFlushMode = pListDll[i].pstCharList[j].bFlushMode;
+				ItemChar.bHLC = pListDll[i].pstCharList[j].bHLC;
 				ItemChar.wCharW = pListDll[i].pstCharList[j].wCharW;
 				ItemChar.wCharH = pListDll[i].pstCharList[j].wCharH;
 				ItemChar.wCharHInterval = pListDll[i].pstCharList[j].wCharHInterval;

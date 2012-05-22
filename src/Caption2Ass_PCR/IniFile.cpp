@@ -20,6 +20,9 @@ extern long assPlayResY;
 extern TCHAR *passDefaultFontname;
 extern long assDefaultFontsize;
 extern TCHAR *passDefaultStyle;
+extern TCHAR *passBoxFontname;
+extern long assBoxFontsize;
+extern TCHAR *passBoxStyle;
 extern TCHAR *passRubiFontname;
 extern long assRubiFontsize;
 extern TCHAR *passRubiStyle;
@@ -70,6 +73,10 @@ void IniFileRead(TCHAR* passType)
 	memset(passDefaultFontname, 0, sizeof(TCHAR) * iStrLen);
 	passDefaultStyle = new TCHAR[iStrLen];
 	memset(passDefaultStyle, 0, sizeof(TCHAR) * iStrLen);
+	passBoxFontname = new TCHAR[iStrLen];
+	memset(passBoxFontname, 0, sizeof(TCHAR) * iStrLen);
+	passBoxStyle = new TCHAR[iStrLen];
+	memset(passBoxStyle, 0, sizeof(TCHAR) * iStrLen);
 	passRubiFontname = new TCHAR[iStrLen];
 	memset(passRubiFontname, 0, sizeof(TCHAR) * iStrLen);
 	passRubiStyle = new TCHAR[iStrLen];
@@ -112,23 +119,32 @@ void IniFileRead(TCHAR* passType)
 	GetPrivateProfileString(passType,_T("Comment3"),NULL,tmpBuff,iStrLen,pIniFilePath);
 	MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
 	WideCharToMultiByte(CP_UTF8, 0, str, -1, passComment3, 1024, NULL, NULL);
+	assPlayResX=GetPrivateProfileInt(passType,_T("PlayResX"),1920,pIniFilePath);
+	assPlayResY=GetPrivateProfileInt(passType,_T("PlayResY"),1080,pIniFilePath);
+
 	GetPrivateProfileString(passType,_T("DefaultFontname"),_T("MS UI Gothic"),tmpBuff,iStrLen,pIniFilePath);
 	MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
 	WideCharToMultiByte(CP_UTF8, 0, str, -1, passDefaultFontname, 1024, NULL, NULL);
+	assDefaultFontsize=GetPrivateProfileInt(passType,_T("DefaultFontsize"),90,pIniFilePath);
+	GetPrivateProfileString(passType,_T("DefaultStyle"),_T("&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,15,0,1,2,2,1,10,10,10,0"),tmpBuff,iStrLen,pIniFilePath);
+	MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
+	WideCharToMultiByte(CP_UTF8, 0, str, -1, passDefaultStyle, 1024, NULL, NULL);
+
+	GetPrivateProfileString(passType,_T("BoxFontname"),_T("MS UI Gothic"),tmpBuff,iStrLen,pIniFilePath);
+	MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
+	WideCharToMultiByte(CP_UTF8, 0, str, -1, passBoxFontname, 1024, NULL, NULL);
+	assBoxFontsize=GetPrivateProfileInt(passType,_T("BoxFontsize"),90,pIniFilePath);
+	GetPrivateProfileString(passType,_T("BoxStyle"),_T("&HFFFFFFFF,&H000000FF,&H00FFFFFF,&H00FFFFFF,0,0,0,0,100,100,0,0,1,2,2,2,10,10,10,0"),tmpBuff,iStrLen,pIniFilePath);
+	MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
+	WideCharToMultiByte(CP_UTF8, 0, str, -1, passBoxStyle, 1024, NULL, NULL);
+
 	GetPrivateProfileString(passType,_T("RubiFontname"),_T("MS UI Gothic"),tmpBuff,iStrLen,pIniFilePath);
 	MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
 	WideCharToMultiByte(CP_UTF8, 0, str, -1, passRubiFontname, 1024, NULL, NULL);
-	GetPrivateProfileString(passType,_T("DefaultStyle"),_T("&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,5,0,1,2,2,1,10,10,10,0"),tmpBuff,iStrLen,pIniFilePath);
-	MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-	WideCharToMultiByte(CP_UTF8, 0, str, -1, passDefaultStyle, 1024, NULL, NULL);
+	assRubiFontsize=GetPrivateProfileInt(passType,_T("RubiFontsize"),50,pIniFilePath);
 	GetPrivateProfileString(passType,_T("RubiStyle"),_T("&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,2,1,10,10,10,0"),tmpBuff,iStrLen,pIniFilePath);
 	MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
 	WideCharToMultiByte(CP_UTF8, 0, str, -1, passRubiStyle, 1024, NULL, NULL);
 	
-	assPlayResX=GetPrivateProfileInt(passType,_T("PlayResX"),1920,pIniFilePath);
-	assPlayResY=GetPrivateProfileInt(passType,_T("PlayResY"),1080,pIniFilePath);
-	assDefaultFontsize=GetPrivateProfileInt(passType,_T("DefaultFontsize"),90,pIniFilePath);
-	assRubiFontsize=GetPrivateProfileInt(passType,_T("RubiFontsize"),50,pIniFilePath);
-
 	return;
 }

@@ -65,6 +65,7 @@ typedef struct _CAPTION_CHAR_DATA{
 	BOOL bBold;
 	BOOL bItalic;
 	BYTE bFlushMode;
+	BYTE bHLC; //must ignore low 4bits
 
 	WORD wCharW;
 	WORD wCharH;
@@ -81,6 +82,7 @@ typedef struct _CAPTION_CHAR_DATA{
 		bBold = o.bBold;
 		bItalic = o.bItalic;
 		bFlushMode = o.bFlushMode;
+		bHLC = o.bHLC;
 		wCharW = o.wCharH;
 		wCharHInterval = o.wCharHInterval;
 		wCharVInterval = o.wCharVInterval;

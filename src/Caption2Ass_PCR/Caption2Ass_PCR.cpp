@@ -39,6 +39,12 @@ typedef struct _SRT_LINE {
 // mark10als
 	BYTE				outCharSizeMode;
 	ASS_COLOR			outCharColor;
+	BOOL				outUnderLine;
+	BOOL				outShadow;
+	BOOL				outBold;
+	BOOL				outItalic;
+	BYTE				outFlushMode;
+	BYTE				outHLC; //must ignore low 4bits
 	WORD				outCharW;
 	WORD				outCharH;
 	WORD				outCharHInterval;
@@ -83,12 +89,71 @@ extern long assPlayResX = 0;
 extern long assPlayResY = 0;
 extern TCHAR *passDefaultFontname = NULL;
 extern long assDefaultFontsize = 0;
+extern TCHAR *passDefaultStyle = NULL;
+extern TCHAR *passBoxFontname = NULL;
+extern long assBoxFontsize = 0;
+extern TCHAR *passBoxStyle = NULL;
 extern TCHAR *passRubiFontname = NULL;
 extern long assRubiFontsize = 0;
-extern TCHAR *passDefaultStyle = NULL;
 extern TCHAR *passRubiStyle = NULL;
 // mark10als
+int count_UTF8(const unsigned char *string)
+{
+	int len = 0;
 
+	while(*string){
+		if(string[0] == 0x00){
+			break;
+		}
+		if(string[0] < 0x1f || string[0] == 0x7f){
+			// 制御コード
+		}else{
+			if(string[0] <= 0x7f){
+				++len; // 1バイト文字
+			}else if(string[0] <= 0xbf){
+				; // 文字の続き
+			}else if(string[0] <= 0xdf){
+				++len; // 2バイト文字
+				++len; // 2バイト文字
+				if ((string[0] == 0xc2) && (string[1] == 0xa5)){
+					--len; // 2バイト文字
+				}
+			}else if(string[0] <= 0xef){
+				++len; // 3バイト文字
+				++len; // 3バイト文字
+				if ((string[0] == 0xe2) && (string[1] == 0x80) && (string[2] == 0xbe)){
+					--len; // 2バイト文字
+				}
+				if (string[0] == 0xef){
+					if (string[1] == 0xbd){
+						if((string[2] >= 0xa1) && (string[2] == 0xbf)){
+							--len; // 2バイト文字
+						}
+					}
+					if (string[1] == 0xbe){
+						if((string[2] >= 0x80) && (string[2] == 0x9f)){
+							--len; // 2バイト文字
+						}
+					}
+				}
+			}else if(string[0] <= 0xf7){
+				++len; // 4バイト文字
+				++len; // 4バイト文字
+			}else if(string[0] <= 0xfb){
+				++len; // 5バイト文字
+				++len; // 5バイト文字
+			}else if(string[0] <= 0xfd){
+				++len; // 6バイト文字
+				++len; // 6バイト文字
+			}else{
+				; // 使われていない範囲
+			}
+		}
+		++string;
+	}
+
+	return len;
+}
 DWORD assIndex = 1; // index for ASS
 void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS)
 {
@@ -115,6 +180,17 @@ void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS)
 			eMs /= 10;
 // mark10als
 //			fprintf(fp,"Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Default,,0000,0000,0000,,", sH, sM, sS, sMs, eH, eM, eS, eMs);
+			if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC != 0)) {
+				int iHankaku;
+				unsigned char usTmpUTF8[1024] = {0};
+				memcpy_s(usTmpUTF8, 1024, (*it)->str.c_str(), (*it)->str.size());
+				iHankaku = count_UTF8(usTmpUTF8);
+			//	iHankaku = (*it)->str.length() * 2;
+				fprintf(fp,"Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\fscx%d\\fscy150\\3c&H%06x&}", sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX + (iHankaku*(((*it)->outCharW + (*it)->outCharHInterval)/4)), (*it)->outPosY+((*it)->outCharVInterval/2),(iHankaku)*50, (*it)->outCharColor);
+				unsigned char utf8box[] = {0xE2, 0x96, 0xA0};
+				fwrite(utf8box, 3, 1, fp);
+				fprintf(fp, "\r\n");
+			}
 			if ((*it)->outCharSizeMode == STR_SMALL) {
 				fprintf(fp,"Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Rubi,,0000,0000,0000,,{\\pos(%d,%d)", sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX, (*it)->outPosY);
 			} else {
@@ -123,15 +199,24 @@ void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS)
 			if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff ) {
 				fprintf(fp,"\\c&H%06x&", (*it)->outCharColor);
 			}
-			if ((bUnicode) && (((*it)->outCharH + (*it)->outCharVInterval) != 60)) {
-				int iFontSize = 0;
+		//	if ((bUnicode) && (((*it)->outCharH + (*it)->outCharVInterval) != 60)) {
+		//		int iFontSize = 0;
 			//	if ((*it)->outCharSizeMode == STR_SMALL) {
 			//		iFontSize = (assRubiFontsize * ((*it)->outCharH + (*it)->outCharVInterval)) / 60;
 			//	} else {
 			//		iFontSize = (assDefaultFontsize * ((*it)->outCharH + (*it)->outCharVInterval)) / 60;
 			//	}
-				iFontSize = (100 * ((*it)->outCharH + (*it)->outCharVInterval)) / 60;
-				fprintf(fp,"\\fscy%d", iFontSize);
+		//		iFontSize = (100 * ((*it)->outCharH + (*it)->outCharVInterval)) / 60;
+		//		fprintf(fp,"\\fscy%d", iFontSize);
+		//	}
+			if ((*it)->outUnderLine) {
+				fprintf(fp,"\\u1");
+			}
+			if ((*it)->outBold) {
+				fprintf(fp,"\\b1");
+			}
+			if ((*it)->outItalic) {
+				fprintf(fp,"\\i1");
 			}
 			fprintf(fp,"}");
 //		}
@@ -190,6 +275,15 @@ void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS)
 			continue;
 		bNoSRT = FALSE;
 		if ((*it)->outornament) {
+			if ((*it)->outItalic) {
+				fprintf(fp,"<i>");
+			}
+			if ((*it)->outBold) {
+				fprintf(fp,"<b>");
+			}
+			if ((*it)->outUnderLine) {
+				fprintf(fp,"<u>");
+			}
 			if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff ) {
 				fprintf(fp,"<font color=\"#%02x%02x%02x\">", (*it)->outCharColor.ucR, (*it)->outCharColor.ucG, (*it)->outCharColor.ucB);
 			}
@@ -198,6 +292,15 @@ void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS)
 		if ((*it)->outornament) {
 			if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff ) {
 				fprintf(fp,"</font>");
+			}
+			if ((*it)->outUnderLine) {
+				fprintf(fp,"</u>");
+			}
+			if ((*it)->outBold) {
+				fprintf(fp,"</b>");
+			}
+			if ((*it)->outItalic) {
+				fprintf(fp,"</i>");
 			}
 		}
 // mark10als
@@ -240,6 +343,12 @@ int _tmain(int argc, _TCHAR* argv[])
 	unsigned char workucB = 0;
 	unsigned char workucG = 0;
 	unsigned char workucR = 0;
+	BOOL workUnderLine;
+	BOOL workShadow;
+	BOOL workBold;
+	BOOL workItalic;
+	BYTE workFlushMode;
+	BYTE workHLC; //must ignore low 4bits
 	int workCharW = 0;
 	int workCharH = 0;
 	int workCharHInterval = 0;
@@ -802,6 +911,12 @@ int _tmain(int argc, _TCHAR* argv[])
 							workucR = it2->stCharColor.ucR;
 							workucG = it2->stCharColor.ucG;
 							workucB = it2->stCharColor.ucB;
+							workUnderLine = it2->bUnderLine;
+							workShadow = it2->bShadow;
+							workBold = it2->bBold;
+							workItalic = it2->bItalic;
+							workFlushMode = it2->bFlushMode;
+							workHLC = it2->bHLC;
 							workCharW = it2->wCharW;
 							workCharH = it2->wCharH;
 							workCharHInterval = it2->wCharHInterval;
@@ -905,10 +1020,16 @@ int _tmain(int argc, _TCHAR* argv[])
 						pSrtLine->outCharColor.ucR = workucR;
 						pSrtLine->outCharColor.ucG = workucG;
 						pSrtLine->outCharColor.ucB = workucB;
-						pSrtLine->outCharW = workCharW;
-						pSrtLine->outCharH = workCharH;
-						pSrtLine->outCharHInterval = workCharHInterval;
-						pSrtLine->outCharVInterval = workCharVInterval;
+						pSrtLine->outUnderLine = workUnderLine;
+						pSrtLine->outShadow = workShadow;
+						pSrtLine->outBold = workBold;
+						pSrtLine->outItalic = workItalic;
+						pSrtLine->outFlushMode = workFlushMode;
+						pSrtLine->outHLC = workHLC;
+						pSrtLine->outCharW = workCharW * ratioX;
+						pSrtLine->outCharH = workCharH * ratioY;
+						pSrtLine->outCharHInterval = workCharHInterval * ratioX;
+						pSrtLine->outCharVInterval = workCharVInterval * ratioY;
 						pSrtLine->outPosX = workPosX;
 						pSrtLine->outPosY = workPosY;
 						pSrtLine->outornament = bsrtornament;
