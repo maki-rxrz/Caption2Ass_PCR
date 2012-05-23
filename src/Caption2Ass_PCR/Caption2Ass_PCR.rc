@@ -53,8 +53,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,3,0,0
- PRODUCTVERSION 0,3,0,0
+ FILEVERSION 0,3,0,1
+ PRODUCTVERSION 0,3,0,1
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -70,12 +70,12 @@ BEGIN
         BLOCK "041104b0"
         BEGIN
             VALUE "FileDescription", "Caption2Ass_PCR"
-            VALUE "FileVersion", "0, 3, 0, 0"
+            VALUE "FileVersion", "0, 3, 0, 1"
             VALUE "InternalName", "Caption2Ass_PCR.exe"
             VALUE "LegalCopyright", "mark10als ‰ü‘¢”Å"
             VALUE "OriginalFilename", "Caption2Ass_PCR.exe"
             VALUE "ProductName", "Caption2Ass_PCR"
-            VALUE "ProductVersion", "0, 3, 0, 0"
+            VALUE "ProductVersion", "0, 3, 0, 1"
         END
     END
     BLOCK "VarFileInfo"

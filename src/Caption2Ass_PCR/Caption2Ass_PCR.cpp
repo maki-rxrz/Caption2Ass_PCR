@@ -185,8 +185,11 @@ void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS)
 				unsigned char usTmpUTF8[1024] = {0};
 				memcpy_s(usTmpUTF8, 1024, (*it)->str.c_str(), (*it)->str.size());
 				iHankaku = count_UTF8(usTmpUTF8);
-			//	iHankaku = (*it)->str.length() * 2;
-				fprintf(fp,"Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\fscx%d\\fscy150\\3c&H%06x&}", sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX + (iHankaku*(((*it)->outCharW + (*it)->outCharHInterval)/4)), (*it)->outPosY+((*it)->outCharVInterval/2),(iHankaku)*50, (*it)->outCharColor);
+				int iBoxPosX = (*it)->outPosX + (iHankaku*(((*it)->outCharW + (*it)->outCharHInterval)/4));
+				int iBoxPosY = (*it)->outPosY+((*it)->outCharVInterval/2);
+				int iBoxScaleX = iHankaku*50;
+				int iBoxScaleY = 100*((*it)->outCharH + (*it)->outCharVInterval)/(*it)->outCharH;
+				fprintf(fp,"Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\fscx%d\\fscy%d\\3c&H%06x&}", sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, iBoxScaleX, iBoxScaleY, (*it)->outCharColor);
 				unsigned char utf8box[] = {0xE2, 0x96, 0xA0};
 				fwrite(utf8box, 3, 1, fp);
 				fprintf(fp, "\r\n");
@@ -275,6 +278,9 @@ void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS)
 			continue;
 		bNoSRT = FALSE;
 		if ((*it)->outornament) {
+			if ((*it)->outHLC != 0) {
+				fprintf(fp,"[");
+			}
 			if ((*it)->outItalic) {
 				fprintf(fp,"<i>");
 			}
@@ -301,6 +307,9 @@ void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS)
 			}
 			if ((*it)->outItalic) {
 				fprintf(fp,"</i>");
+			}
+			if ((*it)->outHLC != 0) {
+				fprintf(fp,"]");
 			}
 		}
 // mark10als

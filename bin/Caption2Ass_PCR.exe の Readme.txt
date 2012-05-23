@@ -129,6 +129,10 @@ Special thanks to
 皆さんのおかげでつくれました
 
 【Caption2Ass_PCRの変更履歴】
+2012-05-24
+0,3,0,1
+・SRT出力でHLCの時はテキストを"["と"]"で挟む
+
 2012-05-23
 0,3,0,0
 ＊このバージョンは、odaruさん及び、mod1の中の人さんの
@@ -137,7 +141,6 @@ Special thanks to
 ．HLC対応にあたり「Caption2Ass_PCR.ini」を修正しました
 ．DefaultStyleのSpacing値を「5」から「15」に変更した
 ．BoxFontname,BoxFontsize,BoxStyleの三つを追加
-
 
 2012-04-24
 0,2,0,6
