@@ -17,6 +17,11 @@ enum {
 	FORMAT_DUAL = 4
 // mark10als
 };
+enum {
+	HLC_kigou = 1,
+	HLC_box = 2,
+	HLC_draw = 3
+};
 
 extern DWORD format;
 extern TCHAR *pFileName;
@@ -29,6 +34,7 @@ extern BOOL bsrtornament;
 extern BOOL bnorubi;
 extern TCHAR *passType;
 extern DWORD detectLength;
+extern WORD HLCmode;
 // mark10als
 
 BOOL ParseCmd(int argc, char **argv)
@@ -42,6 +48,7 @@ ERROR_PARAM:
 		_tMyPrintf(_T("-asstype TYPE . Ex: -asstype Default\r\n"));
 		_tMyPrintf(_T("-norubi. not-out RUBI to ass-file\r\n"));
 		_tMyPrintf(_T("-srtornament. set ornament to srt-file\r\n"));
+		_tMyPrintf(_T("-hlc {kigou|box|draw}. Ex: -hlc kigou\r\n"));
 		_tMyPrintf(_T("-log. make log-file\r\n"));
 		_tMyPrintf(_T("-detect_length LENGTH. Ex: -detect_length 100\r\n"));
 
@@ -127,6 +134,25 @@ ERROR_PARAM:
 		}
 		else if (_tcsicmp(argv[i], _T("-srtornament")) == 0) {
 			bsrtornament = TRUE;
+			continue;
+		}
+		else if (_tcsicmp(argv[i], _T("-hlc")) == 0) {
+			i++;
+			if (i > argc)
+				goto ERROR_PARAM;
+
+			if (_tcsicmp(argv[i], _T("kigou")) == 0) {
+				HLCmode = HLC_kigou;
+			}
+			else if (_tcsicmp(argv[i], _T("box")) == 0) {
+				HLCmode = HLC_box;
+			}
+			else if (_tcsicmp(argv[i], _T("draw")) == 0) {
+				HLCmode = HLC_draw;
+			}
+			else
+				goto ERROR_PARAM;
+
 			continue;
 		}
 		else if (_tcsicmp(argv[i], _T("-norubi")) == 0) {

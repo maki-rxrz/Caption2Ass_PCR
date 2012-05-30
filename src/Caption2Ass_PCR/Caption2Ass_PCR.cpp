@@ -24,12 +24,18 @@ enum {
 	FORMAT_DUAL = 4
 // mark10als
 };
+enum {
+	HLC_kigou = 1,
+	HLC_box = 2,
+	HLC_draw = 3
+};
 
 // mark10als
 typedef struct _ASS_COLOR{
 	unsigned char ucR;
 	unsigned char ucG;
 	unsigned char ucB;
+	unsigned char ucAlpha;
 } ASS_COLOR;
 // mark10als
 typedef struct _SRT_LINE {
@@ -180,19 +186,30 @@ void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS)
 			eMs /= 10;
 // mark10als
 //			fprintf(fp,"Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Default,,0000,0000,0000,,", sH, sM, sS, sMs, eH, eM, eS, eMs);
-			if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC != 0)) {
+			if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_box)) {
 				int iHankaku;
 				unsigned char usTmpUTF8[1024] = {0};
 				memcpy_s(usTmpUTF8, 1024, (*it)->str.c_str(), (*it)->str.size());
 				iHankaku = count_UTF8(usTmpUTF8);
-				int iBoxPosX = (*it)->outPosX + (iHankaku*(((*it)->outCharW + (*it)->outCharHInterval)/4));
+				int iBoxPosX = (*it)->outPosX + (iHankaku*(((*it)->outCharW + (*it)->outCharHInterval)/4))- ((*it)->outCharHInterval/4);
 				int iBoxPosY = (*it)->outPosY+((*it)->outCharVInterval/2);
-				int iBoxScaleX = iHankaku*50;
+				int iBoxScaleX = (iHankaku+1)*50;
 				int iBoxScaleY = 100*((*it)->outCharH + (*it)->outCharVInterval)/(*it)->outCharH;
 				fprintf(fp,"Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\fscx%d\\fscy%d\\3c&H%06x&}", sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, iBoxScaleX, iBoxScaleY, (*it)->outCharColor);
 				unsigned char utf8box[] = {0xE2, 0x96, 0xA0};
 				fwrite(utf8box, 3, 1, fp);
 				fprintf(fp, "\r\n");
+			}
+			if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_draw)) {
+				int iHankaku;
+				unsigned char usTmpUTF8[1024] = {0};
+				memcpy_s(usTmpUTF8, 1024, (*it)->str.c_str(), (*it)->str.size());
+				iHankaku = count_UTF8(usTmpUTF8);
+				int iBoxPosX = (*it)->outPosX + (iHankaku*(((*it)->outCharW + (*it)->outCharHInterval)/4));
+				int iBoxPosY = (*it)->outPosY+((*it)->outCharVInterval/4);
+				int iBoxScaleX = iHankaku*55;
+				int iBoxScaleY = 100;	//*((*it)->outCharH + (*it)->outCharVInterval)/(*it)->outCharH;
+				fprintf(fp,"Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\3c&H%06x&\\p1}m 0 0 l %d 0 %d %d 0 %d{\\p0}\r\n", sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, (*it)->outCharColor, iBoxScaleX, iBoxScaleX, iBoxScaleY, iBoxScaleY);
 			}
 			if ((*it)->outCharSizeMode == STR_SMALL) {
 				fprintf(fp,"Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Rubi,,0000,0000,0000,,{\\pos(%d,%d)", sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX, (*it)->outPosY);
@@ -228,7 +245,9 @@ void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS)
 		if (((*it)->outCharSizeMode == STR_SMALL) && (bnorubi)) {
 			fprintf(fp, "\\N");
 		} else {
+			if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_kigou)) fprintf(fp, "[");
 			fwrite((*it)->str.c_str(), (*it)->str.size(),1, fp);
+			if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_kigou)) fprintf(fp, "]");
 			fprintf(fp, "\\N");
 		}
 // mark10als
@@ -335,6 +354,7 @@ USHORT PMTPid = 0;
 USHORT CaptionPid = 0;
 USHORT PCRPid = 0;
 DWORD format = FORMAT_ASS;
+WORD HLCmode = HLC_kigou;
 TCHAR *pFileName = NULL;
 TCHAR *pTargetFileName = NULL;
 
@@ -926,6 +946,7 @@ int _tmain(int argc, _TCHAR* argv[])
 							workItalic = it2->bItalic;
 							workFlushMode = it2->bFlushMode;
 							workHLC = it2->bHLC;
+							if (it2->bHLC != 0) workHLC = HLCmode;
 							workCharW = it2->wCharW;
 							workCharH = it2->wCharH;
 							workCharHInterval = it2->wCharHInterval;
@@ -992,6 +1013,10 @@ int _tmain(int argc, _TCHAR* argv[])
 //							if (fp3)
 //								fprintf(fp3, "%s\r\n", it2->strDecode.c_str());
 							if (fp3) {
+								if (it2->bUnderLine) fprintf(fp3, "UnderLine : on\r\n");
+								if (it2->bBold) fprintf(fp3, "Bold : on\r\n");
+								if (it2->bItalic) fprintf(fp3, "Italic : on\r\n");
+								if (it2->bHLC != 0) fprintf(fp3, "HLC : on\r\n");
 								fprintf(fp3, "Color : %#.X   ", it2->stCharColor);
 								fprintf(fp3, "Char M,W,H,HI,VI : %4d, %4d, %4d, %4d, %4d   ", it2->emCharSizeMode ,it2->wCharW, it2->wCharH,  it2->wCharHInterval,  it2->wCharVInterval);
 								fprintf(fp3, "%s\r\n", it2->strDecode.c_str());
@@ -1026,6 +1051,7 @@ int _tmain(int argc, _TCHAR* argv[])
 						pSrtLine->endTime = 0;
 // mark10als
 						pSrtLine->outCharSizeMode = workCharSizeMode;
+						pSrtLine->outCharColor.ucAlpha = 0x00;
 						pSrtLine->outCharColor.ucR = workucR;
 						pSrtLine->outCharColor.ucG = workucG;
 						pSrtLine->outCharColor.ucB = workucB;
