@@ -297,9 +297,6 @@ void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS)
 			continue;
 		bNoSRT = FALSE;
 		if ((*it)->outornament) {
-			if ((*it)->outHLC != 0) {
-				fprintf(fp,"[");
-			}
 			if ((*it)->outItalic) {
 				fprintf(fp,"<i>");
 			}
@@ -313,7 +310,13 @@ void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS)
 				fprintf(fp,"<font color=\"#%02x%02x%02x\">", (*it)->outCharColor.ucR, (*it)->outCharColor.ucG, (*it)->outCharColor.ucB);
 			}
 		}
+		if ((*it)->outHLC != 0) {
+			fprintf(fp,"[");
+		}
 		fwrite((*it)->str.c_str(), (*it)->str.size(),1, fp);
+		if ((*it)->outHLC != 0) {
+			fprintf(fp,"]");
+		}
 		if ((*it)->outornament) {
 			if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff ) {
 				fprintf(fp,"</font>");
@@ -326,9 +329,6 @@ void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS)
 			}
 			if ((*it)->outItalic) {
 				fprintf(fp,"</i>");
-			}
-			if ((*it)->outHLC != 0) {
-				fprintf(fp,"]");
 			}
 		}
 // mark10als
@@ -873,6 +873,15 @@ int _tmain(int argc, _TCHAR* argv[])
 					CHAR strUTF8[1024] = {0};
 
 					if (it->bClear) {
+						// 字幕のスキップをチェック
+						if ((lastPTS + it->dwWaitTime) <= startPCR){
+							_tMyPrintf(_T("%d Caption skip\r\n"), srtList.size());
+							if (fp3) {
+								fprintf(fp3, "%d Caption skip\r\n", srtList.size());
+							}
+							srtList.clear();
+							continue;
+						}
 						bCreateOutput = TRUE;
 						if (format == FORMAT_ASS)
 							DumpAssLine(fp2, &srtList, (PTS + it->dwWaitTime) - startPCR);
@@ -1047,7 +1056,12 @@ int _tmain(int argc, _TCHAR* argv[])
 
 						PSRT_LINE pSrtLine = new SRT_LINE();
 						pSrtLine->index = 0;	//useless
-						pSrtLine->startTime = (DWORD)(PTS - startPCR);
+			//			pSrtLine->startTime = (DWORD)(PTS - startPCR);
+						if (PTS > startPCR){
+							pSrtLine->startTime = (DWORD)(PTS - startPCR);
+						}else{
+							pSrtLine->startTime = 0;
+						}
 						pSrtLine->endTime = 0;
 // mark10als
 						pSrtLine->outCharSizeMode = workCharSizeMode;

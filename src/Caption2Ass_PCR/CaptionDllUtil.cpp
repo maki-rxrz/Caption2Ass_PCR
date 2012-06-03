@@ -106,6 +106,9 @@ BOOL CCaptionDllUtil::CheckUNICODE()
 }
 DWORD CCaptionDllUtil::InitializeUNICODE()
 {
+	if ( !pfnInitializeUNICODE ) {
+		return ERR_INIT;
+	}
 	return pfnInitializeUNICODE();
 }
 
@@ -117,6 +120,9 @@ DWORD CCaptionDllUtil::Initialize()
 //		return ERR_INIT;
 //	}
 // mark10als
+	if ( !pfnInitializeCP ) {
+		return ERR_INIT;
+	}
 	return pfnInitializeCP();
 }
 
