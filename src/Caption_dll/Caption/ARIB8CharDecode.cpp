@@ -2179,9 +2179,9 @@ BOOL CARIB8CharDecode::DRCSHeaderparse( const BYTE* pbSrc, DWORD dwSrcSize, BOOL
 						WriteFile(hFile, drcs.bBitmap, dwSizeImage, &dwWritten, NULL);
 						CloseHandle(hFile);
 					}
-					if ( Get_dicCharcode_Char(wDRCCode) != DRCSGaiji_str ) {
-						Add_dicCharcode_Char(wDRCCode, DRCSGaiji_str);
-					}
+				}
+				if ( Get_dicCharcode_Char(wDRCCode) != DRCSGaiji_str ) {
+					Add_dicCharcode_Char(wDRCCode, DRCSGaiji_str);
 				}
 			}	// if ( bFirstFont ){
 			dwRead += (bHeight*bWidth+bPixPerByte-1) / bPixPerByte;
