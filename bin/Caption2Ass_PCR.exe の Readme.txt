@@ -15,25 +15,44 @@ srt出力の場合に字幕の色を再現するようにしました。
 万一、上記の許諾条件外の使用が発覚した際には、本ソフトの公開を停止します。
 
 【再配布】
-再配布を固く禁じます。
+上記の使用許諾条件の範囲内で再配布を許可します。
+
+【ライセンス関係】
+このCaption2Ass_PCR.exeは、「Caption2Ass 補完計画（Cleanup code）」および、
+「台湾人のodaruさんのCaption2Ass.exe」のライセンスに従います
+しかし、両方ともライセンスについて記述がありませんでした
+そこで、「台湾人のodaruさんのCaption2Ass.exeに付属のReadme.txt」に
+「This programming is based on the caption.dll of EDCB, Thanks.」の
+記述があることから、勝手ながらcaption.dllのライセンスに準じるものと
+判断させて頂きました
+以下はオリジナル版Caption.dll付属のReadme.txtのライセンス関連部分です。
+自ずと本改造版も以下に従います。
+-------------
+●EpgDataCap_Bon、TSEpgView_Sample、NetworkRemocon、Caption、TSEpgViewServerの
+ソースの取り扱いについて
+　特にGPLとかにはしないので自由に改変してもらって構わないです。
+　改変して公開する場合は改変部分のソースぐらいは一緒に公開してください。
+　（強制ではないので別に公開しなくてもいいです）
+　EpgDataCap.dllの使い方の参考にしてもらうといいかも。
+
+●EpgDataCap.dll、Caption.dllの取り扱いについて
+　フリーソフトに組み込む場合は特に制限は設けません。ただし、dllはオリジナルのまま
+　組み込んでください。
+　このdllを使用したことによって発生した問題について保証は一切行いません。
+　商用、シェアウェアなどに組み込むのは不可です。
+-------------
+
+【連絡方法】
+要望や不具合の報告は、２ちゃんねるの「【開発】 TS関連ソフトウェア総合スレ」
+でしてください
+後、「http://plaza.rakuten.co.jp/mark10als/」や「mark10als@gmail.com」は、
+ありますが基本は、２ちゃんねるでお願いします
 
 【動作環境】
 ・Windows XP SP3で開発(たぶんVistaや７でも動くと思います)
 ・Visual C++ 2010 SP1 再頒布可能パッケージ
-・.NET Framework 4(同梱のCaption.dllに必要)
 
 【使用方法】
-非常に残念なことに
-・mod1さんが「Caption.dll 0114改造版」の公開を止められました
-
-しかたないので、mod1さんが以前に公開されていた
-「Caption.dll 0111改造版」のソースコードと
-「EpgDataCap_Bon（人柱版８．５６）」のソースコード
-「odaruさんの字幕 Plugin For TVTest(20081216)」の
-ソースコードを元にしてユニコードに対応した
-「Caption.dll 改造版」を作って、同梱します
-
-＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
 
 1. Caption2Ass_PCR.exe と 「Caption.dll改造版」を同じフォルダーに置く。
 
@@ -134,6 +153,11 @@ Special thanks to
 皆さんのおかげでつくれました
 
 【Caption2Ass_PCRの変更履歴】
+2012-07-21
+0,3,0,4
+・前回追加した「表示出来ない字幕は出力しない」でPCR巡回発生の
+  対応していなかったので修正した
+
 2012-06-04
 0,3,0,3
 ・makiさんからの報告に依り、２点を修正した

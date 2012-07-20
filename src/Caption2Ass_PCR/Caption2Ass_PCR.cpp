@@ -874,7 +874,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 					if (it->bClear) {
 						// 字幕のスキップをチェック
-						if ((lastPTS + it->dwWaitTime) <= startPCR){
+						if ((basePTS + lastPTS + it->dwWaitTime) <= startPCR){
 							_tMyPrintf(_T("%d Caption skip\r\n"), srtList.size());
 							if (fp3) {
 								fprintf(fp3, "%d Caption skip\r\n", srtList.size());
