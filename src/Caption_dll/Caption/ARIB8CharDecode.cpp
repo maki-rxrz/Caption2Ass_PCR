@@ -387,12 +387,12 @@ void CARIB8CharDecode::InitCaption(void)
 		m_wCharVInterval = 6;
 		break;
 	default:
-	m_wClientW=0;
-	m_wClientH=0;
-	m_wCharW=36;
-	m_wCharH=36;
-	m_wCharHInterval=0;
-	m_wCharVInterval=0;
+		m_wClientW=0;
+		m_wClientH=0;
+		m_wCharW=36;
+		m_wCharH=36;
+		m_wCharHInterval=0;
+		m_wCharVInterval=0;
 		break;
 	}
 //	m_wSWFMode=0;
@@ -418,6 +418,7 @@ BOOL CARIB8CharDecode::Caption( const BYTE* pbSrc, DWORD dwSrcSize, vector<CAPTI
 	if( pbSrc == NULL || dwSrcSize == 0 || pCaptionList == NULL){
 		return FALSE;
 	}
+	m_wSWFMode = 0;
 	InitCaption();
 	m_pCaptionList = pCaptionList;
 
@@ -668,6 +669,8 @@ BOOL CARIB8CharDecode::C0( const BYTE* pbSrc, DWORD* pdwReadSize )
 			}
 			bRet = 2;
 			m_dwWaitTime = 0;
+
+	//		InitCaption();
 		}
 		break;
 	case 0x09:
@@ -1715,6 +1718,7 @@ BOOL CARIB8CharDecode::CSI( const BYTE* pbSrc, DWORD* pdwReadSize )
 						wParam = wParam*10+(pbSrc[i]&0x0F);
 					}
 				}
+	//			InitCaption();
 			}
 			break;
 		case 0x6E:

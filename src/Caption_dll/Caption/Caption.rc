@@ -15,8 +15,8 @@
 //
 LANGUAGE LANG_JAPANESE, SUBLANG_JAPANESE_JAPAN
 VS_VERSION_INFO VERSIONINFO
-    FILEVERSION     0,4,0,2
-    PRODUCTVERSION  0,4,0,2
+    FILEVERSION     0,4,0,3
+    PRODUCTVERSION  0,4,0,3
     FILEOS          VOS__WINDOWS32
     FILETYPE        VFT_DLL
     FILESUBTYPE     VFT2_UNKNOWN
@@ -28,12 +28,12 @@ VS_VERSION_INFO VERSIONINFO
         BLOCK "041104B0"
         {
             VALUE "FileDescription", "Caption"
-            VALUE "FileVersion", "0, 4, 0, 2"
+            VALUE "FileVersion", "0, 4, 0, 3"
             VALUE "InternalName", "Caption.dll"
             VALUE "LegalCopyright", "mark10als ‰ü‘¢”Å 2011-2012"
             VALUE "OriginalFilename", "Caption.dll"
             VALUE "ProductName", "Caption"
-            VALUE "ProductVersion", "0, 4, 0, 2"
+            VALUE "ProductVersion", "0, 4, 0, 3"
         }
     }
     BLOCK "VarFileInfo"
