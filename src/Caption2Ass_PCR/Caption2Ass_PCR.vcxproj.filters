@@ -10,9 +10,6 @@
     <ClCompile Include="CaptionDllUtil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CommRoutine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="cmdline.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -22,18 +19,12 @@
     <ClCompile Include="tslUtil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\CommRoutine.cpp">
+      <Filter>Source Files\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ass_header.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Caption.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CaptionDef.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CommRoutine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="IniFile.h">
@@ -48,6 +39,15 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\Caption.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\CaptionDef.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\CommRoutine.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">
@@ -58,6 +58,12 @@
     </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{ee9eac07-5bff-4ef1-a960-747790b787b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\common">
+      <UniqueIdentifier>{7d9bf529-cf93-41f5-8d68-2921d201d5d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\common">
+      <UniqueIdentifier>{bd34b798-fbb8-424c-9b69-77577e7a6677}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

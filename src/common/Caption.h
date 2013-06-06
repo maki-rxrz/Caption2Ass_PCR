@@ -7,6 +7,8 @@
 extern "C" {
 #endif
 
+#ifdef CAPTION_EXPORTS
+
 //DLLの初期化
 //戻り値：エラーコード
 __declspec(dllexport)
@@ -41,6 +43,24 @@ DWORD WINAPI GetTagInfoCP(LANG_TAG_INFO_DLL** ppList, DWORD* pdwListCount);
 //戻り値：エラーコード
 __declspec(dllexport)
 DWORD WINAPI GetCaptionDataCP(unsigned char ucLangTag, CAPTION_DATA_DLL** ppList, DWORD* pdwListCount);
+
+#else /* CAPTION_EXPORTS */
+
+typedef DWORD (WINAPI* InitializeCP)();
+
+typedef DWORD (WINAPI* InitializeUNICODECP)();
+
+typedef DWORD (WINAPI* UnInitializeCP)();
+
+typedef DWORD (WINAPI* AddTSPacketCP)(BYTE* pbPacket);
+
+typedef DWORD (WINAPI* ClearCP)();
+
+typedef DWORD (WINAPI* GetTagInfoCP)(LANG_TAG_INFO_DLL** ppList, DWORD* pdwListCount);
+
+typedef DWORD (WINAPI* GetCaptionDataCP)(unsigned char ucLangTag, CAPTION_DATA_DLL** ppList, DWORD* pdwListCount);
+
+#endif /* CAPTION_EXPORTS */
 
 #ifdef __cplusplus
 }

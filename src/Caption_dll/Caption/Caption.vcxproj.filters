@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
     </Filter>
+    <Filter Include="Header Files\common">
+      <UniqueIdentifier>{98898857-a30c-434a-96d3-be157abad109}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\common">
+      <UniqueIdentifier>{5c3074bf-d912-416d-b44b-c8ea2d4d6bbe}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ARIB8CharDecode.cpp">
@@ -24,14 +30,14 @@
     <ClCompile Include="CaptionMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CommRoutine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="CalcMD5.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="IniFile.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\common\CommRoutine.cpp">
+      <Filter>Source Files\common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -41,12 +47,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ARIB8CharDecode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Caption.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CaptionDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CaptionMain.h">
@@ -61,14 +61,20 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CommRoutine.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="CalcMD5.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="IniFile.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\common\Caption.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\common\CaptionDef.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\common\CommRoutine.h">
+      <Filter>Header Files\common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

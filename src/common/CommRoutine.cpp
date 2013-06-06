@@ -1,5 +1,4 @@
 // mark10als
-// #include "stdafx.h"
 #include <string.h>
 // mark10als
 #include "CommRoutine.h"

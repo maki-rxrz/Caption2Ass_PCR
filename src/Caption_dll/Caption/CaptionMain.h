@@ -1,26 +1,9 @@
 #pragma once
 
-#define ERR_FALSE FALSE //汎用エラー
-#define NO_ERR TRUE //成功
+#include "CaptionDef.h"
 
-#define ERR_INIT		10
-#define ERR_NOT_INIT	11
-#define ERR_SIZE		12
-
-#define ERR_NEED_NEXT_PACKET 13 //次のTSパケット入れないと解析できない
-#define ERR_CAN_NOT_ANALYZ 14 //本当にTSパケット？解析不可能
-#define ERR_NOT_FIRST 15 //最初のTSパケット未入力
-#define ERR_INVALID_PACKET 16 //本当にTSパケット？パケット飛んで壊れてるかも
-
-#define CHANGE_VERSION 20
-#define NO_ERR_TAG_INFO 21
-#define NO_ERR_CAPTION 22
-
-#define SAFE_DELETE(p)       { if(p) { delete (p);     (p)=NULL; } }
-#define SAFE_DELETE_ARRAY(p) { if(p) { delete[] (p);   (p)=NULL; } }
 #define RESET_JD_SYSTEMTIME(p)  { if(p) { *p.wYear = 1991; *p.wMonth = 12; *p.wDay = 31; *p.wHour = 0; *p.wMinute = 0; *p.wSecond = 0; *p.wMilliseconds = 0; *p.wDayOfWeek = 0; } }
 #define RESET_MJD_SYSTEMTIME(p)  { if(p) { *p.wYear = 1858; *p.wMonth = 11; *p.wDay = 17; *p.wHour = 0; *p.wMinute = 0; *p.wSecond = 0; *p.wMilliseconds = 0; *p.wDayOfWeek = 0; } }
-
 
 class CCaptionMain
 {

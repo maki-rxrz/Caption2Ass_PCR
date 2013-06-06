@@ -89,6 +89,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\common</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -103,6 +104,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\common</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -119,6 +121,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\common</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -137,6 +140,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\common</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -147,20 +151,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\common\CommRoutine.cpp" />
     <ClCompile Include="ass_header.cpp" />
     <ClCompile Include="Caption2Ass_PCR.cpp" />
     <ClCompile Include="CaptionDllUtil.cpp" />
     <ClCompile Include="cmdline.cpp" />
-    <ClCompile Include="CommRoutine.cpp" />
     <ClCompile Include="IniFile.cpp" />
     <ClCompile Include="tslUtil.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\common\Caption.h" />
+    <ClInclude Include="..\common\CaptionDef.h" />
+    <ClInclude Include="..\common\CommRoutine.h" />
     <ClInclude Include="ass_header.h" />
-    <ClInclude Include="Caption.h" />
-    <ClInclude Include="CaptionDef.h" />
     <ClInclude Include="CaptionDllUtil.h" />
-    <ClInclude Include="CommRoutine.h" />
     <ClInclude Include="IniFile.h" />
     <ClInclude Include="packet_types.h" />
     <ClInclude Include="resource.h" />
