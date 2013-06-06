@@ -12,6 +12,11 @@ extern "C" {
 __declspec(dllexport)
 DWORD WINAPI InitializeCP();
 
+//DLLの初期化 UNICODE対応
+//戻り値：エラーコード
+__declspec(dllexport)
+DWORD WINAPI InitializeUNICODE();
+
 //DLLの開放
 //戻り値：エラーコード
 __declspec(dllexport)
