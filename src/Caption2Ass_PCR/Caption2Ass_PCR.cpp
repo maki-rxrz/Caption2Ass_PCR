@@ -13,6 +13,8 @@
 #include "CaptionDllUtil.h"
 #include "ass_header.h"
 
+#define WRAP_AROUND_VALUE   (1LL << 33)
+
 enum {
     FORMAT_SRT  = 1,
     FORMAT_ASS  = 2,
@@ -627,7 +629,7 @@ int _tmain(int argc, _TCHAR* argv[])
                     fprintf(fp3, "====== PCR less than lastPCR ======\r\n");
                     fprintf(fp3, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n", PCR, startPCR, lastPCR, basePCR);
                 }
-                basePCR = basePCR + (0x1FFFFFFFF / 90);
+                basePCR = basePCR + (WRAP_AROUND_VALUE / 90);
                 lastPCR = PCR;
             } else {
                 lastPCR = PCR;
@@ -648,13 +650,13 @@ int _tmain(int argc, _TCHAR* argv[])
                     fprintf(fp3, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ", PTS, lastPTS, basePTS, startPCR);
                 }
                 if ((PTS > 0) && (lastPTS == 0) && (PTS < lastPCR) && ((lastPCR - PTS) > (0x0FFFFFFFF / 90))) {
-                    startPCR = startPCR - (0x1FFFFFFFF / 90);
+                    startPCR = startPCR - (WRAP_AROUND_VALUE / 90);
                 }
                 if (PTS == 0) {
                     PTS = lastPTS;
                 }
                 if (PTS < lastPTS) {
-                    basePTS = basePTS + (0x1FFFFFFFF / 90);
+                    basePTS = basePTS + (WRAP_AROUND_VALUE / 90);
                     lastPTS = PTS;
                 } else {
                     lastPTS = PTS;
