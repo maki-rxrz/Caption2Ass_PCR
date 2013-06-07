@@ -1072,7 +1072,7 @@ BOOL CARIB8CharDecode::GL(const BYTE* pbSrc, DWORD* pdwReadSize)
             }
             dwReadSize = 1;
         } else if (m_GL->iMode == MF_MODE_DRCS) {
-            WORD DRCSCharCode = (( m_GR->iMF ) << 8) | (pbSrc[0] & 0x7f);
+            WORD DRCSCharCode = ((0xff & m_GR->iMF) << 8) | (pbSrc[0] & 0x7f);
 
             string tmpDRCSChar = Get_dicCharcode_Char(DRCSCharCode);
             string tmpStr = tmpDRCSChar.substr( 0, 4 );
@@ -1271,7 +1271,7 @@ BOOL CARIB8CharDecode::GR(const BYTE* pbSrc, DWORD* pdwReadSize)
             }
             dwReadSize = 1;
         } else if (m_GR->iMode == MF_MODE_DRCS) {
-            WORD DRCSCharCode = (( m_GR->iMF ) << 8) | (pbSrc[0] & 0x7f);
+            WORD DRCSCharCode = ((0xff & m_GR->iMF) << 8) | (pbSrc[0] & 0x7f);
 
             string tmpDRCSChar = Get_dicCharcode_Char(DRCSCharCode);
             string tmpStr = tmpDRCSChar.substr( 0, 4 );
@@ -2065,8 +2065,8 @@ BOOL CARIB8CharDecode::DRCSHeaderparse(const BYTE* pbSrc, DWORD dwSrcSize, BOOL 
             if (bFirstFont) {
                 bFirstFont = FALSE;
                 DWORD dwDRCS_pat_size = (bHeight*bWidth+bPixPerByte-1) / bPixPerByte;
-                BYTE md5[16] = {0};
-                char md5char[33] = {0};
+                BYTE md5[MD5_HASH_HEX_LENGTH / 2] = {0};
+                char md5char[MD5_HASH_HEX_LENGTH + 1] = {0};
                 string MD5Str = "";
                 CalcMD5FromDRCSPattern( md5, md5char, pbSrc+dwRead, dwDRCS_pat_size);
                 MD5Str = md5char;

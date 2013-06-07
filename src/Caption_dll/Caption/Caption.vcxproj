@@ -171,6 +171,7 @@
     <ClInclude Include="..\..\common\Caption.h" />
     <ClInclude Include="..\..\common\CaptionDef.h" />
     <ClInclude Include="..\..\common\CommRoutine.h" />
+    <ClInclude Include="..\..\common\packet_types.h" />
     <ClInclude Include="ARIB8CharDecode.h" />
     <ClInclude Include="CalcMD5.h" />
     <ClInclude Include="CaptionMain.h" />

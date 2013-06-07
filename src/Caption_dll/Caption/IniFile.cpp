@@ -38,8 +38,8 @@ BOOL IniFile::ReadIni()
 {
     CARIB8CharDecode ARIB8CharDecode;
     string tmpFilename = ARIB8CharDecode.GetAppPath() + "\\Gaiji\\" + iniFilename;
-    FILE *fpini = fopen(tmpFilename.c_str(), "rt");
-    if (!fpini) {
+    FILE *fpini = NULL;
+    if (fopen_s(&fpini, tmpFilename.c_str(), "rt") || !fpini) {
         return FALSE;
     }
     string tmprl;
@@ -56,7 +56,7 @@ BOOL IniFile::ReadIni()
         size_t len = strlen( strSJIS );
         strSJIS[len-1]=0;
         tmprl = strSJIS;
-        int iPos = tmprl.find_first_of("=");
+        size_t iPos = tmprl.find_first_of("=");
         if (iPos != string::npos) {
             if (iPos == 32) {
                 string tmpKey = tmprl.substr( 0, iPos );
@@ -74,8 +74,8 @@ BOOL IniFile::ReadIniARIB()
     // ARIBの追加記号 「ARIB STD-B24」第一編 第２部の表7-10
     CARIB8CharDecode ARIB8CharDecode;
     string tmpFilename = ARIB8CharDecode.GetAppPath() + "\\Gaiji\\" + iniFileARIB;
-    FILE *fpini = fopen(tmpFilename.c_str(), "rt");
-    if (!fpini) {
+    FILE *fpini = NULL;
+    if (fopen_s(&fpini, tmpFilename.c_str(), "rt") || !fpini) {
         return FALSE;
     }
     string tmprl;
@@ -92,7 +92,7 @@ BOOL IniFile::ReadIniARIB()
         size_t len = strlen( strSJIS );
         strSJIS[len-1]=0;
         tmprl = strSJIS;
-        int iPos = tmprl.find_first_of("=");
+        size_t iPos = tmprl.find_first_of("=");
         if (iPos != string::npos) {
             if ((iPos == 4) && (iGaijiCtr < ARIB_MAX)) {
                 GaijiTable[iGaijiCtr].usARIB8 = tmprl.substr( 0, iPos );
@@ -102,11 +102,11 @@ BOOL IniFile::ReadIniARIB()
         }
     } while ((tmprl != "[ARIB外字出力]") && (!feof(fpini)));
     fclose(fpini);
+    fpini = NULL;
 
     // ARIBの追加漢字 「ARIB STD-B24」第一編 第２部の表7-11
     tmpFilename = ARIB8CharDecode.GetAppPath() + "\\Gaiji\\" + iniFileARIB2;
-    fpini = fopen(tmpFilename.c_str(), "rt");
-    if (!fpini) {
+    if (fopen_s(&fpini, tmpFilename.c_str(), "rt") || !fpini) {
         return FALSE;
     }
     do {
@@ -121,7 +121,7 @@ BOOL IniFile::ReadIniARIB()
         size_t len = strlen( strSJIS );
         strSJIS[len-1]=0;
         tmprl = strSJIS;
-        int iPos = tmprl.find_first_of("=");
+        size_t iPos = tmprl.find_first_of("=");
         if (iPos != string::npos) {
             if ((iPos == 3) && (iGaijiCtr2 < ARIB_MAX2)) {
                 GaijiTbl2[iGaijiCtr2].usARIB8 = tmprl.substr( 0, iPos );
@@ -137,8 +137,8 @@ BOOL IniFile::ReadIniUNICODE()
 {
     CARIB8CharDecode ARIB8CharDecode;
     string tmpFilename = ARIB8CharDecode.GetAppPath() + "\\Gaiji\\" + iniFilenameU;
-    FILE *fpini = fopen(tmpFilename.c_str(), "rb");
-    if (!fpini) {
+    FILE *fpini = NULL;
+    if (fopen_s(&fpini, tmpFilename.c_str(), "rb") || !fpini) {
         return FALSE;
     }
     // BOM判定
@@ -173,7 +173,7 @@ BOOL IniFile::ReadIniUNICODE()
         tmprl = strSJIS;
         WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8, 1024, NULL, NULL);
         tmpUTF8 = strUTF8;
-        int iPos = tmpUTF8.find_first_of("=");
+        size_t iPos = tmpUTF8.find_first_of("=");
         if (iPos != string::npos) {
             if (iPos == 32) {
                 string tmpKey = tmpUTF8.substr( 0, iPos );
@@ -191,8 +191,8 @@ BOOL IniFile::ReadIniARIBUNICODE()
     // ARIBの追加記号 「ARIB STD-B24」第一編 第２部の表7-10
     CARIB8CharDecode ARIB8CharDecode;
     string tmpFilename = ARIB8CharDecode.GetAppPath() + "\\Gaiji\\" + iniFileARIBU;
-    FILE *fpini = fopen(tmpFilename.c_str(), "rb");
-    if (!fpini) {
+    FILE *fpini = NULL;
+    if (fopen_s(&fpini, tmpFilename.c_str(), "rb") || !fpini) {
         return FALSE;
     }
     // BOM判定
@@ -227,7 +227,7 @@ BOOL IniFile::ReadIniARIBUNICODE()
         tmprl = strSJIS;
         WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8, 1024, NULL, NULL);
         tmpUTF8 = strUTF8;
-        int iPos = tmpUTF8.find_first_of("=");
+        size_t iPos = tmpUTF8.find_first_of("=");
         if (iPos != string::npos) {
             if ((iPos == 4) && (iGaijiCtr < ARIB_MAX)) {
                 GaijiTable[iGaijiCtr].usARIB8 = tmpUTF8.substr( 0, iPos );
@@ -237,11 +237,11 @@ BOOL IniFile::ReadIniARIBUNICODE()
         }
     } while ((tmprl != "[ARIB外字出力]") && (!feof(fpini)));
     fclose(fpini);
+    fpini = NULL;
 
     // ARIBの追加漢字 「ARIB STD-B24」第一編 第２部の表7-11
     tmpFilename = ARIB8CharDecode.GetAppPath() + "\\Gaiji\\" + iniFileARIB2U;
-    fpini = fopen(tmpFilename.c_str(), "rb");
-    if (!fpini) {
+    if (fopen_s(&fpini, tmpFilename.c_str(), "rb") || !fpini) {
         return FALSE;
     }
     // BOM判定
@@ -272,7 +272,7 @@ BOOL IniFile::ReadIniARIBUNICODE()
         tmprl = strSJIS;
         WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8, 1024, NULL, NULL);
         tmpUTF8 = strUTF8;
-        int iPos = tmpUTF8.find_first_of("=");
+        size_t iPos = tmpUTF8.find_first_of("=");
         if (iPos != string::npos) {
             if ((iPos == 3) && (iGaijiCtr2 < ARIB_MAX2)) {
                 GaijiTbl2[iGaijiCtr2].usARIB8 = tmpUTF8.substr( 0, iPos );

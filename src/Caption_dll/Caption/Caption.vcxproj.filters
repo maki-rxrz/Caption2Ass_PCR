@@ -39,6 +39,9 @@
     <ClCompile Include="..\..\common\CommRoutine.cpp">
       <Filter>Source Files\common</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\common\packet_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Caption.def">

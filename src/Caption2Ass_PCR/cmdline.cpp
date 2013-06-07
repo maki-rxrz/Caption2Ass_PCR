@@ -32,7 +32,7 @@ extern BOOL bsrtornament;
 extern BOOL bnorubi;
 extern TCHAR *passType;
 extern DWORD detectLength;
-extern WORD HLCmode;
+extern BYTE HLCmode;
 
 BOOL ParseCmd(int argc, char **argv)
 {
@@ -181,7 +181,7 @@ VOID _tMyPrintf(
 
         if (ret == S_OK) {
             DWORD ws;
-            WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), buf, _tcslen(buf), &ws, NULL);
+            WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), buf, (DWORD)_tcslen(buf), &ws, NULL);
 
         }
     }

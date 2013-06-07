@@ -56,15 +56,15 @@ void GetPrivateProfilePath(TCHAR* pIniFilePath)
     //フルパス名を分割する
     _splitpath_s(wkPath, wkDrive, _MAX_DRIVE, wkDir, _MAX_DIR, wkFileName, _MAX_FNAME, wkExt, _MAX_EXT);
 
-    _tcscat(pIniFilePath,wkDrive);
-    _tcscat(pIniFilePath,wkDir);
-    _tcscat(pIniFilePath,wkFileName);
-    _tcscat(pIniFilePath,_T(".ini"));
+    _tcscat_s(pIniFilePath, _MAX_DRIVE, wkDrive);
+    _tcscat_s(pIniFilePath, _MAX_DIR  , wkDir);
+    _tcscat_s(pIniFilePath, _MAX_FNAME, wkFileName);
+    _tcscat_s(pIniFilePath, _MAX_EXT  , _T(".ini"));
     return;
 }
 
 //PrivateProfileファイルから読み込む
-void IniFileRead(TCHAR* passType)
+int IniFileRead(TCHAR* passType)
 {
     int iStrLen = 256;
     passComment1 = new TCHAR[iStrLen];
@@ -92,14 +92,13 @@ void IniFileRead(TCHAR* passType)
 
     GetPrivateProfilePath(pIniFilePath);
     // Open ini File
-    FILE *fp = _tfopen(pIniFilePath, _T("r"));
-    if (!fp) {
-        FILE *fp = _tfopen(pIniFilePath, _T("wb"));
+    FILE *fp = NULL;
+    if (_tfopen_s(&fp, pIniFilePath, _T("r")) || !fp) {
+        if (_tfopen_s(&fp, pIniFilePath, _T("wb")) || !fp)
+            return -1;
         fprintf(fp, "%s", DEFAULT_INI);
-        fclose(fp);
-    } else {
-        fclose(fp);
     }
+    fclose(fp);
     // Caption offset of SWF-Mode
     assSWF0offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF0offset"),0,pIniFilePath);
     assSWF5offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF5offset"),0,pIniFilePath);
@@ -149,5 +148,5 @@ void IniFileRead(TCHAR* passType)
     MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
     WideCharToMultiByte(CP_UTF8, 0, str, -1, passRubiStyle, 1024, NULL, NULL);
 
-    return;
+    return 0;
 }

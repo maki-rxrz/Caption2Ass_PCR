@@ -2,6 +2,7 @@
 // CommRoutine.cpp
 //------------------------------------------------------------------------------
 
+#include <intrin.h>
 #include <string.h>
 #include "CommRoutine.h"
 #include <strsafe.h>

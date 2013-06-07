@@ -29,7 +29,7 @@ BOOL FindStartOffset(FILE *fp)
 
 BOOL resync(BYTE *pbPacket, FILE *fp)
 {
-    int pos;
+    __int64 pos;
     char *p;
 
     p = (char*)memchr(pbPacket, 'G', 188);

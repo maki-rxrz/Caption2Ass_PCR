@@ -2,7 +2,6 @@
 // Caption2Ass_PCR.cpp : Defines the entry point for the console application.
 //------------------------------------------------------------------------------
 
-#pragma warning(disable: 4996 4995)
 #include <windows.h>
 #include <stdio.h>
 #include <tchar.h>
@@ -60,7 +59,7 @@ typedef std::list<PSRT_LINE> SRT_LIST;
 
 VOID _tMyPrintf(IN  LPCTSTR tracemsg, ...);
 BOOL ParseCmd(int argc, char**argv);
-void IniFileRead(char *passType);
+int IniFileRead(char *passType);
 void assHeaderWrite(FILE *fp);
 BOOL FindStartOffset(FILE *fp);
 BOOL resync(BYTE *pbPacket, FILE *fp);
@@ -314,7 +313,7 @@ USHORT PMTPid = 0;
 USHORT CaptionPid = 0;
 USHORT PCRPid = 0;
 DWORD format = FORMAT_ASS;
-WORD HLCmode = HLC_kigou;
+BYTE HLCmode = HLC_kigou;
 TCHAR *pFileName = NULL;
 TCHAR *pTargetFileName = NULL;
 
@@ -351,8 +350,8 @@ int _tmain(int argc, _TCHAR* argv[])
     int offsetPosY = 0;
     float ratioX = 2;
     float ratioY = 2;
-    FILE *fp3;
-    FILE *fp4;
+    FILE *fp3 = NULL;
+    FILE *fp4 = NULL;
     passType = new TCHAR[256];
     memset(passType, 0, sizeof(TCHAR) * 256);
     passComment1 = new TCHAR[256];
@@ -409,21 +408,21 @@ int _tmain(int argc, _TCHAR* argv[])
     if ((!pTargetFileName) || ( result == 0 )) {
         pTargetFileName = new TCHAR[MAX_PATH];
         memset(pTargetFileName, 0, sizeof(TCHAR) * MAX_PATH);
-        _tcscat(pTargetFileName, pFileName);
+        _tcscat_s(pTargetFileName, MAX_PATH, pFileName);
     }
     if ((format == FORMAT_ASS) || (format == FORMAT_DUAL)) {
         TCHAR *pExt = PathFindExtension(pTargetFileName);
-        _tcscpy(pExt, _T(".ass"));
+        _tcscpy_s(pExt, 5, _T(".ass"));
     } else {
         TCHAR *pExt = PathFindExtension(pTargetFileName);
-        _tcscpy(pExt, _T(".srt"));
+        _tcscpy_s(pExt, 5, _T(".srt"));
     }
     if (format == FORMAT_DUAL) {
         pTargetFileName2 = new TCHAR[MAX_PATH];
         memset(pTargetFileName2, 0, sizeof(TCHAR) * MAX_PATH);
-        _tcscat(pTargetFileName2, pTargetFileName);
+        _tcscat_s(pTargetFileName2, MAX_PATH, pTargetFileName);
         TCHAR *pExt = PathFindExtension(pTargetFileName2);
-        _tcscpy(pExt, _T(".srt"));
+        _tcscpy_s(pExt, 5, _T(".srt"));
     }
 
     _tMyPrintf(_T("[Source] %s\r\n"), pFileName);
@@ -441,21 +440,21 @@ int _tmain(int argc, _TCHAR* argv[])
     }
 
     // Open TS File.
-    FILE *fp = _tfopen(pFileName, _T("rb"));
-    if (!fp) {
+    FILE *fp = NULL;
+    if (_tfopen_s(&fp, pFileName, _T("rb")) || !fp) {
         _tMyPrintf(_T("Open TS File: %s failed\r\n"), pFileName);
         goto EXIT;
     }
 
     // Open ASS/SRT File.
-    FILE *fp2 = _tfopen(pTargetFileName, _T("wb"));
-    if (!fp2) {
+    FILE *fp2 = NULL;
+    if (_tfopen_s(&fp2, pTargetFileName, _T("wb")) || !fp2) {
         _tMyPrintf(_T("Open Target File: %s failed\r\n"), pTargetFileName);
         goto EXIT;
     }
     if (format == FORMAT_DUAL) {
-        fp4 = _tfopen(pTargetFileName2, _T("wb"));
-        if (!fp4) {
+        fp4 = NULL;
+        if (_tfopen_s(&fp4, pTargetFileName2, _T("wb")) || !fp4) {
             _tMyPrintf(_T("Open Target File: %s failed\r\n"), pTargetFileName2);
             goto EXIT;
         }
@@ -464,11 +463,11 @@ int _tmain(int argc, _TCHAR* argv[])
     if (bLogMode) {
         pLogFileName = new TCHAR[MAX_PATH];
         memset(pLogFileName, 0, sizeof(TCHAR) * MAX_PATH);
-        _tcscat(pLogFileName, pTargetFileName);
+        _tcscat_s(pLogFileName, MAX_PATH, pTargetFileName);
         TCHAR *pExt = PathFindExtension(pLogFileName);
-        _tcscpy(pExt, _T("_Caption.log"));
-        fp3 = _tfopen(pLogFileName, _T("wb"));
-        if (!fp3) {
+        _tcscpy_s(pExt, 13, _T("_Caption.log"));
+        fp3 = NULL;
+        if (_tfopen_s(&fp3, pLogFileName, _T("wb")) || !fp3) {
             _tMyPrintf(_T("Open Log File: %s failed\r\n"), pLogFileName);
             goto EXIT;
         }
@@ -477,7 +476,8 @@ int _tmain(int argc, _TCHAR* argv[])
     }
 
     if ((format == FORMAT_ASS) || (format == FORMAT_DUAL)) {
-        IniFileRead(passType);
+        if (IniFileRead(passType))
+            goto EXIT;
     }
     if (format == FORMAT_SRT) {
         unsigned char tag[] = {0xEF, 0xBB, 0xBF};
@@ -860,13 +860,13 @@ int _tmain(int argc, _TCHAR* argv[])
                             CHAR strUTF8_2[1024] = {0};
 
                             if ((format == FORMAT_TAW) || (bUnicode)) {
-                                strcat(strUTF8, it2->strDecode.c_str());
+                                strcat_s(strUTF8, 1024, it2->strDecode.c_str());
                             } else {
                                 // CP 932 to UTF-8
                                 MultiByteToWideChar(932, 0, it2->strDecode.c_str(), -1, str, 1024);
                                 WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8_2, 1024, NULL, NULL);
 
-                                strcat(strUTF8, strUTF8_2);
+                                strcat_s(strUTF8, 1024, strUTF8_2);
                             }
                         }
 
@@ -889,10 +889,10 @@ int _tmain(int argc, _TCHAR* argv[])
                         pSrtLine->outItalic = workItalic;
                         pSrtLine->outFlushMode = workFlushMode;
                         pSrtLine->outHLC = workHLC;
-                        pSrtLine->outCharW = workCharW * ratioX;
-                        pSrtLine->outCharH = workCharH * ratioY;
-                        pSrtLine->outCharHInterval = workCharHInterval * ratioX;
-                        pSrtLine->outCharVInterval = workCharVInterval * ratioY;
+                        pSrtLine->outCharW = (WORD)(workCharW * ratioX);
+                        pSrtLine->outCharH = (WORD)(workCharH * ratioY);
+                        pSrtLine->outCharHInterval = (WORD)(workCharHInterval * ratioX);
+                        pSrtLine->outCharVInterval = (WORD)(workCharVInterval * ratioY);
                         pSrtLine->outPosX = workPosX;
                         pSrtLine->outPosY = workPosY;
                         pSrtLine->outornament = bsrtornament;

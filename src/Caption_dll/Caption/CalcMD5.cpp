@@ -24,9 +24,9 @@ BOOL CalcMD5FromDRCSPattern(BYTE *pbHash, char *pcHashStr, const BYTE *pbPattern
     DWORD dwHashLen = 16;
     if (!::CryptGetHashParam(hHash, HP_HASHVAL, pbHash, &dwHashLen, 0)) goto EXIT;
     char MD5tmp[10];
-    for (int i=0;i<dwHashLen;i++) {
+    for (DWORD i=0;i<dwHashLen;i++) {
         sprintf_s(MD5tmp, 10, "%02X", pbHash[i]);
-        strcat(pcHashStr, MD5tmp);
+        strcat_s(pcHashStr, MD5_HASH_HEX_LENGTH + 1, MD5tmp);
     }
     bRet = TRUE;
 

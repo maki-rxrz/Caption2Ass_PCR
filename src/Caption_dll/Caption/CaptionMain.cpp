@@ -9,6 +9,7 @@
 #include "ARIB8CharDecode.h"
 #include "IniFile.h"
 #include "CaptionMain.h"
+#include "packet_types.h"
 
 // ARIBの追加記号 ＆ 追加漢字のテーブル定義
 
@@ -98,36 +99,37 @@ DWORD CCaptionMain::AddTSPacket(BYTE* pbPacket)
     BYTE bb[188];
     memcpy(bb,pbPacket,188);
 
-    unsigned char ucSync = pbPacket[0];
-    unsigned char ucTsErr = (pbPacket[1]&0x80)>>7;
-    unsigned char ucPayloadStartFlag = (pbPacket[1]&0x40)>>6;
-    unsigned char ucPriority = (pbPacket[1]&0x20)>>5;
-    unsigned short usPID = ((unsigned short)(pbPacket[1]&0x1F))<<8 | pbPacket[2];
-    unsigned char ucScramble = (pbPacket[3]&0xC0)>>6;
-    unsigned char ucAdaptFlag = (pbPacket[3]&0x20)>>5;
-    unsigned char ucPayloadFlag = (pbPacket[3]&0x10)>>4;
-    unsigned char ucCounter = (pbPacket[3]&0x0F);
+    Packet_Header ph;
+    ph.Sync             = pbPacket[0];
+    ph.TsErr            = (pbPacket[1]&0x80)>>7;
+    ph.PayloadStartFlag = (pbPacket[1]&0x40)>>6;
+    ph.Priority         = (pbPacket[1]&0x20)>>5;
+    ph.PID              = ((unsigned short)(pbPacket[1]&0x1F))<<8 | pbPacket[2];
+    ph.Scramble         = (pbPacket[3]&0xC0)>>6;
+    ph.AdaptFlag        = (pbPacket[3]&0x20)>>5;
+    ph.PayloadFlag      = (pbPacket[3]&0x10)>>4;
+    ph.Counter          = (pbPacket[3]&0x0F);
 
-    if (ucSync != 0x47) {
+    if (ph.Sync != 0x47) {
         Clear();
         return ERR_CAN_NOT_ANALYZ;
     }
 
     //パケットカウンターチェック
     if (m_iLastCounter == -1) {
-        m_iLastCounter = (int)ucCounter;
+        m_iLastCounter = (int)ph.Counter;
     } else {
-        if (ucCounter == 0x00) {
+        if (ph.Counter == 0x00) {
             if (m_iLastCounter != 0x0F) {
                 Clear();
             } else {
-                m_iLastCounter = (int)ucCounter;
+                m_iLastCounter = (int)ph.Counter;
             }
         } else {
-            if (ucCounter != m_iLastCounter+1) {
+            if (ph.Counter != m_iLastCounter+1) {
                 Clear();
             } else {
-                m_iLastCounter = (int)ucCounter;
+                m_iLastCounter = (int)ph.Counter;
             }
         }
     }
@@ -138,7 +140,7 @@ DWORD CCaptionMain::AddTSPacket(BYTE* pbPacket)
     BOOL bBeforeParse = FALSE;
 
     //アダプテーションフィールドは飛ばす
-    if (ucAdaptFlag == 1) {
+    if (ph.AdaptFlag == 1) {
         ucAdaptLength = pbPacket[4];
         dwStart++;
         dwStart+=ucAdaptLength;
@@ -146,8 +148,8 @@ DWORD CCaptionMain::AddTSPacket(BYTE* pbPacket)
 
     DWORD dwRet = NO_ERR;
     //ペイロード部分あり？
-    if (ucPayloadFlag == 1) {
-        if (ucPayloadStartFlag == 1) {
+    if (ph.PayloadFlag == 1) {
+        if (ph.PayloadStartFlag == 1) {
 //          ucPayloadOffset = pbPacket[dwStart];
 //          dwStart++;
         } else {
@@ -182,7 +184,7 @@ DWORD CCaptionMain::AddTSPacket(BYTE* pbPacket)
         }
         dwStart+=ucPayloadOffset;
 
-        if ((m_bAnalyz == FALSE || dwStart > 188) && (ucPayloadStartFlag == 1)) {
+        if ((m_bAnalyz == FALSE || dwStart > 188) && (ph.PayloadStartFlag == 1)) {
             //解析してないのに次の開始パケットがきた
             //パケット飛んでる可能性あるのでエラー
             Clear();
@@ -202,7 +204,7 @@ DWORD CCaptionMain::AddTSPacket(BYTE* pbPacket)
         m_PayloadList.push_back(stData);
 
         BOOL bNext = TRUE;
-        if (ucPayloadStartFlag == 1) {
+        if (ph.PayloadStartFlag == 1) {
             //スタートフラグたってるのでこれだけでデータたまってるかチェック
             m_dwNowReadSize = 0;
             m_dwNeedSize = 0;
