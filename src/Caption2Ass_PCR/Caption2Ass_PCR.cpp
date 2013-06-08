@@ -372,10 +372,13 @@ int _tmain(int argc, _TCHAR* argv[])
 
     BOOL bPrintPMT = TRUE;
 
-//#ifdef _DEBUG
-//  argc = 2;
-//  argv[1] = _T("C:\\Users\\YourName\\Videos\\sample.ts");
-//#endif
+#ifdef _DEBUG
+//  argc    = 5;
+//  argv[1] = _T("-log");
+//  argv[2] = _T("-format");
+//  argv[3] = _T("dual");
+//  argv[4] = _T("C:\\Users\\YourName\\Videos\\sample.ts");
+#endif
 
     system("cls");
 
