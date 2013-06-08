@@ -1,118 +1,123 @@
 //------------------------------------------------------------------------------
 //IniFile.cpp
 //------------------------------------------------------------------------------
-//iniファイル操作
 
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <tchar.h>
+#include <shlwapi.h>
 
 #include "IniFile.h"
 #include "CaptionDef.h"
 #include "Caption2Ass_PCR.h"
 
-//iniファイルパスを取得
-static void GetPrivateProfilePath(TCHAR *pIniFilePath)
+#define FILE_PATH_MAX           (2048)
+#define INI_STRING_MAX          (1024)
+
+static int GetPrivateProfilePath(TCHAR *ini_file)
 {
-    TCHAR wkPath[_MAX_PATH];
-    TCHAR wkDrive[_MAX_DRIVE];
-    TCHAR wkDir[_MAX_DIR];
-    TCHAR wkFileName[_MAX_FNAME];
-    TCHAR wkExt[_MAX_EXT];
-    DWORD dwRet;
+    int ret = -1;
 
-    //初期化
-    memset(wkPath, 0x00, sizeof(wkPath));
-    memset(wkDrive, 0x00, sizeof(wkDrive));
-    memset(wkDir, 0x00, sizeof(wkDir));
-    memset(wkExt, 0x00, sizeof(wkExt));
-    dwRet = 0;
+    // Allocate string buffers
+    TCHAR *process_path = new TCHAR[FILE_PATH_MAX];
+    if (!process_path)
+        goto EXIT;
+    // Initliaze string buffers.
+    memset(process_path, 0, sizeof(TCHAR) * FILE_PATH_MAX);
 
-    //実行中のプロセスのフルパス名を取得する
-    dwRet = GetModuleFileName(NULL, wkPath, sizeof(wkPath));
-    if (dwRet == 0) {
-    //エラー処理など(省略)
-    }
+    // Get the full path name of the running process.
+    DWORD dwRet = GetModuleFileName(NULL, process_path, sizeof(TCHAR) * FILE_PATH_MAX);
+    if (dwRet == 0)
+        goto EXIT;
 
-    //フルパス名を分割する
-    _splitpath_s(wkPath, wkDrive, _MAX_DRIVE, wkDir, _MAX_DIR, wkFileName, _MAX_FNAME, wkExt, _MAX_EXT);
+    // Generate the ini file path.
+    _tcscpy_s(ini_file, FILE_PATH_MAX, process_path);
+    TCHAR *pExt = PathFindExtension(ini_file);
+    _tcscpy_s(pExt, 5, _T(".ini"));
 
-    _tcscat_s(pIniFilePath, _MAX_DRIVE, wkDrive);
-    _tcscat_s(pIniFilePath, _MAX_DIR  , wkDir);
-    _tcscat_s(pIniFilePath, _MAX_FNAME, wkFileName);
-    _tcscat_s(pIniFilePath, _MAX_EXT  , _T(".ini"));
-    return;
+    ret = 0;
+EXIT:
+    SAFE_DELETE_ARRAY(process_path);
+
+    return ret;
 }
 
-//PrivateProfileファイルから読み込む
 extern int IniFileRead(TCHAR *ass_type, ass_setting_t *as)
 {
-    int iStrLen = 256;
+    int ret = -1;
 
-    //iniファイルパス取得
-    TCHAR pIniFilePath[_MAX_PATH];
-    memset(pIniFilePath, 0x00, sizeof(pIniFilePath));
+    // Allocate string buffers
+    TCHAR *ini_file = new TCHAR[FILE_PATH_MAX];
+    TCHAR *tmp_buff = new TCHAR[INI_STRING_MAX];
+    WCHAR *utf8_str = new WCHAR[INI_STRING_MAX];
+    if (!ini_file || !tmp_buff || !utf8_str)
+        goto EXIT;
+    // Initliaze string buffers.
+    memset(ini_file, 0, sizeof(TCHAR) * FILE_PATH_MAX);
+    memset(tmp_buff, 0, sizeof(TCHAR) * INI_STRING_MAX);
+    memset(utf8_str, 0, sizeof(WCHAR) * INI_STRING_MAX);
 
-    GetPrivateProfilePath(pIniFilePath);
-    // Open ini File
+    // Get the file path of ini file.
+    if (GetPrivateProfilePath(ini_file))
+        goto EXIT;
+    // Open ini file.
     FILE *fp = NULL;
-    if (_tfopen_s(&fp, pIniFilePath, _T("r")) || !fp) {
-        if (_tfopen_s(&fp, pIniFilePath, _T("wb")) || !fp)
-            return -1;
+    if (_tfopen_s(&fp, ini_file, _T("r")) || !fp) {
+        if (_tfopen_s(&fp, ini_file, _T("wb")) || !fp)
+            goto EXIT;
         fprintf(fp, "%s", DEFAULT_INI);
     }
     fclose(fp);
+
     // Caption offset of SWF-Mode
-    as->SWF0offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF0offset"),0,pIniFilePath);
-    as->SWF5offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF5offset"),0,pIniFilePath);
-    as->SWF7offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF7offset"),0,pIniFilePath);
-    as->SWF9offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF9offset"),0,pIniFilePath);
-    as->SWF11offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF11offset"),0,pIniFilePath);
+    as->SWF0offset=GetPrivateProfileInt(_T("SWFModeOffset"), _T("SWF0offset"), 0, ini_file);
+    as->SWF5offset=GetPrivateProfileInt(_T("SWFModeOffset"), _T("SWF5offset"), 0, ini_file);
+    as->SWF7offset=GetPrivateProfileInt(_T("SWFModeOffset"), _T("SWF7offset"), 0, ini_file);
+    as->SWF9offset=GetPrivateProfileInt(_T("SWFModeOffset"), _T("SWF9offset"), 0, ini_file);
+    as->SWF11offset=GetPrivateProfileInt(_T("SWFModeOffset"), _T("SWF11offset"), 0, ini_file);
 
     // ass header infomation
-    TCHAR *tmpBuff;
-    tmpBuff = new TCHAR[iStrLen];
-    memset(tmpBuff, 0, sizeof(TCHAR) * iStrLen);
-    WCHAR str[1024] = {0};
+#define GET_INI_STRING(sec, key, def, tmp, str, len, ini, get)      \
+do {                                                                \
+    GetPrivateProfileString(sec, key, def, tmp, len, ini);          \
+    MultiByteToWideChar(932, 0, tmp, -1, str, len);                 \
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, get, len, NULL, NULL); \
+} while(0)
+#define GET_INI_VALUE(sec, key, def, ini, get)          \
+do {                                                    \
+    get = GetPrivateProfileInt(sec, key, def, ini);     \
+} while(0)
 
-    GetPrivateProfileString(ass_type,_T("Comment1"),NULL,tmpBuff,iStrLen,pIniFilePath);
-    MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->Comment1, 1024, NULL, NULL);
-    GetPrivateProfileString(ass_type,_T("Comment2"),NULL,tmpBuff,iStrLen,pIniFilePath);
-    MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->Comment2, 1024, NULL, NULL);
-    GetPrivateProfileString(ass_type,_T("Comment3"),NULL,tmpBuff,iStrLen,pIniFilePath);
-    MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->Comment3, 1024, NULL, NULL);
-    as->PlayResX=GetPrivateProfileInt(ass_type,_T("PlayResX"),1920,pIniFilePath);
-    as->PlayResY=GetPrivateProfileInt(ass_type,_T("PlayResY"),1080,pIniFilePath);
+    GET_INI_STRING(ass_type, _T("Comment1"), NULL, tmp_buff, utf8_str, INI_STRING_MAX, ini_file, as->Comment1);
+    GET_INI_STRING(ass_type, _T("Comment2"), NULL, tmp_buff, utf8_str, INI_STRING_MAX, ini_file, as->Comment2);
+    GET_INI_STRING(ass_type, _T("Comment3"), NULL, tmp_buff, utf8_str, INI_STRING_MAX, ini_file, as->Comment3);
+    GET_INI_VALUE(ass_type, _T("PlayResX"), 1920, ini_file, as->PlayResX);
+    GET_INI_VALUE(ass_type, _T("PlayResY"), 1080, ini_file, as->PlayResY);
 
-    GetPrivateProfileString(ass_type,_T("DefaultFontname"),_T("MS UI Gothic"),tmpBuff,iStrLen,pIniFilePath);
-    MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->DefaultFontname, 1024, NULL, NULL);
-    as->DefaultFontsize=GetPrivateProfileInt(ass_type,_T("DefaultFontsize"),90,pIniFilePath);
-    GetPrivateProfileString(ass_type,_T("DefaultStyle"),_T("&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,15,0,1,2,2,1,10,10,10,0"),tmpBuff,iStrLen,pIniFilePath);
-    MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->DefaultStyle, 1024, NULL, NULL);
+    GET_INI_STRING(ass_type, _T("DefaultFontname"), _T("MS UI Gothic"), tmp_buff, utf8_str, INI_STRING_MAX, ini_file, as->DefaultFontname);
+    GET_INI_VALUE(ass_type, _T("DefaultFontsize"), 90, ini_file, as->DefaultFontsize);
+    GET_INI_STRING(ass_type, _T("DefaultStyle"), _T("&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,15,0,1,2,2,1,10,10,10,0")
+                 , tmp_buff, utf8_str, INI_STRING_MAX, ini_file, as->DefaultStyle);
 
-    GetPrivateProfileString(ass_type,_T("BoxFontname"),_T("MS UI Gothic"),tmpBuff,iStrLen,pIniFilePath);
-    MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->BoxFontname, 1024, NULL, NULL);
-    as->BoxFontsize=GetPrivateProfileInt(ass_type,_T("BoxFontsize"),90,pIniFilePath);
-    GetPrivateProfileString(ass_type,_T("BoxStyle"),_T("&HFFFFFFFF,&H000000FF,&H00FFFFFF,&H00FFFFFF,0,0,0,0,100,100,0,0,1,2,2,2,10,10,10,0"),tmpBuff,iStrLen,pIniFilePath);
-    MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->BoxStyle, 1024, NULL, NULL);
+    GET_INI_STRING(ass_type, _T("BoxFontname"), _T("MS UI Gothic"), tmp_buff, utf8_str, INI_STRING_MAX, ini_file, as->BoxFontname);
+    GET_INI_VALUE(ass_type, _T("BoxFontsize"), 90, ini_file, as->BoxFontsize);
+    GET_INI_STRING(ass_type, _T("BoxStyle"), _T("&HFFFFFFFF,&H000000FF,&H00FFFFFF,&H00FFFFFF,0,0,0,0,100,100,0,0,1,2,2,2,10,10,10,0")
+                 , tmp_buff, utf8_str, INI_STRING_MAX, ini_file, as->BoxStyle);
 
-    GetPrivateProfileString(ass_type,_T("RubiFontname"),_T("MS UI Gothic"),tmpBuff,iStrLen,pIniFilePath);
-    MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->RubiFontname, 1024, NULL, NULL);
-    as->RubiFontsize=GetPrivateProfileInt(ass_type,_T("RubiFontsize"),50,pIniFilePath);
-    GetPrivateProfileString(ass_type,_T("RubiStyle"),_T("&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,2,1,10,10,10,0"),tmpBuff,iStrLen,pIniFilePath);
-    MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->RubiStyle, 1024, NULL, NULL);
+    GET_INI_STRING(ass_type, _T("RubiFontname"), _T("MS UI Gothic"), tmp_buff, utf8_str, INI_STRING_MAX, ini_file, as->RubiFontname);
+    GET_INI_VALUE(ass_type, _T("RubiFontsize"), 50, ini_file, as->RubiFontsize);
+    GET_INI_STRING(ass_type, _T("RubiStyle"), _T("&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,2,1,10,10,10,0")
+                 , tmp_buff, utf8_str, INI_STRING_MAX, ini_file, as->RubiStyle);
 
-    SAFE_DELETE_ARRAY(tmpBuff);
+#undef GET_INI_STRING
+#undef GET_INI_VALUE
 
-    return 0;
+    ret = 0;
+EXIT:
+    SAFE_DELETE_ARRAY(ini_file);
+    SAFE_DELETE_ARRAY(tmp_buff);
+    SAFE_DELETE_ARRAY(utf8_str);
+
+    return ret;
 }
