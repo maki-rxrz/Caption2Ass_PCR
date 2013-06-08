@@ -11,22 +11,11 @@
 
 #include "CommRoutine.h"
 #include "CaptionDllUtil.h"
-#include "ass_header.h"
+#include "cmdline.h"
+#include "tslutil.h"
+#include "Caption2Ass_PCR.h"
 
 #define WRAP_AROUND_VALUE   (1LL << 33)
-
-enum {
-    FORMAT_SRT  = 1,
-    FORMAT_ASS  = 2,
-    FORMAT_TAW  = 3,
-    FORMAT_DUAL = 4
-};
-
-enum {
-    HLC_kigou = 1,
-    HLC_box   = 2,
-    HLC_draw  = 3
-};
 
 typedef struct _ASS_COLOR {
     unsigned char ucR;
@@ -59,46 +48,13 @@ typedef struct _SRT_LINE {
 
 typedef std::list<PSRT_LINE> SRT_LIST;
 
-VOID _tMyPrintf(IN  LPCTSTR tracemsg, ...);
-BOOL ParseCmd(int argc, char**argv);
-int IniFileRead(char *passType);
-void assHeaderWrite(FILE *fp);
-BOOL FindStartOffset(FILE *fp);
-BOOL resync(BYTE *pbPacket, FILE *fp);
-long long GetPTS(BYTE *pbPacket);
+typedef struct {
+    DWORD       assIndex;       // index for ASS
+    DWORD       srtIndex;       // index for SRT
+    int         norubi;
+} app_status_t;
 
-long delayTime = 0;
-DWORD detectLength = 300*10000;
-DWORD packetCount = 0;
-BOOL bLogMode = FALSE;
-BOOL bUnicode = FALSE;
-BOOL bsrtornament = FALSE;
-BOOL bnorubi = FALSE;
-BOOL bCreateOutput = FALSE;
-TCHAR *pTargetFileName2 = NULL;
-TCHAR *pLogFileName = NULL;
-extern long assSWF0offset = 0;
-extern long assSWF5offset = 0;
-extern long assSWF7offset = 0;
-extern long assSWF9offset = 0;
-extern long assSWF11offset = 0;
-extern TCHAR *passType = NULL;
-extern TCHAR *passComment1 = NULL;
-extern TCHAR *passComment2 = NULL;
-extern TCHAR *passComment3 = NULL;
-extern long assPlayResX = 0;
-extern long assPlayResY = 0;
-extern TCHAR *passDefaultFontname = NULL;
-extern long assDefaultFontsize = 0;
-extern TCHAR *passDefaultStyle = NULL;
-extern TCHAR *passBoxFontname = NULL;
-extern long assBoxFontsize = 0;
-extern TCHAR *passBoxStyle = NULL;
-extern TCHAR *passRubiFontname = NULL;
-extern long assRubiFontsize = 0;
-extern TCHAR *passRubiStyle = NULL;
-
-int count_UTF8(const unsigned char *string)
+static int count_UTF8(const unsigned char *string)
 {
     int len = 0;
 
@@ -155,8 +111,8 @@ int count_UTF8(const unsigned char *string)
 
     return len;
 }
-DWORD assIndex = 1; // index for ASS
-void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS)
+
+static void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS, app_status_t *app)
 {
     SRT_LIST::iterator it = list->begin();
     for (int i = 0; it != list->end(); it++, i++) {
@@ -218,7 +174,7 @@ void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS)
         }
         fprintf(fp,"}");
 
-        if (((*it)->outCharSizeMode == STR_SMALL) && (bnorubi)) {
+        if (((*it)->outCharSizeMode == STR_SMALL) && (app->norubi)) {
             fprintf(fp, "\\N");
         } else {
             if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_kigou)) fprintf(fp, "[");
@@ -230,11 +186,10 @@ void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS)
     }
 
     if (list->size() > 0)
-        assIndex++;
+        ++(app->assIndex);
 }
 
-static DWORD srtIndex = 1; // index for SRT
-void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS)
+static void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS, app_status_t *app)
 {
     BOOL bNoSRT = TRUE;
     SRT_LIST::iterator it = list->begin();
@@ -255,7 +210,7 @@ void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS)
             eM = (int)((*it)->endTime / (1000 * 60)) % 60;
             eH = (int)((*it)->endTime / (1000 * 60 *60));
 
-            fprintf(fp,"%d\r\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\r\n", srtIndex, sH, sM, sS, sMs, eH, eM, eS, eMs);
+            fprintf(fp,"%d\r\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\r\n", app->srtIndex, sH, sM, sS, sMs, eH, eM, eS, eMs);
         }
 
         // ‚Ó‚è‚ª‚È Skip
@@ -305,21 +260,11 @@ void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS)
             fprintf(fp, "\r\n");
         }
         fprintf(fp, "\r\n");
-        srtIndex++;
+        ++(app->srtIndex);
     }
 }
 
-#include "packet_types.h"
-
-USHORT PMTPid = 0;
-USHORT CaptionPid = 0;
-USHORT PCRPid = 0;
-DWORD format = FORMAT_ASS;
-BYTE HLCmode = HLC_kigou;
-TCHAR *pFileName = NULL;
-TCHAR *pTargetFileName = NULL;
-
-int _tmain(int argc, _TCHAR* argv[])
+int _tmain(int argc, _TCHAR *argv[])
 {
     long long startPCR = 0;
     long long lastPCR = 0;
@@ -354,23 +299,14 @@ int _tmain(int argc, _TCHAR* argv[])
     float ratioY = 2;
     FILE *fp3 = NULL;
     FILE *fp4 = NULL;
-    passType = new TCHAR[256];
-    memset(passType, 0, sizeof(TCHAR) * 256);
-    passComment1 = new TCHAR[256];
-    memset(passComment1, 0, sizeof(TCHAR) * 256);
-    passComment2 = new TCHAR[256];
-    memset(passComment2, 0, sizeof(TCHAR) * 256);
-    passComment3 = new TCHAR[256];
-    memset(passComment3, 0, sizeof(TCHAR) * 256);
-    passDefaultFontname = new TCHAR[256];
-    memset(passDefaultFontname, 0, sizeof(TCHAR) * 256);
-    passRubiFontname = new TCHAR[256];
-    memset(passRubiFontname, 0, sizeof(TCHAR) * 256);
+
     int sidebar_size = 0;
 
     SRT_LIST srtList;
 
-    BOOL bPrintPMT = TRUE;
+    BOOL bPrintPMT     = TRUE;
+    BOOL bUnicode      = FALSE;
+    BOOL bCreateOutput = FALSE;
 
 #ifdef _DEBUG
 //  argc    = 5;
@@ -380,17 +316,34 @@ int _tmain(int argc, _TCHAR* argv[])
 //  argv[4] = _T("C:\\Users\\YourName\\Videos\\sample.ts");
 #endif
 
+    size_t string_length = MAX_PATH;
+    for (int i = 0; i < argc; i++) {
+        size_t length = _tcslen(argv[i]) + 1 + 20;  // +20: It's a margin for append the suffix.
+        if (length > string_length)
+            string_length = length;
+    }
+    CCaption2AssParameter *param = new CCaption2AssParameter(string_length);
+    if (param->Allocate()) {
+        _tMyPrintf(_T("Failed to allocate the buffers for output.\r\n"));
+        return -1;
+    }
+
+
     system("cls");
 
     // Parse arguments.
-    if (!ParseCmd(argc, argv)) {
+    if (ParseCmd(argc, argv, param)) {
         return 1;
     }
+    pid_information_t *pi = param->get_pid_information();
+    cli_parameter_t   *cp = param->get_cli_parameter();
+    ass_setting_t     *as = param->get_ass_setting();
+    app_status_t app = { 1, 1, cp->norubi };
 
     // Initialize Caption Utility.
     CCaptionDllUtil capUtil;
 
-    if (!capUtil.CheckUNICODE() || (format == FORMAT_TAW)) {
+    if (!capUtil.CheckUNICODE() || (cp->format == FORMAT_TAW)) {
         if (capUtil.Initialize() != NO_ERR) {
             _tMyPrintf(_T("Load Caption.dll failed\r\n"));
             return 1;
@@ -405,105 +358,98 @@ int _tmain(int argc, _TCHAR* argv[])
     }
 
     // Initialize ASS/SRT filename.
-    int result = 1;
-    if (pTargetFileName) {
-        TCHAR *pExt = PathFindExtension(pTargetFileName);
-        result = _tcsicmp(pExt, _T(".ts"));
+    int not_specified = _tcsicmp(cp->TargetFileName1, _T("")) == 0;
+    if (!not_specified) {
+        TCHAR *pExt = PathFindExtension(cp->TargetFileName1);
+        if (_tcsicmp(pExt, _T(".ts")) == 0)
+            not_specified = 1;
     }
-    if ((!pTargetFileName) || ( result == 0 )) {
-        pTargetFileName = new TCHAR[MAX_PATH];
-        memset(pTargetFileName, 0, sizeof(TCHAR) * MAX_PATH);
-        _tcscat_s(pTargetFileName, MAX_PATH, pFileName);
+    if (not_specified) {
+        _tcscpy_s(cp->TargetFileName1, string_length, cp->FileName);
     }
-    if ((format == FORMAT_ASS) || (format == FORMAT_DUAL)) {
-        TCHAR *pExt = PathFindExtension(pTargetFileName);
+    if ((cp->format == FORMAT_ASS) || (cp->format == FORMAT_DUAL)) {
+        TCHAR *pExt = PathFindExtension(cp->TargetFileName1);
         _tcscpy_s(pExt, 5, _T(".ass"));
     } else {
-        TCHAR *pExt = PathFindExtension(pTargetFileName);
+        TCHAR *pExt = PathFindExtension(cp->TargetFileName1);
         _tcscpy_s(pExt, 5, _T(".srt"));
     }
-    if (format == FORMAT_DUAL) {
-        pTargetFileName2 = new TCHAR[MAX_PATH];
-        memset(pTargetFileName2, 0, sizeof(TCHAR) * MAX_PATH);
-        _tcscat_s(pTargetFileName2, MAX_PATH, pTargetFileName);
-        TCHAR *pExt = PathFindExtension(pTargetFileName2);
+    if (cp->format == FORMAT_DUAL) {
+        _tcscpy_s(cp->TargetFileName2, string_length, cp->TargetFileName1);
+        TCHAR *pExt = PathFindExtension(cp->TargetFileName2);
         _tcscpy_s(pExt, 5, _T(".srt"));
     }
 
-    _tMyPrintf(_T("[Source] %s\r\n"), pFileName);
-    _tMyPrintf(_T("[Target] %s\r\n"), pTargetFileName);
+    _tMyPrintf(_T("[Source] %s\r\n"), cp->FileName);
+    _tMyPrintf(_T("[Target] %s\r\n"), cp->TargetFileName1);
 
-    if (format == FORMAT_SRT) {
+    if (cp->format == FORMAT_SRT) {
         _tMyPrintf(_T("[Format] %s\r\n"), _T("srt"));
-    } else if (format == FORMAT_ASS) {
+    } else if (cp->format == FORMAT_ASS) {
         _tMyPrintf(_T("[Format] %s\r\n"), _T("ass"));
-    } else if (format == FORMAT_TAW) {
+    } else if (cp->format == FORMAT_TAW) {
         _tMyPrintf(_T("[Format] %s\r\n"), _T("srt for TAW"));
-        bsrtornament = FALSE;
-    } else if (format == FORMAT_DUAL) {
+        cp->srtornament = FALSE;
+    } else if (cp->format == FORMAT_DUAL) {
         _tMyPrintf(_T("[Format] %s\r\n"), _T("ass & srt"));
     }
 
     // Open TS File.
     FILE *fp = NULL;
-    if (_tfopen_s(&fp, pFileName, _T("rb")) || !fp) {
-        _tMyPrintf(_T("Open TS File: %s failed\r\n"), pFileName);
+    if (_tfopen_s(&fp, cp->FileName, _T("rb")) || !fp) {
+        _tMyPrintf(_T("Open TS File: %s failed\r\n"), cp->FileName);
         goto EXIT;
     }
 
     // Open ASS/SRT File.
     FILE *fp2 = NULL;
-    if (_tfopen_s(&fp2, pTargetFileName, _T("wb")) || !fp2) {
-        _tMyPrintf(_T("Open Target File: %s failed\r\n"), pTargetFileName);
+    if (_tfopen_s(&fp2, cp->TargetFileName1, _T("wb")) || !fp2) {
+        _tMyPrintf(_T("Open Target File: %s failed\r\n"), cp->TargetFileName1);
         goto EXIT;
     }
-    if (format == FORMAT_DUAL) {
-        fp4 = NULL;
-        if (_tfopen_s(&fp4, pTargetFileName2, _T("wb")) || !fp4) {
-            _tMyPrintf(_T("Open Target File: %s failed\r\n"), pTargetFileName2);
+    if (cp->format == FORMAT_DUAL) {
+        if (_tfopen_s(&fp4, cp->TargetFileName2, _T("wb")) || !fp4) {
+            _tMyPrintf(_T("Open Target File: %s failed\r\n"), cp->TargetFileName2);
             goto EXIT;
         }
     }
 
-    if (bLogMode) {
-        pLogFileName = new TCHAR[MAX_PATH];
-        memset(pLogFileName, 0, sizeof(TCHAR) * MAX_PATH);
-        _tcscat_s(pLogFileName, MAX_PATH, pTargetFileName);
-        TCHAR *pExt = PathFindExtension(pLogFileName);
-        _tcscpy_s(pExt, 13, _T("_Caption.log"));
-        fp3 = NULL;
-        if (_tfopen_s(&fp3, pLogFileName, _T("wb")) || !fp3) {
-            _tMyPrintf(_T("Open Log File: %s failed\r\n"), pLogFileName);
+    if (cp->LogMode) {
+        if (_tcsicmp(cp->LogFileName, _T("")) == 0) {
+            _tcscpy_s(cp->LogFileName, string_length, cp->TargetFileName1);
+            TCHAR *pExt = PathFindExtension(cp->LogFileName);
+            _tcscpy_s(pExt, 13, _T("_Caption.log"));
+        }
+        if (_tfopen_s(&fp3, cp->LogFileName, _T("wb")) || !fp3) {
+            _tMyPrintf(_T("Open Log File: %s failed\r\n"), cp->LogFileName);
             goto EXIT;
         }
-    } else {
-        fp3 = FALSE;
     }
 
-    if ((format == FORMAT_ASS) || (format == FORMAT_DUAL)) {
-        if (IniFileRead(passType))
+    if ((cp->format == FORMAT_ASS) || (cp->format == FORMAT_DUAL)) {
+        if (IniFileRead(cp->ass_type, as))
             goto EXIT;
+        if ((as->PlayResX * 3)==(as->PlayResY * 4)) {
+            sidebar_size = (((as->PlayResY * 16) / 9) - as->PlayResX) / 2;
+            as->PlayResX = (as->PlayResY * 16) / 9;
+        }
     }
-    if (format == FORMAT_SRT) {
+    if (cp->format == FORMAT_SRT) {
         unsigned char tag[] = {0xEF, 0xBB, 0xBF};
         fwrite(tag, 3, 1, fp2);
-    } else if (format == FORMAT_ASS) {
+    } else if (cp->format == FORMAT_ASS) {
         unsigned char tag[] = {0xEF, 0xBB, 0xBF};
         fwrite(tag, 3, 1, fp2);
-        assHeaderWrite(fp2);
-    } else if (format == FORMAT_DUAL) {
+        assHeaderWrite(fp2, as);
+    } else if (cp->format == FORMAT_DUAL) {
         unsigned char tag[] = {0xEF, 0xBB, 0xBF};
         fwrite(tag, 3, 1, fp2);
-        assHeaderWrite(fp2);
+        assHeaderWrite(fp2, as);
         fwrite(tag, 3, 1, fp4);
     }
     if ((fp3) && (bUnicode)) {
         unsigned char tag[] = {0xEF, 0xBB, 0xBF};
         fwrite(tag, 3, 1, fp3);
-    }
-    if ((assPlayResX * 3)==(assPlayResY * 4)) {
-        sidebar_size = (((assPlayResY * 16) / 9) - assPlayResX) / 2;
-        assPlayResX = (assPlayResY * 16) / 9;
     }
 
     if (!FindStartOffset(fp)) {
@@ -513,12 +459,13 @@ int _tmain(int argc, _TCHAR* argv[])
     }
 
     BYTE pbPacket[188*2+4] = {0};
+    DWORD packetCount = 0;
 
     // Main loop
     while (fread(pbPacket, 188, 1, fp) == 1) {
         packetCount++;
-        if (detectLength > 0) {
-            if (packetCount > detectLength && !bCreateOutput) {
+        if (cp->detectLength > 0) {
+            if (packetCount > cp->detectLength && !bCreateOutput) {
                 _tMyPrintf(_T("Programe has deteced %dw packets, but can't find caption. Now it exits.\r\n"), packetCount/10000);
                 break;
             }
@@ -544,8 +491,6 @@ int _tmain(int argc, _TCHAR* argv[])
         }
 
         Packet_Header packet;
-        void parse_Packet_Header(Packet_Header *packet_header, BYTE *pbPacket);
-
         parse_Packet_Header(&packet, &pbPacket[0]);
 
         if (packet.Sync != 'G') {
@@ -561,28 +506,25 @@ int _tmain(int argc, _TCHAR* argv[])
             continue;
 
         // PAT
-        if (packet.PID == 0 && (PMTPid == 0 || bPrintPMT)) {
-            void parse_PAT(BYTE *pbPacket);
-
-            parse_PAT(&pbPacket[0]);
+        if (packet.PID == 0 && (pi->PMTPid == 0 || bPrintPMT)) {
+            parse_PAT(&pbPacket[0], &(pi->PMTPid));
             bPrintPMT = FALSE;
 
             continue; // next packet
         }
 
         // PMT
-        if (PMTPid != 0 && packet.PID == PMTPid) {
+        if (pi->PMTPid != 0 && packet.PID == pi->PMTPid) {
             if (0x2b == (pbPacket[5] << 4) + ((pbPacket[6] & 0xf0) >> 4)) {
             } else {
                 continue; // next packet
             }
 
-            void parse_PMT(BYTE *pbPacket);
-            parse_PMT(&pbPacket[0]);
+            parse_PMT(&pbPacket[0], &(pi->PCRPid), &(pi->CaptionPid));
 
             if (fp3) {
                 if (lastPTS == 0) {
-                    fprintf(fp3, "PMT, PCR, Caption : %04x, %04x, %04x\r\n", PMTPid, PCRPid, CaptionPid);
+                    fprintf(fp3, "PMT, PCR, Caption : %04x, %04x, %04x\r\n", pi->PMTPid, pi->PCRPid, pi->CaptionPid);
                 }
             }
 
@@ -591,7 +533,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
         long long PCR = 0;
 
-        if (PCRPid != 0 && packet.PID == PCRPid) {
+        if (pi->PCRPid != 0 && packet.PID == pi->PCRPid) {
             DWORD bADP = (((DWORD)pbPacket[3] & 0x30) >> 4);
             if (!(bADP & 0x2)) {
                 continue; // next packet
@@ -620,11 +562,11 @@ int _tmain(int argc, _TCHAR* argv[])
             }
 
             if (startPCR == 0) {
-                startPCR = PCR - delayTime;
+                startPCR = PCR - cp->DelayTime;
                 lastPCR = PCR;
             }
             if ((PCR > lastPCR) && ((PCR - lastPCR) > 60000)) {
-                startPCR = PCR - delayTime;
+                startPCR = PCR - cp->DelayTime;
                 lastPCR = PCR;
             }
             if (PCR < lastPCR) {
@@ -641,7 +583,7 @@ int _tmain(int argc, _TCHAR* argv[])
             continue; // next packet
         }
 
-        if (CaptionPid != 0 && packet.PID == CaptionPid) {
+        if (pi->CaptionPid != 0 && packet.PID == pi->CaptionPid) {
             long long PTS = 0;
             static __int64 lastStamp =0;
 
@@ -729,15 +671,15 @@ int _tmain(int argc, _TCHAR* argv[])
                             continue;
                         }
                         bCreateOutput = TRUE;
-                        if (format == FORMAT_ASS)
-                            DumpAssLine(fp2, &srtList, (PTS + it->dwWaitTime) - startPCR);
-                        else if (format == FORMAT_SRT)
-                            DumpSrtLine(fp2, &srtList, (PTS + it->dwWaitTime) - startPCR);
-                        else if (format == FORMAT_TAW)
-                            DumpSrtLine(fp2, &srtList, (PTS + it->dwWaitTime) - startPCR);
-                        else if (format == FORMAT_DUAL) {
-                            DumpAssLine(fp2, &srtList, (PTS + it->dwWaitTime) - startPCR);
-                            DumpSrtLine(fp4, &srtList, (PTS + it->dwWaitTime) - startPCR);
+                        if (cp->format == FORMAT_ASS)
+                            DumpAssLine(fp2, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
+                        else if (cp->format == FORMAT_SRT)
+                            DumpSrtLine(fp2, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
+                        else if (cp->format == FORMAT_TAW)
+                            DumpSrtLine(fp2, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
+                        else if (cp->format == FORMAT_DUAL) {
+                            DumpAssLine(fp2, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
+                            DumpSrtLine(fp4, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
                         }
                         srtList.clear();
 
@@ -756,17 +698,17 @@ int _tmain(int argc, _TCHAR* argv[])
                         if (it->wSWFMode != wLastSWFMode) {
                             wLastSWFMode = it->wSWFMode;
                             if (wLastSWFMode == 5) {
-                                ratioX = (float)(assPlayResX) / (float)(1920);
-                                ratioY = (float)(assPlayResY) / (float)(1080);
+                                ratioX = (float)(as->PlayResX) / (float)(1920);
+                                ratioY = (float)(as->PlayResY) / (float)(1080);
                             } else if (wLastSWFMode == 9) {
-                                ratioX = (float)(assPlayResX) / (float)(720);
-                                ratioY = (float)(assPlayResY) / (float)(480);
+                                ratioX = (float)(as->PlayResX) / (float)(720);
+                                ratioY = (float)(as->PlayResY) / (float)(480);
                             } else if (wLastSWFMode == 11) {
-                                ratioX = (float)(assPlayResX) / (float)(1280);
-                                ratioY = (float)(assPlayResY) / (float)(720);
+                                ratioX = (float)(as->PlayResX) / (float)(1280);
+                                ratioY = (float)(as->PlayResY) / (float)(720);
                             } else {
-                                ratioX = (float)(assPlayResX) / (float)(960);
-                                ratioY = (float)(assPlayResY) / (float)(540);
+                                ratioX = (float)(as->PlayResX) / (float)(960);
+                                ratioY = (float)(as->PlayResY) / (float)(540);
                             }
                         }
                         if (bUnicode) {
@@ -792,7 +734,7 @@ int _tmain(int argc, _TCHAR* argv[])
                             workItalic = it2->bItalic;
                             workFlushMode = it2->bFlushMode;
                             workHLC = it2->bHLC;
-                            if (it2->bHLC != 0) workHLC = HLCmode;
+                            if (it2->bHLC != 0) workHLC = cp->HLCmode;
                             workCharW = it2->wCharW;
                             workCharH = it2->wCharH;
                             workCharHInterval = it2->wCharHInterval;
@@ -815,23 +757,23 @@ int _tmain(int argc, _TCHAR* argv[])
                             }
                             if (wLastSWFMode == 0) {
                                 workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
-                                workPosY = (int)((float)( it->wPosY + offsetPosY + assSWF0offset ) * ratioY);
+                                workPosY = (int)((float)( it->wPosY + offsetPosY + as->SWF0offset ) * ratioY);
                             } else if (wLastSWFMode == 5) {
                                 workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
-                                workPosY = (int)((float)( it->wPosY + offsetPosY - 0 + assSWF5offset ) * ratioY);
+                                workPosY = (int)((float)( it->wPosY + offsetPosY - 0 + as->SWF5offset ) * ratioY);
                             } else if (wLastSWFMode == 7) {
                                 workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
-                                workPosY = (int)((float)( it->wPosY + offsetPosY +0 + assSWF7offset ) * ratioY);
+                                workPosY = (int)((float)( it->wPosY + offsetPosY +0 + as->SWF7offset ) * ratioY);
                             } else if (wLastSWFMode == 9) {
                                 workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
                                 if (bUnicode) {
-                                    workPosY = (int)((float)( it->wPosY + offsetPosY + assSWF9offset ) * ratioY);
+                                    workPosY = (int)((float)( it->wPosY + offsetPosY + as->SWF9offset ) * ratioY);
                                 } else {
-                                    workPosY = (int)((float)( it->wPosY + offsetPosY -50 + assSWF9offset ) * ratioY);
+                                    workPosY = (int)((float)( it->wPosY + offsetPosY -50 + as->SWF9offset ) * ratioY);
                                 }
                             } else if (wLastSWFMode == 11) {
                                 workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
-                                workPosY = (int)((float)( it->wPosY + offsetPosY - 0 + assSWF11offset ) * ratioY);
+                                workPosY = (int)((float)( it->wPosY + offsetPosY - 0 + as->SWF11offset ) * ratioY);
                             } else {
                                 workPosX = it->wPosX + offsetPosX;
                                 workPosY = it->wPosY + offsetPosY;
@@ -864,7 +806,7 @@ int _tmain(int argc, _TCHAR* argv[])
                             WCHAR str[1024] = {0};
                             CHAR strUTF8_2[1024] = {0};
 
-                            if ((format == FORMAT_TAW) || (bUnicode)) {
+                            if ((cp->format == FORMAT_TAW) || (bUnicode)) {
                                 strcat_s(strUTF8, 1024, it2->strDecode.c_str());
                             } else {
                                 // CP 932 to UTF-8
@@ -900,7 +842,7 @@ int _tmain(int argc, _TCHAR* argv[])
                         pSrtLine->outCharVInterval = (WORD)(workCharVInterval * ratioY);
                         pSrtLine->outPosX = workPosX;
                         pSrtLine->outPosY = workPosY;
-                        pSrtLine->outornament = bsrtornament;
+                        pSrtLine->outornament = cp->srtornament;
                         pSrtLine->str = strUTF8;
                         if (pSrtLine->str == "") {
                             delete pSrtLine;
@@ -921,26 +863,22 @@ int _tmain(int argc, _TCHAR* argv[])
 EXIT:
     if (fp)
         fclose(fp);
-
     if (fp2)
         fclose(fp2);
+    if (fp3)
+        fclose(fp3);
+    if (fp4)
+        fclose(fp4);
 
-    if (format == FORMAT_DUAL) {
-        if (fp4)
-            fclose(fp4);
-    }
-    if ((assIndex == 1) && (srtIndex == 1)) {
+    if ((app.assIndex == 1) && (app.srtIndex == 1)) {
         Sleep(2000);
-        remove( pTargetFileName );
-        if (format == FORMAT_DUAL) {
-            remove( pTargetFileName2 );
+        remove(cp->TargetFileName1);
+        if (cp->format == FORMAT_DUAL) {
+            remove(cp->TargetFileName2);
         }
     }
 
-    if (bLogMode) {
-        if (fp3)
-            fclose(fp3);
-    }
+    SAFE_DELETE(param);
 
     return 0;
 }

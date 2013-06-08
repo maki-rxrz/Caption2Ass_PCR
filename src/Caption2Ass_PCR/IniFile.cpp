@@ -7,31 +7,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <tchar.h>
-#include "IniFile.h"
 
-extern long assSWF0offset;
-extern long assSWF5offset;
-extern long assSWF7offset;
-extern long assSWF9offset;
-extern long assSWF11offset;
-extern TCHAR *passType;
-extern TCHAR *passComment1;
-extern TCHAR *passComment2;
-extern TCHAR *passComment3;
-extern long assPlayResX;
-extern long assPlayResY;
-extern TCHAR *passDefaultFontname;
-extern long assDefaultFontsize;
-extern TCHAR *passDefaultStyle;
-extern TCHAR *passBoxFontname;
-extern long assBoxFontsize;
-extern TCHAR *passBoxStyle;
-extern TCHAR *passRubiFontname;
-extern long assRubiFontsize;
-extern TCHAR *passRubiStyle;
+#include "IniFile.h"
+#include "CaptionDef.h"
+#include "Caption2Ass_PCR.h"
 
 //iniファイルパスを取得
-void GetPrivateProfilePath(TCHAR* pIniFilePath)
+static void GetPrivateProfilePath(TCHAR *pIniFilePath)
 {
     TCHAR wkPath[_MAX_PATH];
     TCHAR wkDrive[_MAX_DRIVE];
@@ -64,27 +46,9 @@ void GetPrivateProfilePath(TCHAR* pIniFilePath)
 }
 
 //PrivateProfileファイルから読み込む
-int IniFileRead(TCHAR* passType)
+extern int IniFileRead(TCHAR *ass_type, ass_setting_t *as)
 {
     int iStrLen = 256;
-    passComment1 = new TCHAR[iStrLen];
-    memset(passComment1, 0, sizeof(TCHAR) * iStrLen);
-    passComment2 = new TCHAR[iStrLen];
-    memset(passComment2, 0, sizeof(TCHAR) * iStrLen);
-    passComment3 = new TCHAR[iStrLen];
-    memset(passComment3, 0, sizeof(TCHAR) * iStrLen);
-    passDefaultFontname = new TCHAR[iStrLen];
-    memset(passDefaultFontname, 0, sizeof(TCHAR) * iStrLen);
-    passDefaultStyle = new TCHAR[iStrLen];
-    memset(passDefaultStyle, 0, sizeof(TCHAR) * iStrLen);
-    passBoxFontname = new TCHAR[iStrLen];
-    memset(passBoxFontname, 0, sizeof(TCHAR) * iStrLen);
-    passBoxStyle = new TCHAR[iStrLen];
-    memset(passBoxStyle, 0, sizeof(TCHAR) * iStrLen);
-    passRubiFontname = new TCHAR[iStrLen];
-    memset(passRubiFontname, 0, sizeof(TCHAR) * iStrLen);
-    passRubiStyle = new TCHAR[iStrLen];
-    memset(passRubiStyle, 0, sizeof(TCHAR) * iStrLen);
 
     //iniファイルパス取得
     TCHAR pIniFilePath[_MAX_PATH];
@@ -100,11 +64,11 @@ int IniFileRead(TCHAR* passType)
     }
     fclose(fp);
     // Caption offset of SWF-Mode
-    assSWF0offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF0offset"),0,pIniFilePath);
-    assSWF5offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF5offset"),0,pIniFilePath);
-    assSWF7offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF7offset"),0,pIniFilePath);
-    assSWF9offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF9offset"),0,pIniFilePath);
-    assSWF11offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF11offset"),0,pIniFilePath);
+    as->SWF0offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF0offset"),0,pIniFilePath);
+    as->SWF5offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF5offset"),0,pIniFilePath);
+    as->SWF7offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF7offset"),0,pIniFilePath);
+    as->SWF9offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF9offset"),0,pIniFilePath);
+    as->SWF11offset=GetPrivateProfileInt(_T("SWFModeOffset"),_T("SWF11offset"),0,pIniFilePath);
 
     // ass header infomation
     TCHAR *tmpBuff;
@@ -112,41 +76,43 @@ int IniFileRead(TCHAR* passType)
     memset(tmpBuff, 0, sizeof(TCHAR) * iStrLen);
     WCHAR str[1024] = {0};
 
-    GetPrivateProfileString(passType,_T("Comment1"),NULL,tmpBuff,iStrLen,pIniFilePath);
+    GetPrivateProfileString(ass_type,_T("Comment1"),NULL,tmpBuff,iStrLen,pIniFilePath);
     MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, passComment1, 1024, NULL, NULL);
-    GetPrivateProfileString(passType,_T("Comment2"),NULL,tmpBuff,iStrLen,pIniFilePath);
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->Comment1, 1024, NULL, NULL);
+    GetPrivateProfileString(ass_type,_T("Comment2"),NULL,tmpBuff,iStrLen,pIniFilePath);
     MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, passComment2, 1024, NULL, NULL);
-    GetPrivateProfileString(passType,_T("Comment3"),NULL,tmpBuff,iStrLen,pIniFilePath);
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->Comment2, 1024, NULL, NULL);
+    GetPrivateProfileString(ass_type,_T("Comment3"),NULL,tmpBuff,iStrLen,pIniFilePath);
     MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, passComment3, 1024, NULL, NULL);
-    assPlayResX=GetPrivateProfileInt(passType,_T("PlayResX"),1920,pIniFilePath);
-    assPlayResY=GetPrivateProfileInt(passType,_T("PlayResY"),1080,pIniFilePath);
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->Comment3, 1024, NULL, NULL);
+    as->PlayResX=GetPrivateProfileInt(ass_type,_T("PlayResX"),1920,pIniFilePath);
+    as->PlayResY=GetPrivateProfileInt(ass_type,_T("PlayResY"),1080,pIniFilePath);
 
-    GetPrivateProfileString(passType,_T("DefaultFontname"),_T("MS UI Gothic"),tmpBuff,iStrLen,pIniFilePath);
+    GetPrivateProfileString(ass_type,_T("DefaultFontname"),_T("MS UI Gothic"),tmpBuff,iStrLen,pIniFilePath);
     MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, passDefaultFontname, 1024, NULL, NULL);
-    assDefaultFontsize=GetPrivateProfileInt(passType,_T("DefaultFontsize"),90,pIniFilePath);
-    GetPrivateProfileString(passType,_T("DefaultStyle"),_T("&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,15,0,1,2,2,1,10,10,10,0"),tmpBuff,iStrLen,pIniFilePath);
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->DefaultFontname, 1024, NULL, NULL);
+    as->DefaultFontsize=GetPrivateProfileInt(ass_type,_T("DefaultFontsize"),90,pIniFilePath);
+    GetPrivateProfileString(ass_type,_T("DefaultStyle"),_T("&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,15,0,1,2,2,1,10,10,10,0"),tmpBuff,iStrLen,pIniFilePath);
     MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, passDefaultStyle, 1024, NULL, NULL);
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->DefaultStyle, 1024, NULL, NULL);
 
-    GetPrivateProfileString(passType,_T("BoxFontname"),_T("MS UI Gothic"),tmpBuff,iStrLen,pIniFilePath);
+    GetPrivateProfileString(ass_type,_T("BoxFontname"),_T("MS UI Gothic"),tmpBuff,iStrLen,pIniFilePath);
     MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, passBoxFontname, 1024, NULL, NULL);
-    assBoxFontsize=GetPrivateProfileInt(passType,_T("BoxFontsize"),90,pIniFilePath);
-    GetPrivateProfileString(passType,_T("BoxStyle"),_T("&HFFFFFFFF,&H000000FF,&H00FFFFFF,&H00FFFFFF,0,0,0,0,100,100,0,0,1,2,2,2,10,10,10,0"),tmpBuff,iStrLen,pIniFilePath);
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->BoxFontname, 1024, NULL, NULL);
+    as->BoxFontsize=GetPrivateProfileInt(ass_type,_T("BoxFontsize"),90,pIniFilePath);
+    GetPrivateProfileString(ass_type,_T("BoxStyle"),_T("&HFFFFFFFF,&H000000FF,&H00FFFFFF,&H00FFFFFF,0,0,0,0,100,100,0,0,1,2,2,2,10,10,10,0"),tmpBuff,iStrLen,pIniFilePath);
     MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, passBoxStyle, 1024, NULL, NULL);
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->BoxStyle, 1024, NULL, NULL);
 
-    GetPrivateProfileString(passType,_T("RubiFontname"),_T("MS UI Gothic"),tmpBuff,iStrLen,pIniFilePath);
+    GetPrivateProfileString(ass_type,_T("RubiFontname"),_T("MS UI Gothic"),tmpBuff,iStrLen,pIniFilePath);
     MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, passRubiFontname, 1024, NULL, NULL);
-    assRubiFontsize=GetPrivateProfileInt(passType,_T("RubiFontsize"),50,pIniFilePath);
-    GetPrivateProfileString(passType,_T("RubiStyle"),_T("&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,2,1,10,10,10,0"),tmpBuff,iStrLen,pIniFilePath);
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->RubiFontname, 1024, NULL, NULL);
+    as->RubiFontsize=GetPrivateProfileInt(ass_type,_T("RubiFontsize"),50,pIniFilePath);
+    GetPrivateProfileString(ass_type,_T("RubiStyle"),_T("&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,2,1,10,10,10,0"),tmpBuff,iStrLen,pIniFilePath);
     MultiByteToWideChar(932, 0, tmpBuff, -1, str, 1024);
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, passRubiStyle, 1024, NULL, NULL);
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, as->RubiStyle, 1024, NULL, NULL);
+
+    SAFE_DELETE_ARRAY(tmpBuff);
 
     return 0;
 }

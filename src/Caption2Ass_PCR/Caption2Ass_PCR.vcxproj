@@ -154,6 +154,7 @@
     <ClCompile Include="..\common\CommRoutine.cpp" />
     <ClCompile Include="ass_header.cpp" />
     <ClCompile Include="Caption2Ass_PCR.cpp" />
+    <ClCompile Include="Caption2AssParameter.cpp" />
     <ClCompile Include="CaptionDllUtil.cpp" />
     <ClCompile Include="cmdline.cpp" />
     <ClCompile Include="IniFile.cpp" />
@@ -165,9 +166,13 @@
     <ClInclude Include="..\common\CommRoutine.h" />
     <ClInclude Include="..\common\packet_types.h" />
     <ClInclude Include="ass_header.h" />
+    <ClInclude Include="Caption2Ass_PCR.h" />
+    <ClInclude Include="Caption2AssParameter.h" />
     <ClInclude Include="CaptionDllUtil.h" />
+    <ClInclude Include="cmdline.h" />
     <ClInclude Include="IniFile.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="tslUtil.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Caption2Ass_PCR.rc" />

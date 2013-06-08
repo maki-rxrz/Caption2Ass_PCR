@@ -7,6 +7,9 @@
     <ClCompile Include="Caption2Ass_PCR.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Caption2AssParameter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="CaptionDllUtil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -27,13 +30,25 @@
     <ClInclude Include="ass_header.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="IniFile.h">
+    <ClInclude Include="Caption2Ass_PCR.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Caption2AssParameter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CaptionDllUtil.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="cmdline.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IniFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tslUtil.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\common\Caption.h">
