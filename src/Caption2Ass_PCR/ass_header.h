@@ -1,3 +1,8 @@
+//------------------------------------------------------------------------------
+// ass_header.h
+//------------------------------------------------------------------------------
+#ifndef __ASS_HEADER_H__
+#define __ASS_HEADER_H__
 
 #define ASS_HEADER1 "Title: Default Aegisub file\r\n\
 ScriptType: v4.00+\r\n\
@@ -15,3 +20,4 @@ Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour,
 [Events]\r\n\
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\r\n"
 
+#endif // __ASS_HEADER_H__

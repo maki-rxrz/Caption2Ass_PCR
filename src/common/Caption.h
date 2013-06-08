@@ -1,3 +1,6 @@
+//------------------------------------------------------------------------------
+// Caption.h
+//------------------------------------------------------------------------------
 #ifndef __CAPTION_H__
 #define __CAPTION_H__
 
@@ -66,4 +69,4 @@ typedef DWORD (WINAPI* GetCaptionDataCP)(unsigned char ucLangTag, CAPTION_DATA_D
 }
 #endif
 
-#endif
+#endif // __CAPTION_H__

@@ -1,6 +1,9 @@
-#ifndef INCLUDE_CALCMD5_H
-#define INCLUDE_CALCMD5_H
+//------------------------------------------------------------------------------
+// CalcMD5.h
+//------------------------------------------------------------------------------
+#ifndef __CALC_MD5_H__
+#define __CALC_MD5_H__
 
-	BOOL CalcMD5FromDRCSPattern(BYTE *pbHash, char *pcHashStr, const BYTE *pbPatternData, const DWORD dwDataLen);
+extern BOOL CalcMD5FromDRCSPattern(BYTE *pbHash, char *pcHashStr, const BYTE *pbPatternData, const DWORD dwDataLen);
 
-#endif // INCLUDE_CALCMD5_H
+#endif // __CALC_MD5_H__
