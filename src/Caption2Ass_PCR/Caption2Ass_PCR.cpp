@@ -269,7 +269,6 @@ int _tmain(int argc, _TCHAR *argv[])
     long long startPCR = 0;
     long long lastPCR = 0;
     long long lastPTS = 0;
-
     long long basePCR = 0;
     long long basePTS = 0;
     BOOL bFirstPTS = true;
@@ -297,10 +296,11 @@ int _tmain(int argc, _TCHAR *argv[])
     int offsetPosY = 0;
     float ratioX = 2;
     float ratioY = 2;
-    FILE *fp3 = NULL;
-    FILE *fp4 = NULL;
-
     int sidebar_size = 0;
+    FILE *fpInputTs = NULL;
+    FILE *fpTarget1 = NULL;
+    FILE *fpTarget2 = NULL;
+    FILE *fpLogFile = NULL;
 
     SRT_LIST srtList;
 
@@ -395,20 +395,18 @@ int _tmain(int argc, _TCHAR *argv[])
     }
 
     // Open TS File.
-    FILE *fp = NULL;
-    if (_tfopen_s(&fp, cp->FileName, _T("rb")) || !fp) {
+    if (_tfopen_s(&fpInputTs, cp->FileName, _T("rb")) || !fpInputTs) {
         _tMyPrintf(_T("Open TS File: %s failed\r\n"), cp->FileName);
         goto EXIT;
     }
 
     // Open ASS/SRT File.
-    FILE *fp2 = NULL;
-    if (_tfopen_s(&fp2, cp->TargetFileName1, _T("wb")) || !fp2) {
+    if (_tfopen_s(&fpTarget1, cp->TargetFileName1, _T("wb")) || !fpTarget1) {
         _tMyPrintf(_T("Open Target File: %s failed\r\n"), cp->TargetFileName1);
         goto EXIT;
     }
     if (cp->format == FORMAT_DUAL) {
-        if (_tfopen_s(&fp4, cp->TargetFileName2, _T("wb")) || !fp4) {
+        if (_tfopen_s(&fpTarget2, cp->TargetFileName2, _T("wb")) || !fpTarget2) {
             _tMyPrintf(_T("Open Target File: %s failed\r\n"), cp->TargetFileName2);
             goto EXIT;
         }
@@ -420,7 +418,7 @@ int _tmain(int argc, _TCHAR *argv[])
             TCHAR *pExt = PathFindExtension(cp->LogFileName);
             _tcscpy_s(pExt, 13, _T("_Caption.log"));
         }
-        if (_tfopen_s(&fp3, cp->LogFileName, _T("wb")) || !fp3) {
+        if (_tfopen_s(&fpLogFile, cp->LogFileName, _T("wb")) || !fpLogFile) {
             _tMyPrintf(_T("Open Log File: %s failed\r\n"), cp->LogFileName);
             goto EXIT;
         }
@@ -436,23 +434,23 @@ int _tmain(int argc, _TCHAR *argv[])
     }
     if (cp->format == FORMAT_SRT) {
         unsigned char tag[] = {0xEF, 0xBB, 0xBF};
-        fwrite(tag, 3, 1, fp2);
+        fwrite(tag, 3, 1, fpTarget1);
     } else if (cp->format == FORMAT_ASS) {
         unsigned char tag[] = {0xEF, 0xBB, 0xBF};
-        fwrite(tag, 3, 1, fp2);
-        assHeaderWrite(fp2, as);
+        fwrite(tag, 3, 1, fpTarget1);
+        assHeaderWrite(fpTarget1, as);
     } else if (cp->format == FORMAT_DUAL) {
         unsigned char tag[] = {0xEF, 0xBB, 0xBF};
-        fwrite(tag, 3, 1, fp2);
-        assHeaderWrite(fp2, as);
-        fwrite(tag, 3, 1, fp4);
+        fwrite(tag, 3, 1, fpTarget1);
+        assHeaderWrite(fpTarget1, as);
+        fwrite(tag, 3, 1, fpTarget2);
     }
-    if ((fp3) && (bUnicode)) {
+    if ((fpLogFile) && (bUnicode)) {
         unsigned char tag[] = {0xEF, 0xBB, 0xBF};
-        fwrite(tag, 3, 1, fp3);
+        fwrite(tag, 3, 1, fpLogFile);
     }
 
-    if (!FindStartOffset(fp)) {
+    if (!FindStartOffset(fpInputTs)) {
         _tMyPrintf(_T("Invalid TS File.\r\n"));
         Sleep(2000);
         goto EXIT;
@@ -462,7 +460,7 @@ int _tmain(int argc, _TCHAR *argv[])
     DWORD packetCount = 0;
 
     // Main loop
-    while (fread(pbPacket, 188, 1, fp) == 1) {
+    while (fread(pbPacket, 188, 1, fpInputTs) == 1) {
         packetCount++;
         if (cp->detectLength > 0) {
             if (packetCount > cp->detectLength && !bCreateOutput) {
@@ -470,22 +468,22 @@ int _tmain(int argc, _TCHAR *argv[])
                 break;
             }
         }
-        if (fp3) {
+        if (fpLogFile) {
             if (packetCount < 100000) {
                 if ((packetCount % 10000) == 0) {
-                    fprintf(fp3, "Process  %dw packets.\r\n", packetCount/10000);
+                    fprintf(fpLogFile, "Process  %dw packets.\r\n", packetCount/10000);
                 }
             } else if (packetCount < 1000000) {
                 if ((packetCount % 100000) == 0) {
-                    fprintf(fp3, "Process  %dw packets.\r\n", packetCount/10000);
+                    fprintf(fpLogFile, "Process  %dw packets.\r\n", packetCount/10000);
                 }
             } else if (packetCount < 10000000) {
                 if ((packetCount % 1000000) == 0) {
-                    fprintf(fp3, "Process  %dw packets.\r\n", packetCount/10000);
+                    fprintf(fpLogFile, "Process  %dw packets.\r\n", packetCount/10000);
                 }
             } else {
                 if ((packetCount % 10000000) == 0) {
-                    fprintf(fp3, "Process  %dw packets.\r\n", packetCount/10000);
+                    fprintf(fpLogFile, "Process  %dw packets.\r\n", packetCount/10000);
                 }
             }
         }
@@ -494,7 +492,7 @@ int _tmain(int argc, _TCHAR *argv[])
         parse_Packet_Header(&packet, &pbPacket[0]);
 
         if (packet.Sync != 'G') {
-            if (!resync(pbPacket, fp)) {
+            if (!resync(pbPacket, fpInputTs)) {
                 _tMyPrintf(_T("Invalid TS File.\r\n"));
                 Sleep(2000);
                 goto EXIT;
@@ -522,9 +520,9 @@ int _tmain(int argc, _TCHAR *argv[])
 
             parse_PMT(&pbPacket[0], &(pi->PCRPid), &(pi->CaptionPid));
 
-            if (fp3) {
+            if (fpLogFile) {
                 if (lastPTS == 0) {
-                    fprintf(fp3, "PMT, PCR, Caption : %04x, %04x, %04x\r\n", pi->PMTPid, pi->PCRPid, pi->CaptionPid);
+                    fprintf(fpLogFile, "PMT, PCR, Caption : %04x, %04x, %04x\r\n", pi->PMTPid, pi->PCRPid, pi->CaptionPid);
                 }
             }
 
@@ -555,9 +553,9 @@ int _tmain(int argc, _TCHAR *argv[])
                     ((DWORD)pbPacket[10] / 128) ;
             PCR = PCR / 90;
 
-            if (fp3) {
+            if (fpLogFile) {
                 if (lastPTS == 0) {
-                    fprintf(fp3, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n", PCR, startPCR, lastPCR, basePCR);
+                    fprintf(fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n", PCR, startPCR, lastPCR, basePCR);
                 }
             }
 
@@ -570,9 +568,9 @@ int _tmain(int argc, _TCHAR *argv[])
                 lastPCR = PCR;
             }
             if (PCR < lastPCR) {
-                if (fp3) {
-                    fprintf(fp3, "====== PCR less than lastPCR ======\r\n");
-                    fprintf(fp3, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n", PCR, startPCR, lastPCR, basePCR);
+                if (fpLogFile) {
+                    fprintf(fpLogFile, "====== PCR less than lastPCR ======\r\n");
+                    fprintf(fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n", PCR, startPCR, lastPCR, basePCR);
                 }
                 basePCR = basePCR + (WRAP_AROUND_VALUE / 90);
                 lastPCR = PCR;
@@ -591,8 +589,8 @@ int _tmain(int argc, _TCHAR *argv[])
             if (packet.PayloadStartFlag) {
                 PTS = GetPTS(pbPacket);
 
-                if (fp3) {
-                    fprintf(fp3, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ", PTS, lastPTS, basePTS, startPCR);
+                if (fpLogFile) {
+                    fprintf(fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ", PTS, lastPTS, basePTS, startPCR);
                 }
                 if ((PTS > 0) && (lastPTS == 0) && (PTS < lastPCR) && ((lastPCR - PTS) > (0x0FFFFFFFF / 90))) {
                     startPCR = startPCR - (WRAP_AROUND_VALUE / 90);
@@ -620,13 +618,13 @@ int _tmain(int argc, _TCHAR *argv[])
                 lastStamp = (PTS - startPCR);
                 _tMyPrintf(_T("Caption Time: %01d:%02d:%02d.%03d\r\n"), sH, sM, sS, sMs);
 
-                if (fp3) {
-                    fprintf(fp3, "1st Caption Time: %01d:%02d:%02d.%03d\r\n", sH, sM, sS, sMs);
+                if (fpLogFile) {
+                    fprintf(fpLogFile, "1st Caption Time: %01d:%02d:%02d.%03d\r\n", sH, sM, sS, sMs);
                 }
             } else {
                 PTS = GetPTS(pbPacket);
-                if (fp3) {
-                    fprintf(fp3, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ", PTS, lastPTS, basePTS, startPCR);
+                if (fpLogFile) {
+                    fprintf(fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ", PTS, lastPTS, basePTS, startPCR);
                 }
                 if (!PTS) {
                     PTS = lastPTS;
@@ -639,8 +637,8 @@ int _tmain(int argc, _TCHAR *argv[])
                 sM = (int)((PTS - startPCR) / (1000 * 60)) % 60;
                 sH = (int)((PTS - startPCR) / (1000 * 60 *60));
 
-                if (fp3) {
-                    fprintf(fp3, "2nd Caption Time: %01d:%02d:%02d.%03d\r\n", sH, sM, sS, sMs);
+                if (fpLogFile) {
+                    fprintf(fpLogFile, "2nd Caption Time: %01d:%02d:%02d.%03d\r\n", sH, sM, sS, sMs);
                 }
             }
 
@@ -664,22 +662,22 @@ int _tmain(int argc, _TCHAR *argv[])
                         // 字幕のスキップをチェック
                         if ((basePTS + lastPTS + it->dwWaitTime) <= startPCR) {
                             _tMyPrintf(_T("%d Caption skip\r\n"), srtList.size());
-                            if (fp3) {
-                                fprintf(fp3, "%d Caption skip\r\n", srtList.size());
+                            if (fpLogFile) {
+                                fprintf(fpLogFile, "%d Caption skip\r\n", srtList.size());
                             }
                             srtList.clear();
                             continue;
                         }
                         bCreateOutput = TRUE;
                         if (cp->format == FORMAT_ASS)
-                            DumpAssLine(fp2, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
+                            DumpAssLine(fpTarget1, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
                         else if (cp->format == FORMAT_SRT)
-                            DumpSrtLine(fp2, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
+                            DumpSrtLine(fpTarget1, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
                         else if (cp->format == FORMAT_TAW)
-                            DumpSrtLine(fp2, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
+                            DumpSrtLine(fpTarget1, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
                         else if (cp->format == FORMAT_DUAL) {
-                            DumpAssLine(fp2, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
-                            DumpSrtLine(fp4, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
+                            DumpAssLine(fpTarget1, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
+                            DumpSrtLine(fpTarget2, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
                         }
                         srtList.clear();
 
@@ -688,11 +686,11 @@ int _tmain(int argc, _TCHAR *argv[])
 
                         std::vector<CAPTION_CHAR_DATA>::iterator it2 = it->CharList.begin();
 
-                        if (fp3) {
-                            fprintf(fp3, "SWFMode    : %4d\r\n", it->wSWFMode);
-                            fprintf(fp3, "Client X:Y : %4d\t%4d\r\n", it->wClientX, it->wClientY);
-                            fprintf(fp3, "Client W:H : %4d\t%4d\r\n", it->wClientW, it->wClientH);
-                            fprintf(fp3, "Pos    X:Y : %4d\t%4d\r\n", it->wPosX, it->wPosY);
+                        if (fpLogFile) {
+                            fprintf(fpLogFile, "SWFMode    : %4d\r\n", it->wSWFMode);
+                            fprintf(fpLogFile, "Client X:Y : %4d\t%4d\r\n", it->wClientX, it->wClientY);
+                            fprintf(fpLogFile, "Client W:H : %4d\t%4d\r\n", it->wClientW, it->wClientH);
+                            fprintf(fpLogFile, "Pos    X:Y : %4d\t%4d\r\n", it->wPosX, it->wPosY);
                         }
 
                         if (it->wSWFMode != wLastSWFMode) {
@@ -793,14 +791,14 @@ int _tmain(int argc, _TCHAR *argv[])
                                 it2->strDecode = GetHalfChar(it2->strDecode);
                             }
 
-                            if (fp3) {
-                                if (it2->bUnderLine) fprintf(fp3, "UnderLine : on\r\n");
-                                if (it2->bBold) fprintf(fp3, "Bold : on\r\n");
-                                if (it2->bItalic) fprintf(fp3, "Italic : on\r\n");
-                                if (it2->bHLC != 0) fprintf(fp3, "HLC : on\r\n");
-                                fprintf(fp3, "Color : %#.X   ", it2->stCharColor);
-                                fprintf(fp3, "Char M,W,H,HI,VI : %4d, %4d, %4d, %4d, %4d   ", it2->emCharSizeMode ,it2->wCharW, it2->wCharH,  it2->wCharHInterval,  it2->wCharVInterval);
-                                fprintf(fp3, "%s\r\n", it2->strDecode.c_str());
+                            if (fpLogFile) {
+                                if (it2->bUnderLine) fprintf(fpLogFile, "UnderLine : on\r\n");
+                                if (it2->bBold) fprintf(fpLogFile, "Bold : on\r\n");
+                                if (it2->bItalic) fprintf(fpLogFile, "Italic : on\r\n");
+                                if (it2->bHLC != 0) fprintf(fpLogFile, "HLC : on\r\n");
+                                fprintf(fpLogFile, "Color : %#.X   ", it2->stCharColor);
+                                fprintf(fpLogFile, "Char M,W,H,HI,VI : %4d, %4d, %4d, %4d, %4d   ", it2->emCharSizeMode ,it2->wCharW, it2->wCharH,  it2->wCharHInterval,  it2->wCharVInterval);
+                                fprintf(fpLogFile, "%s\r\n", it2->strDecode.c_str());
                             }
 
                             WCHAR str[1024] = {0};
@@ -861,14 +859,14 @@ int _tmain(int argc, _TCHAR *argv[])
     }
 
 EXIT:
-    if (fp)
-        fclose(fp);
-    if (fp2)
-        fclose(fp2);
-    if (fp3)
-        fclose(fp3);
-    if (fp4)
-        fclose(fp4);
+    if (fpInputTs)
+        fclose(fpInputTs);
+    if (fpTarget1)
+        fclose(fpTarget1);
+    if (fpTarget2)
+        fclose(fpTarget2);
+    if (fpLogFile)
+        fclose(fpLogFile);
 
     if ((app.assIndex == 1) && (app.srtIndex == 1)) {
         Sleep(2000);
