@@ -1,6 +1,7 @@
 // Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
+#include "../config.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -76,6 +77,9 @@ BEGIN
             VALUE "OriginalFilename", "Caption2Ass_PCR.exe"
             VALUE "ProductName", "Caption2Ass_PCR"
             VALUE "ProductVersion", "0, 3, 0, 4"
+#ifdef CAPTION2ASS_PCR_GIT_VERSION
+            VALUE "Comments", "ver." CAPTION2ASS_PCR_GIT_VERSION
+#endif
         END
     END
     BLOCK "VarFileInfo"

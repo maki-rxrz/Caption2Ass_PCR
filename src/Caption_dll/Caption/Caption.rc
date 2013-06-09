@@ -6,7 +6,7 @@
 #include <commctrl.h>
 #include <richedit.h>
 #include "resource.h"
-
+#include "../../config.h"
 
 
 
@@ -34,6 +34,9 @@ VS_VERSION_INFO VERSIONINFO
             VALUE "OriginalFilename", "Caption.dll"
             VALUE "ProductName", "Caption"
             VALUE "ProductVersion", "0, 4, 0, 3"
+#ifdef CAPTION_DLL_GIT_VERSION
+            VALUE "Comments", "ver." CAPTION_DLL_GIT_VERSION
+#endif
         }
     }
     BLOCK "VarFileInfo"
