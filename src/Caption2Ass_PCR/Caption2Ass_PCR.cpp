@@ -546,9 +546,6 @@ int _tmain(int argc, _TCHAR *argv[])
     app.srtIndex = 1;
     app.norubi   = cp->norubi;
 
-    // Clear console window.
-    system("cls");
-
     // Parse arguments.
     if (ParseCmd(argc, argv, param))
         return 1;
