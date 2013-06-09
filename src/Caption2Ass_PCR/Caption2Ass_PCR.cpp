@@ -49,10 +49,25 @@ typedef struct _SRT_LINE {
 typedef std::list<PSRT_LINE> SRT_LIST;
 
 typedef struct {
+    // Output handlers
     DWORD       assIndex;       // index for ASS
     DWORD       srtIndex;       // index for SRT
     int         norubi;
-} app_status_t;
+    int         sidebar_size;
+    BOOL        bUnicode;
+    BOOL        bCreateOutput;
+    // Timestamp handlers
+    long long   startPCR;
+    long long   lastPCR;
+    long long   lastPTS;
+    long long   basePCR;
+    long long   basePTS;
+    // File handlers
+    FILE       *fpInputTs;
+    FILE       *fpTarget1;
+    FILE       *fpTarget2;
+    FILE       *fpLogFile;
+} app_handler_t;
 
 static int count_UTF8(const unsigned char *string)
 {
@@ -112,7 +127,7 @@ static int count_UTF8(const unsigned char *string)
     return len;
 }
 
-static void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS, app_status_t *app)
+static void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS, app_handler_t *app)
 {
     SRT_LIST::iterator it = list->begin();
     for (int i = 0; it != list->end(); it++, i++) {
@@ -189,7 +204,7 @@ static void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS, app_status_t *
         ++(app->assIndex);
 }
 
-static void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS, app_status_t *app)
+static void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS, app_handler_t *app)
 {
     BOOL bNoSRT = TRUE;
     SRT_LIST::iterator it = list->begin();
@@ -264,15 +279,8 @@ static void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS, app_status_t *
     }
 }
 
-int _tmain(int argc, _TCHAR *argv[])
+static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCaptionDllUtil *capUtil, SRT_LIST *srtList, long long PTS)
 {
-    long long startPCR = 0;
-    long long lastPCR = 0;
-    long long lastPTS = 0;
-    long long basePCR = 0;
-    long long basePTS = 0;
-    BOOL bFirstPTS = true;
-    long long offsetPCR = 0;
     int workCharSizeMode = 0;
     unsigned char workucB = 0;
     unsigned char workucG = 0;
@@ -296,17 +304,218 @@ int _tmain(int argc, _TCHAR *argv[])
     int offsetPosY = 0;
     float ratioX = 2;
     float ratioY = 2;
-    int sidebar_size = 0;
-    FILE *fpInputTs = NULL;
-    FILE *fpTarget1 = NULL;
-    FILE *fpTarget2 = NULL;
-    FILE *fpLogFile = NULL;
 
+    // Prepare the handlers.
+//  pid_information_t *pi = param->get_pid_information();
+    cli_parameter_t   *cp = param->get_cli_parameter();
+    ass_setting_t     *as = param->get_ass_setting();
+
+    // Output
+    std::vector<CAPTION_DATA> Captions;
+    int ret = capUtil->GetCaptionData(0, &Captions);
+
+    std::vector<CAPTION_DATA>::iterator it = Captions.begin();
+    for (;it != Captions.end(); it++) {
+        CHAR strUTF8[1024] = {0};
+
+        if (it->bClear) {
+            // 字幕のスキップをチェック
+            if ((app->basePTS + app->lastPTS + it->dwWaitTime) <= app->startPCR) {
+                _tMyPrintf(_T("%d Caption skip\r\n"), srtList->size());
+                if (app->fpLogFile) {
+                    fprintf(app->fpLogFile, "%d Caption skip\r\n", srtList->size());
+                }
+                srtList->clear();
+                continue;
+            }
+            app->bCreateOutput = TRUE;
+            if (cp->format == FORMAT_ASS)
+                DumpAssLine(app->fpTarget1, srtList, (PTS + it->dwWaitTime) - app->startPCR, app);
+            else if (cp->format == FORMAT_SRT)
+                DumpSrtLine(app->fpTarget1, srtList, (PTS + it->dwWaitTime) - app->startPCR, app);
+            else if (cp->format == FORMAT_TAW)
+                DumpSrtLine(app->fpTarget1, srtList, (PTS + it->dwWaitTime) - app->startPCR, app);
+            else if (cp->format == FORMAT_DUAL) {
+                DumpAssLine(app->fpTarget1, srtList, (PTS + it->dwWaitTime) - app->startPCR, app);
+                DumpSrtLine(app->fpTarget2, srtList, (PTS + it->dwWaitTime) - app->startPCR, app);
+            }
+            srtList->clear();
+
+            continue;
+        } else {
+
+            std::vector<CAPTION_CHAR_DATA>::iterator it2 = it->CharList.begin();
+
+            if (app->fpLogFile) {
+                fprintf(app->fpLogFile, "SWFMode    : %4d\r\n", it->wSWFMode);
+                fprintf(app->fpLogFile, "Client X:Y : %4d\t%4d\r\n", it->wClientX, it->wClientY);
+                fprintf(app->fpLogFile, "Client W:H : %4d\t%4d\r\n", it->wClientW, it->wClientH);
+                fprintf(app->fpLogFile, "Pos    X:Y : %4d\t%4d\r\n", it->wPosX, it->wPosY);
+            }
+
+            if (it->wSWFMode != wLastSWFMode) {
+                wLastSWFMode = it->wSWFMode;
+                if (wLastSWFMode == 5) {
+                    ratioX = (float)(as->PlayResX) / (float)(1920);
+                    ratioY = (float)(as->PlayResY) / (float)(1080);
+                } else if (wLastSWFMode == 9) {
+                    ratioX = (float)(as->PlayResX) / (float)(720);
+                    ratioY = (float)(as->PlayResY) / (float)(480);
+                } else if (wLastSWFMode == 11) {
+                    ratioX = (float)(as->PlayResX) / (float)(1280);
+                    ratioY = (float)(as->PlayResY) / (float)(720);
+                } else {
+                    ratioX = (float)(as->PlayResX) / (float)(960);
+                    ratioY = (float)(as->PlayResY) / (float)(540);
+                }
+            }
+            if (app->bUnicode) {
+                if ((it->wPosX < 2000) || (it->wPosY < 2000)) {
+                    offsetPosX = it->wClientX;
+                    offsetPosY = it->wClientY;
+                } else {
+                    offsetPosX = 0;
+                    offsetPosY = 0;
+                    it->wPosX -= 2000;
+                    it->wPosY -= 2000;
+                }
+            }
+
+            for (;it2 != it->CharList.end(); it2++) {
+                workCharSizeMode = it2->emCharSizeMode;
+                workucR = it2->stCharColor.ucR;
+                workucG = it2->stCharColor.ucG;
+                workucB = it2->stCharColor.ucB;
+                workUnderLine = it2->bUnderLine;
+                workShadow = it2->bShadow;
+                workBold = it2->bBold;
+                workItalic = it2->bItalic;
+                workFlushMode = it2->bFlushMode;
+                workHLC = it2->bHLC;
+                if (it2->bHLC != 0) workHLC = cp->HLCmode;
+                workCharW = it2->wCharW;
+                workCharH = it2->wCharH;
+                workCharHInterval = it2->wCharHInterval;
+                workCharVInterval = it2->wCharVInterval;
+                if (!(app->bUnicode)) {
+                    if (wLastSWFMode == 9) {
+                        amariPosX = it->wPosX % 18;
+                        amariPosY = it->wPosY % 15;
+                    } else {
+                        amariPosX = it->wPosX % ((workCharW + workCharHInterval) / 2);
+                        amariPosY = it->wPosY % ((workCharH + workCharVInterval) / 2);
+                    }
+                    if ((amariPosX == 0) || (amariPosY == 0)) {
+                        offsetPosX = it->wClientX;
+                        offsetPosY = it->wClientY +10;
+                    } else {
+                        offsetPosX = 0;
+                        offsetPosY = 0;
+                    }
+                }
+                if (wLastSWFMode == 0) {
+                    workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
+                    workPosY = (int)((float)( it->wPosY + offsetPosY + as->SWF0offset ) * ratioY);
+                } else if (wLastSWFMode == 5) {
+                    workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
+                    workPosY = (int)((float)( it->wPosY + offsetPosY - 0 + as->SWF5offset ) * ratioY);
+                } else if (wLastSWFMode == 7) {
+                    workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
+                    workPosY = (int)((float)( it->wPosY + offsetPosY +0 + as->SWF7offset ) * ratioY);
+                } else if (wLastSWFMode == 9) {
+                    workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
+                    if (app->bUnicode) {
+                        workPosY = (int)((float)( it->wPosY + offsetPosY + as->SWF9offset ) * ratioY);
+                    } else {
+                        workPosY = (int)((float)( it->wPosY + offsetPosY -50 + as->SWF9offset ) * ratioY);
+                    }
+                } else if (wLastSWFMode == 11) {
+                    workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
+                    workPosY = (int)((float)( it->wPosY + offsetPosY - 0 + as->SWF11offset ) * ratioY);
+                } else {
+                    workPosX = it->wPosX + offsetPosX;
+                    workPosY = it->wPosY + offsetPosY;
+                }
+                workPosX -= app->sidebar_size;
+                if (workPosX < 0) {
+                    workPosX = 0;
+                }
+
+                // ふりがな Skip
+                // ふりがな Skip は 出力時に
+                if ((it2->emCharSizeMode == STR_SMALL) &&  (!(app->bUnicode))) {
+                    workPosY += (int)(10 * ratioY);
+                }
+                if ((it2->emCharSizeMode == STR_MEDIUM) &&  (!(app->bUnicode))) {
+                    // 全角 -> 半角
+                    it2->strDecode = GetHalfChar(it2->strDecode);
+                }
+
+                if (app->fpLogFile) {
+                    if (it2->bUnderLine) fprintf(app->fpLogFile, "UnderLine : on\r\n");
+                    if (it2->bBold) fprintf(app->fpLogFile, "Bold : on\r\n");
+                    if (it2->bItalic) fprintf(app->fpLogFile, "Italic : on\r\n");
+                    if (it2->bHLC != 0) fprintf(app->fpLogFile, "HLC : on\r\n");
+                    fprintf(app->fpLogFile, "Color : %#.X   ", it2->stCharColor);
+                    fprintf(app->fpLogFile, "Char M,W,H,HI,VI : %4d, %4d, %4d, %4d, %4d   ", it2->emCharSizeMode ,it2->wCharW, it2->wCharH,  it2->wCharHInterval,  it2->wCharVInterval);
+                    fprintf(app->fpLogFile, "%s\r\n", it2->strDecode.c_str());
+                }
+
+                WCHAR str[1024] = {0};
+                CHAR strUTF8_2[1024] = {0};
+
+                if ((cp->format == FORMAT_TAW) || (app->bUnicode)) {
+                    strcat_s(strUTF8, 1024, it2->strDecode.c_str());
+                } else {
+                    // CP 932 to UTF-8
+                    MultiByteToWideChar(932, 0, it2->strDecode.c_str(), -1, str, 1024);
+                    WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8_2, 1024, NULL, NULL);
+
+                    strcat_s(strUTF8, 1024, strUTF8_2);
+                }
+            }
+
+            PSRT_LINE pSrtLine = new SRT_LINE();
+            pSrtLine->index = 0;    //useless
+            if (PTS > app->startPCR) {
+                pSrtLine->startTime = (DWORD)(PTS - app->startPCR);
+            } else {
+                pSrtLine->startTime = 0;
+            }
+            pSrtLine->endTime = 0;
+            pSrtLine->outCharSizeMode = workCharSizeMode;
+            pSrtLine->outCharColor.ucAlpha = 0x00;
+            pSrtLine->outCharColor.ucR = workucR;
+            pSrtLine->outCharColor.ucG = workucG;
+            pSrtLine->outCharColor.ucB = workucB;
+            pSrtLine->outUnderLine = workUnderLine;
+            pSrtLine->outShadow = workShadow;
+            pSrtLine->outBold = workBold;
+            pSrtLine->outItalic = workItalic;
+            pSrtLine->outFlushMode = workFlushMode;
+            pSrtLine->outHLC = workHLC;
+            pSrtLine->outCharW = (WORD)(workCharW * ratioX);
+            pSrtLine->outCharH = (WORD)(workCharH * ratioY);
+            pSrtLine->outCharHInterval = (WORD)(workCharHInterval * ratioX);
+            pSrtLine->outCharVInterval = (WORD)(workCharVInterval * ratioY);
+            pSrtLine->outPosX = workPosX;
+            pSrtLine->outPosY = workPosY;
+            pSrtLine->outornament = cp->srtornament;
+            pSrtLine->str = strUTF8;
+            if (pSrtLine->str == "") {
+                delete pSrtLine;
+                continue;
+            }
+
+            srtList->push_back(pSrtLine);
+        }
+
+    }
+}
+
+int _tmain(int argc, _TCHAR *argv[])
+{
     SRT_LIST srtList;
-
-    BOOL bPrintPMT     = TRUE;
-    BOOL bUnicode      = FALSE;
-    BOOL bCreateOutput = FALSE;
 
 #ifdef _DEBUG
 //  argc    = 5;
@@ -316,6 +525,7 @@ int _tmain(int argc, _TCHAR *argv[])
 //  argv[4] = _T("C:\\Users\\YourName\\Videos\\sample.ts");
 #endif
 
+    // Create parameter handler.
     size_t string_length = MAX_PATH;
     for (int i = 0; i < argc; i++) {
         size_t length = _tcslen(argv[i]) + 1 + 20;  // +20: It's a margin for append the suffix.
@@ -327,18 +537,21 @@ int _tmain(int argc, _TCHAR *argv[])
         _tMyPrintf(_T("Failed to allocate the buffers for output.\r\n"));
         return -1;
     }
-
-
-    system("cls");
-
-    // Parse arguments.
-    if (ParseCmd(argc, argv, param)) {
-        return 1;
-    }
+    // Prepare the handlers.
     pid_information_t *pi = param->get_pid_information();
     cli_parameter_t   *cp = param->get_cli_parameter();
     ass_setting_t     *as = param->get_ass_setting();
-    app_status_t app = { 1, 1, cp->norubi };
+    app_handler_t app = { 0 };
+    app.assIndex = 1;
+    app.srtIndex = 1;
+    app.norubi   = cp->norubi;
+
+    // Clear console window.
+    system("cls");
+
+    // Parse arguments.
+    if (ParseCmd(argc, argv, param))
+        return 1;
 
     // Initialize Caption Utility.
     CCaptionDllUtil capUtil;
@@ -348,13 +561,13 @@ int _tmain(int argc, _TCHAR *argv[])
             _tMyPrintf(_T("Load Caption.dll failed\r\n"));
             return 1;
         }
-        bUnicode = FALSE;
+        app.bUnicode = FALSE;
     } else {
         if (capUtil.InitializeUNICODE() != NO_ERR) {
             _tMyPrintf(_T("Load Caption.dll failed\r\n"));
             return 1;
         }
-        bUnicode = TRUE;
+        app.bUnicode = TRUE;
     }
 
     // Initialize ASS/SRT filename.
@@ -395,18 +608,18 @@ int _tmain(int argc, _TCHAR *argv[])
     }
 
     // Open TS File.
-    if (_tfopen_s(&fpInputTs, cp->FileName, _T("rb")) || !fpInputTs) {
+    if (_tfopen_s(&(app.fpInputTs), cp->FileName, _T("rb")) || !(app.fpInputTs)) {
         _tMyPrintf(_T("Open TS File: %s failed\r\n"), cp->FileName);
         goto EXIT;
     }
 
     // Open ASS/SRT File.
-    if (_tfopen_s(&fpTarget1, cp->TargetFileName1, _T("wb")) || !fpTarget1) {
+    if (_tfopen_s(&(app.fpTarget1), cp->TargetFileName1, _T("wb")) || !(app.fpTarget1)) {
         _tMyPrintf(_T("Open Target File: %s failed\r\n"), cp->TargetFileName1);
         goto EXIT;
     }
     if (cp->format == FORMAT_DUAL) {
-        if (_tfopen_s(&fpTarget2, cp->TargetFileName2, _T("wb")) || !fpTarget2) {
+        if (_tfopen_s(&(app.fpTarget2), cp->TargetFileName2, _T("wb")) || !(app.fpTarget2)) {
             _tMyPrintf(_T("Open Target File: %s failed\r\n"), cp->TargetFileName2);
             goto EXIT;
         }
@@ -418,7 +631,7 @@ int _tmain(int argc, _TCHAR *argv[])
             TCHAR *pExt = PathFindExtension(cp->LogFileName);
             _tcscpy_s(pExt, 13, _T("_Caption.log"));
         }
-        if (_tfopen_s(&fpLogFile, cp->LogFileName, _T("wb")) || !fpLogFile) {
+        if (_tfopen_s(&(app.fpLogFile), cp->LogFileName, _T("wb")) || !(app.fpLogFile)) {
             _tMyPrintf(_T("Open Log File: %s failed\r\n"), cp->LogFileName);
             goto EXIT;
         }
@@ -428,62 +641,63 @@ int _tmain(int argc, _TCHAR *argv[])
         if (IniFileRead(cp->ass_type, as))
             goto EXIT;
         if ((as->PlayResX * 3)==(as->PlayResY * 4)) {
-            sidebar_size = (((as->PlayResY * 16) / 9) - as->PlayResX) / 2;
+            app.sidebar_size = (((as->PlayResY * 16) / 9) - as->PlayResX) / 2;
             as->PlayResX = (as->PlayResY * 16) / 9;
         }
     }
     if (cp->format == FORMAT_SRT) {
         unsigned char tag[] = {0xEF, 0xBB, 0xBF};
-        fwrite(tag, 3, 1, fpTarget1);
+        fwrite(tag, 3, 1, app.fpTarget1);
     } else if (cp->format == FORMAT_ASS) {
         unsigned char tag[] = {0xEF, 0xBB, 0xBF};
-        fwrite(tag, 3, 1, fpTarget1);
-        assHeaderWrite(fpTarget1, as);
+        fwrite(tag, 3, 1, app.fpTarget1);
+        assHeaderWrite(app.fpTarget1, as);
     } else if (cp->format == FORMAT_DUAL) {
         unsigned char tag[] = {0xEF, 0xBB, 0xBF};
-        fwrite(tag, 3, 1, fpTarget1);
-        assHeaderWrite(fpTarget1, as);
-        fwrite(tag, 3, 1, fpTarget2);
+        fwrite(tag, 3, 1, app.fpTarget1);
+        assHeaderWrite(app.fpTarget1, as);
+        fwrite(tag, 3, 1, app.fpTarget2);
     }
-    if ((fpLogFile) && (bUnicode)) {
+    if ((app.fpLogFile) && (app.bUnicode)) {
         unsigned char tag[] = {0xEF, 0xBB, 0xBF};
-        fwrite(tag, 3, 1, fpLogFile);
+        fwrite(tag, 3, 1, app.fpLogFile);
     }
 
-    if (!FindStartOffset(fpInputTs)) {
+    if (!FindStartOffset(app.fpInputTs)) {
         _tMyPrintf(_T("Invalid TS File.\r\n"));
         Sleep(2000);
         goto EXIT;
     }
 
+    BOOL bPrintPMT = TRUE;
     BYTE pbPacket[188*2+4] = {0};
     DWORD packetCount = 0;
 
     // Main loop
-    while (fread(pbPacket, 188, 1, fpInputTs) == 1) {
+    while (fread(pbPacket, 188, 1, app.fpInputTs) == 1) {
         packetCount++;
         if (cp->detectLength > 0) {
-            if (packetCount > cp->detectLength && !bCreateOutput) {
+            if (packetCount > cp->detectLength && !(app.bCreateOutput)) {
                 _tMyPrintf(_T("Programe has deteced %dw packets, but can't find caption. Now it exits.\r\n"), packetCount/10000);
                 break;
             }
         }
-        if (fpLogFile) {
+        if (app.fpLogFile) {
             if (packetCount < 100000) {
                 if ((packetCount % 10000) == 0) {
-                    fprintf(fpLogFile, "Process  %dw packets.\r\n", packetCount/10000);
+                    fprintf(app.fpLogFile, "Process  %dw packets.\r\n", packetCount/10000);
                 }
             } else if (packetCount < 1000000) {
                 if ((packetCount % 100000) == 0) {
-                    fprintf(fpLogFile, "Process  %dw packets.\r\n", packetCount/10000);
+                    fprintf(app.fpLogFile, "Process  %dw packets.\r\n", packetCount/10000);
                 }
             } else if (packetCount < 10000000) {
                 if ((packetCount % 1000000) == 0) {
-                    fprintf(fpLogFile, "Process  %dw packets.\r\n", packetCount/10000);
+                    fprintf(app.fpLogFile, "Process  %dw packets.\r\n", packetCount/10000);
                 }
             } else {
                 if ((packetCount % 10000000) == 0) {
-                    fprintf(fpLogFile, "Process  %dw packets.\r\n", packetCount/10000);
+                    fprintf(app.fpLogFile, "Process  %dw packets.\r\n", packetCount/10000);
                 }
             }
         }
@@ -492,7 +706,7 @@ int _tmain(int argc, _TCHAR *argv[])
         parse_Packet_Header(&packet, &pbPacket[0]);
 
         if (packet.Sync != 'G') {
-            if (!resync(pbPacket, fpInputTs)) {
+            if (!resync(pbPacket, app.fpInputTs)) {
                 _tMyPrintf(_T("Invalid TS File.\r\n"));
                 Sleep(2000);
                 goto EXIT;
@@ -520,9 +734,9 @@ int _tmain(int argc, _TCHAR *argv[])
 
             parse_PMT(&pbPacket[0], &(pi->PCRPid), &(pi->CaptionPid));
 
-            if (fpLogFile) {
-                if (lastPTS == 0) {
-                    fprintf(fpLogFile, "PMT, PCR, Caption : %04x, %04x, %04x\r\n", pi->PMTPid, pi->PCRPid, pi->CaptionPid);
+            if (app.fpLogFile) {
+                if (app.lastPTS == 0) {
+                    fprintf(app.fpLogFile, "PMT, PCR, Caption : %04x, %04x, %04x\r\n", pi->PMTPid, pi->PCRPid, pi->CaptionPid);
                 }
             }
 
@@ -553,29 +767,29 @@ int _tmain(int argc, _TCHAR *argv[])
                     ((DWORD)pbPacket[10] / 128) ;
             PCR = PCR / 90;
 
-            if (fpLogFile) {
-                if (lastPTS == 0) {
-                    fprintf(fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n", PCR, startPCR, lastPCR, basePCR);
+            if (app.fpLogFile) {
+                if (app.lastPTS == 0) {
+                    fprintf(app.fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n", PCR, app.startPCR, app.lastPCR, app.basePCR);
                 }
             }
 
-            if (startPCR == 0) {
-                startPCR = PCR - cp->DelayTime;
-                lastPCR = PCR;
+            if (app.startPCR == 0) {
+                app.startPCR = PCR - cp->DelayTime;
+                app.lastPCR = PCR;
             }
-            if ((PCR > lastPCR) && ((PCR - lastPCR) > 60000)) {
-                startPCR = PCR - cp->DelayTime;
-                lastPCR = PCR;
+            if ((PCR > app.lastPCR) && ((PCR - app.lastPCR) > 60000)) {
+                app.startPCR = PCR - cp->DelayTime;
+                app.lastPCR = PCR;
             }
-            if (PCR < lastPCR) {
-                if (fpLogFile) {
-                    fprintf(fpLogFile, "====== PCR less than lastPCR ======\r\n");
-                    fprintf(fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n", PCR, startPCR, lastPCR, basePCR);
+            if (PCR < app.lastPCR) {
+                if (app.fpLogFile) {
+                    fprintf(app.fpLogFile, "====== PCR less than lastPCR ======\r\n");
+                    fprintf(app.fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n", PCR, app.startPCR, app.lastPCR, app.basePCR);
                 }
-                basePCR = basePCR + (WRAP_AROUND_VALUE / 90);
-                lastPCR = PCR;
+                app.basePCR = app.basePCR + (WRAP_AROUND_VALUE / 90);
+                app.lastPCR = PCR;
             } else {
-                lastPCR = PCR;
+                app.lastPCR = PCR;
             }
 
             continue; // next packet
@@ -583,290 +797,86 @@ int _tmain(int argc, _TCHAR *argv[])
 
         if (pi->CaptionPid != 0 && packet.PID == pi->CaptionPid) {
             long long PTS = 0;
-            static __int64 lastStamp =0;
+            static long long lastStamp =0;
 
             // Get Caption PTS.
             if (packet.PayloadStartFlag) {
                 PTS = GetPTS(pbPacket);
 
-                if (fpLogFile) {
-                    fprintf(fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ", PTS, lastPTS, basePTS, startPCR);
+                if (app.fpLogFile) {
+                    fprintf(app.fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ", PTS, app.lastPTS, app.basePTS, app.startPCR);
                 }
-                if ((PTS > 0) && (lastPTS == 0) && (PTS < lastPCR) && ((lastPCR - PTS) > (0x0FFFFFFFF / 90))) {
-                    startPCR = startPCR - (WRAP_AROUND_VALUE / 90);
+                if ((PTS > 0) && (app.lastPTS == 0) && (PTS < app.lastPCR) && ((app.lastPCR - PTS) > (0x0FFFFFFFF / 90))) {
+                    app.startPCR = app.startPCR - (WRAP_AROUND_VALUE / 90);
                 }
                 if (PTS == 0) {
-                    PTS = lastPTS;
+                    PTS = app.lastPTS;
                 }
-                if (PTS < lastPTS) {
-                    basePTS = basePTS + (WRAP_AROUND_VALUE / 90);
-                    lastPTS = PTS;
+                if (PTS < app.lastPTS) {
+                    app.basePTS = app.basePTS + (WRAP_AROUND_VALUE / 90);
+                    app.lastPTS = PTS;
                 } else {
-                    lastPTS = PTS;
+                    app.lastPTS = PTS;
                 }
-                PTS = PTS + basePTS;
-                if ((PTS - startPCR) <= 0) {
-                    PTS = startPCR;
+                PTS = PTS + app.basePTS;
+                if ((PTS - app.startPCR) <= 0) {
+                    PTS = app.startPCR;
                 }
 
                 unsigned short sH, sM, sS, sMs;
-                sMs = (int)(PTS - startPCR) % 1000;
-                sS = (int)((PTS - startPCR) / 1000) % 60;
-                sM = (int)((PTS - startPCR) / (1000 * 60)) % 60;
-                sH = (int)((PTS - startPCR) / (1000 * 60 *60));
+                sMs = (int)(PTS - app.startPCR) % 1000;
+                sS = (int)((PTS - app.startPCR) / 1000) % 60;
+                sM = (int)((PTS - app.startPCR) / (1000 * 60)) % 60;
+                sH = (int)((PTS - app.startPCR) / (1000 * 60 *60));
 
-                lastStamp = (PTS - startPCR);
+                lastStamp = (PTS - app.startPCR);
                 _tMyPrintf(_T("Caption Time: %01d:%02d:%02d.%03d\r\n"), sH, sM, sS, sMs);
 
-                if (fpLogFile) {
-                    fprintf(fpLogFile, "1st Caption Time: %01d:%02d:%02d.%03d\r\n", sH, sM, sS, sMs);
+                if (app.fpLogFile) {
+                    fprintf(app.fpLogFile, "1st Caption Time: %01d:%02d:%02d.%03d\r\n", sH, sM, sS, sMs);
                 }
             } else {
                 PTS = GetPTS(pbPacket);
-                if (fpLogFile) {
-                    fprintf(fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ", PTS, lastPTS, basePTS, startPCR);
+                if (app.fpLogFile) {
+                    fprintf(app.fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ", PTS, app.lastPTS, app.basePTS, app.startPCR);
                 }
                 if (!PTS) {
-                    PTS = lastPTS;
+                    PTS = app.lastPTS;
                 }
-                PTS = PTS + basePTS;
+                PTS = PTS + app.basePTS;
 
                 unsigned short sH, sM, sS, sMs;
-                sMs = (int)(PTS - startPCR) % 1000;
-                sS = (int)((PTS - startPCR) / 1000) % 60;
-                sM = (int)((PTS - startPCR) / (1000 * 60)) % 60;
-                sH = (int)((PTS - startPCR) / (1000 * 60 *60));
+                sMs = (int)(PTS - app.startPCR) % 1000;
+                sS = (int)((PTS - app.startPCR) / 1000) % 60;
+                sM = (int)((PTS - app.startPCR) / (1000 * 60)) % 60;
+                sH = (int)((PTS - app.startPCR) / (1000 * 60 *60));
 
-                if (fpLogFile) {
-                    fprintf(fpLogFile, "2nd Caption Time: %01d:%02d:%02d.%03d\r\n", sH, sM, sS, sMs);
+                if (app.fpLogFile) {
+                    fprintf(app.fpLogFile, "2nd Caption Time: %01d:%02d:%02d.%03d\r\n", sH, sM, sS, sMs);
                 }
             }
 
             // Parse caption.
-
             int ret = capUtil.AddTSPacket(pbPacket);
-
             if (ret == CHANGE_VERSION) {
                 std::vector<LANG_TAG_INFO> tagInfoList;
                 ret = capUtil.GetTagInfo(&tagInfoList);
             } else if (ret == NO_ERR_CAPTION) {
-
-                std::vector<CAPTION_DATA> Captions;
-                ret = capUtil.GetCaptionData(0, &Captions);
-
-                std::vector<CAPTION_DATA>::iterator it = Captions.begin();
-                for (;it != Captions.end(); it++) {
-                    CHAR strUTF8[1024] = {0};
-
-                    if (it->bClear) {
-                        // 字幕のスキップをチェック
-                        if ((basePTS + lastPTS + it->dwWaitTime) <= startPCR) {
-                            _tMyPrintf(_T("%d Caption skip\r\n"), srtList.size());
-                            if (fpLogFile) {
-                                fprintf(fpLogFile, "%d Caption skip\r\n", srtList.size());
-                            }
-                            srtList.clear();
-                            continue;
-                        }
-                        bCreateOutput = TRUE;
-                        if (cp->format == FORMAT_ASS)
-                            DumpAssLine(fpTarget1, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
-                        else if (cp->format == FORMAT_SRT)
-                            DumpSrtLine(fpTarget1, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
-                        else if (cp->format == FORMAT_TAW)
-                            DumpSrtLine(fpTarget1, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
-                        else if (cp->format == FORMAT_DUAL) {
-                            DumpAssLine(fpTarget1, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
-                            DumpSrtLine(fpTarget2, &srtList, (PTS + it->dwWaitTime) - startPCR, &app);
-                        }
-                        srtList.clear();
-
-                        continue;
-                    } else {
-
-                        std::vector<CAPTION_CHAR_DATA>::iterator it2 = it->CharList.begin();
-
-                        if (fpLogFile) {
-                            fprintf(fpLogFile, "SWFMode    : %4d\r\n", it->wSWFMode);
-                            fprintf(fpLogFile, "Client X:Y : %4d\t%4d\r\n", it->wClientX, it->wClientY);
-                            fprintf(fpLogFile, "Client W:H : %4d\t%4d\r\n", it->wClientW, it->wClientH);
-                            fprintf(fpLogFile, "Pos    X:Y : %4d\t%4d\r\n", it->wPosX, it->wPosY);
-                        }
-
-                        if (it->wSWFMode != wLastSWFMode) {
-                            wLastSWFMode = it->wSWFMode;
-                            if (wLastSWFMode == 5) {
-                                ratioX = (float)(as->PlayResX) / (float)(1920);
-                                ratioY = (float)(as->PlayResY) / (float)(1080);
-                            } else if (wLastSWFMode == 9) {
-                                ratioX = (float)(as->PlayResX) / (float)(720);
-                                ratioY = (float)(as->PlayResY) / (float)(480);
-                            } else if (wLastSWFMode == 11) {
-                                ratioX = (float)(as->PlayResX) / (float)(1280);
-                                ratioY = (float)(as->PlayResY) / (float)(720);
-                            } else {
-                                ratioX = (float)(as->PlayResX) / (float)(960);
-                                ratioY = (float)(as->PlayResY) / (float)(540);
-                            }
-                        }
-                        if (bUnicode) {
-                            if ((it->wPosX < 2000) || (it->wPosY < 2000)) {
-                                offsetPosX = it->wClientX;
-                                offsetPosY = it->wClientY;
-                            } else {
-                                offsetPosX = 0;
-                                offsetPosY = 0;
-                                it->wPosX -= 2000;
-                                it->wPosY -= 2000;
-                            }
-                        }
-
-                        for (;it2 != it->CharList.end(); it2++) {
-                            workCharSizeMode = it2->emCharSizeMode;
-                            workucR = it2->stCharColor.ucR;
-                            workucG = it2->stCharColor.ucG;
-                            workucB = it2->stCharColor.ucB;
-                            workUnderLine = it2->bUnderLine;
-                            workShadow = it2->bShadow;
-                            workBold = it2->bBold;
-                            workItalic = it2->bItalic;
-                            workFlushMode = it2->bFlushMode;
-                            workHLC = it2->bHLC;
-                            if (it2->bHLC != 0) workHLC = cp->HLCmode;
-                            workCharW = it2->wCharW;
-                            workCharH = it2->wCharH;
-                            workCharHInterval = it2->wCharHInterval;
-                            workCharVInterval = it2->wCharVInterval;
-                            if (!bUnicode) {
-                                if (wLastSWFMode == 9) {
-                                    amariPosX = it->wPosX % 18;
-                                    amariPosY = it->wPosY % 15;
-                                } else {
-                                    amariPosX = it->wPosX % ((workCharW + workCharHInterval) / 2);
-                                    amariPosY = it->wPosY % ((workCharH + workCharVInterval) / 2);
-                                }
-                                if ((amariPosX == 0) || (amariPosY == 0)) {
-                                    offsetPosX = it->wClientX;
-                                    offsetPosY = it->wClientY +10;
-                                } else {
-                                    offsetPosX = 0;
-                                    offsetPosY = 0;
-                                }
-                            }
-                            if (wLastSWFMode == 0) {
-                                workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
-                                workPosY = (int)((float)( it->wPosY + offsetPosY + as->SWF0offset ) * ratioY);
-                            } else if (wLastSWFMode == 5) {
-                                workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
-                                workPosY = (int)((float)( it->wPosY + offsetPosY - 0 + as->SWF5offset ) * ratioY);
-                            } else if (wLastSWFMode == 7) {
-                                workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
-                                workPosY = (int)((float)( it->wPosY + offsetPosY +0 + as->SWF7offset ) * ratioY);
-                            } else if (wLastSWFMode == 9) {
-                                workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
-                                if (bUnicode) {
-                                    workPosY = (int)((float)( it->wPosY + offsetPosY + as->SWF9offset ) * ratioY);
-                                } else {
-                                    workPosY = (int)((float)( it->wPosY + offsetPosY -50 + as->SWF9offset ) * ratioY);
-                                }
-                            } else if (wLastSWFMode == 11) {
-                                workPosX = (int)((float)( it->wPosX + offsetPosX ) * ratioX);
-                                workPosY = (int)((float)( it->wPosY + offsetPosY - 0 + as->SWF11offset ) * ratioY);
-                            } else {
-                                workPosX = it->wPosX + offsetPosX;
-                                workPosY = it->wPosY + offsetPosY;
-                            }
-                            workPosX -= sidebar_size;
-                            if (workPosX < 0) {
-                                workPosX = 0;
-                            }
-
-                            // ふりがな Skip
-                            // ふりがな Skip は 出力時に
-                            if ((it2->emCharSizeMode == STR_SMALL) &&  (!bUnicode)) {
-                                workPosY += (int)(10 * ratioY);
-                            }
-                            if ((it2->emCharSizeMode == STR_MEDIUM) &&  (!bUnicode)) {
-                                // 全角 -> 半角
-                                it2->strDecode = GetHalfChar(it2->strDecode);
-                            }
-
-                            if (fpLogFile) {
-                                if (it2->bUnderLine) fprintf(fpLogFile, "UnderLine : on\r\n");
-                                if (it2->bBold) fprintf(fpLogFile, "Bold : on\r\n");
-                                if (it2->bItalic) fprintf(fpLogFile, "Italic : on\r\n");
-                                if (it2->bHLC != 0) fprintf(fpLogFile, "HLC : on\r\n");
-                                fprintf(fpLogFile, "Color : %#.X   ", it2->stCharColor);
-                                fprintf(fpLogFile, "Char M,W,H,HI,VI : %4d, %4d, %4d, %4d, %4d   ", it2->emCharSizeMode ,it2->wCharW, it2->wCharH,  it2->wCharHInterval,  it2->wCharVInterval);
-                                fprintf(fpLogFile, "%s\r\n", it2->strDecode.c_str());
-                            }
-
-                            WCHAR str[1024] = {0};
-                            CHAR strUTF8_2[1024] = {0};
-
-                            if ((cp->format == FORMAT_TAW) || (bUnicode)) {
-                                strcat_s(strUTF8, 1024, it2->strDecode.c_str());
-                            } else {
-                                // CP 932 to UTF-8
-                                MultiByteToWideChar(932, 0, it2->strDecode.c_str(), -1, str, 1024);
-                                WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8_2, 1024, NULL, NULL);
-
-                                strcat_s(strUTF8, 1024, strUTF8_2);
-                            }
-                        }
-
-                        PSRT_LINE pSrtLine = new SRT_LINE();
-                        pSrtLine->index = 0;    //useless
-                        if (PTS > startPCR) {
-                            pSrtLine->startTime = (DWORD)(PTS - startPCR);
-                        } else {
-                            pSrtLine->startTime = 0;
-                        }
-                        pSrtLine->endTime = 0;
-                        pSrtLine->outCharSizeMode = workCharSizeMode;
-                        pSrtLine->outCharColor.ucAlpha = 0x00;
-                        pSrtLine->outCharColor.ucR = workucR;
-                        pSrtLine->outCharColor.ucG = workucG;
-                        pSrtLine->outCharColor.ucB = workucB;
-                        pSrtLine->outUnderLine = workUnderLine;
-                        pSrtLine->outShadow = workShadow;
-                        pSrtLine->outBold = workBold;
-                        pSrtLine->outItalic = workItalic;
-                        pSrtLine->outFlushMode = workFlushMode;
-                        pSrtLine->outHLC = workHLC;
-                        pSrtLine->outCharW = (WORD)(workCharW * ratioX);
-                        pSrtLine->outCharH = (WORD)(workCharH * ratioY);
-                        pSrtLine->outCharHInterval = (WORD)(workCharHInterval * ratioX);
-                        pSrtLine->outCharVInterval = (WORD)(workCharVInterval * ratioY);
-                        pSrtLine->outPosX = workPosX;
-                        pSrtLine->outPosY = workPosY;
-                        pSrtLine->outornament = cp->srtornament;
-                        pSrtLine->str = strUTF8;
-                        if (pSrtLine->str == "") {
-                            delete pSrtLine;
-                            continue;
-                        }
-
-                        srtList.push_back(pSrtLine);
-                    }
-
-                }
-
+                output_caption(param, &app, &capUtil, &srtList, PTS);
             }
-
         }
 
     }
 
 EXIT:
-    if (fpInputTs)
-        fclose(fpInputTs);
-    if (fpTarget1)
-        fclose(fpTarget1);
-    if (fpTarget2)
-        fclose(fpTarget2);
-    if (fpLogFile)
-        fclose(fpLogFile);
+    if (app.fpInputTs)
+        fclose(app.fpInputTs);
+    if (app.fpTarget1)
+        fclose(app.fpTarget1);
+    if (app.fpTarget2)
+        fclose(app.fpTarget2);
+    if (app.fpLogFile)
+        fclose(app.fpLogFile);
 
     if ((app.assIndex == 1) && (app.srtIndex == 1)) {
         Sleep(2000);
