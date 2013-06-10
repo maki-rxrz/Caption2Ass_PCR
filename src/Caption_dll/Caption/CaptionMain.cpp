@@ -13,20 +13,9 @@
 #include "packet_types.h"
 
 // ARIBの追加記号 ＆ 追加漢字のテーブル定義
+#define GLOBAL
+#include "ARIBGaiji.h"
 
-#define ARIB_MAX        495
-#define ARIB_MAX2       137
-
-typedef struct _GAIJI_TABLE {
-    string usARIB8;
-    string strChar;
-} GAIJI_TABLE;
-
-GAIJI_TABLE GaijiTable[ARIB_MAX];
-
-GAIJI_TABLE GaijiTbl2[ARIB_MAX2];
-
-BOOL m_bUnicode;
 map<string, string> dicHash_Char_map;
 map<WORD, string> dicCharcode_Char_map;
 

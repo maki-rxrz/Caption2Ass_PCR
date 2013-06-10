@@ -11,6 +11,7 @@
 #include "CommRoutine.h"
 #include "ColorDef.h"
 #include "ARIB8CharDecode.h"
+#include "ARIBGaiji.h"
 
 static CLUT_DAT DefClut[] = {
     {  0,  0,  0,255}, //0
@@ -205,7 +206,6 @@ static char SpaceTable[][3] = {
     "　",
     " "
 };
-// ARIBの追加記号 ＆ 追加漢字のテーブル定義は「CaptionMain.cpp」に移す
 
 static BYTE DefaultMacro0[] = {
     0x1B,0x24,0x39,0x1B,0x29,0x4A,0x1B,0x2A,0x30,0x1B,0x2B,0x20,0x70,0x0F,0x1B,0x7D
@@ -255,23 +255,6 @@ static BYTE DefaultMacroE[] = {
 static BYTE DefaultMacroF[] = {
     0x1B,0x28,0x4A,0x1B,0x29,0x32,0x1B,0x2A,0x20,0x41,0x1B,0x2B,0x20,0x70,0x0F,0x1B,0x7D
 };
-
-// ARIBの追加記号 ＆ 追加漢字のテーブル定義
-// 実体は、「CaptionMain.cpp」で宣言
-
-#define ARIB_MAX        495
-#define ARIB_MAX2       137
-
-typedef struct _GAIJI_TABLE {
-    string usARIB8;
-    string strChar;
-} GAIJI_TABLE;
-
-extern GAIJI_TABLE GaijiTable[];
-
-extern GAIJI_TABLE GaijiTbl2[];
-
-extern BOOL m_bUnicode;
 
 CARIB8CharDecode::CARIB8CharDecode(void)
 {

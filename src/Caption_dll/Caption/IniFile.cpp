@@ -11,21 +11,7 @@
 #include "ColorDef.h"
 #include "ARIB8CharDecode.h"
 #include "IniFile.h"
-
-// ARIBの追加記号 ＆ 追加漢字のテーブル定義
-// 実体は、「CaptionMain.cpp」で宣言
-
-#define ARIB_MAX        495
-#define ARIB_MAX2       137
-
-typedef struct _GAIJI_TABLE {
-    string usARIB8;
-    string strChar;
-} GAIJI_TABLE;
-
-extern GAIJI_TABLE GaijiTable[];
-
-extern GAIJI_TABLE GaijiTbl2[];
+#include "ARIBGaiji.h"
 
 static string iniFilename   = "cc_DRCS.ini";
 static string iniFilenameU  = "UNICODE_cc_DRCS.ini";
