@@ -786,7 +786,6 @@ int _tmain(int argc, _TCHAR *argv[])
 
         if (pi->CaptionPid != 0 && packet.PID == pi->CaptionPid) {
             long long PTS = 0;
-            static long long lastStamp =0;
 
             // Get Caption PTS.
             if (packet.PayloadStartFlag) {
@@ -815,7 +814,6 @@ int _tmain(int argc, _TCHAR *argv[])
                 unsigned short sH, sM, sS, sMs;
                 HMS(PTS - app.startPCR, sH, sM, sS, sMs);
 
-                lastStamp = (PTS - app.startPCR);
                 _tMyPrintf(_T("Caption Time: %01d:%02d:%02d.%03d\r\n"), sH, sM, sS, sMs);
 
                 if (app.fpLogFile) {
