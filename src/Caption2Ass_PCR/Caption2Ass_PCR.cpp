@@ -125,6 +125,14 @@ static int count_UTF8(const unsigned char *string)
     return len;
 }
 
+#define HMS(T, h, m, s, ms)             \
+do {                                    \
+    ms = (int)(T) % 1000;               \
+    s  = (int)((T) / 1000) % 60;        \
+    m  = (int)((T) / (1000 * 60)) % 60; \
+    h  = (int)((T) / (1000 * 60 * 60)); \
+} while(0)
+
 static void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS, app_handler_t *app)
 {
     SRT_LIST::iterator it = list->begin();
@@ -132,17 +140,11 @@ static void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS, app_handler_t 
         (*it)->endTime = (DWORD)PTS;
 
         unsigned short sH, sM, sS, sMs, eH, eM, eS, eMs;
-        sMs = (int)(*it)->startTime % 1000;
-        sS = (int)((*it)->startTime / 1000) % 60;
-        sM = (int)((*it)->startTime / (1000 * 60)) % 60;
-        sH = (int)((*it)->startTime / (1000 * 60 *60));
-
-        eMs = (int)(*it)->endTime % 1000;
-        eS = (int)((*it)->endTime / 1000) % 60;
-        eM = (int)((*it)->endTime / (1000 * 60)) % 60;
-        eH = (int)((*it)->endTime / (1000 * 60 *60));
+        HMS((*it)->startTime, sH, sM, sS, sMs);
+        HMS((*it)->endTime, eH, eM, eS, eMs);
         sMs /= 10;
         eMs /= 10;
+
         if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_box)) {
             int iHankaku;
             unsigned char usTmpUTF8[1024] = {0};
@@ -212,16 +214,8 @@ static void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS, app_handler_t 
             (*it)->endTime = (DWORD)PTS;
 
             unsigned short sH, sM, sS, sMs, eH, eM, eS, eMs;
-
-            sMs = (int)(*it)->startTime % 1000;
-            sS = (int)((*it)->startTime / 1000) % 60;
-            sM = (int)((*it)->startTime / (1000 * 60)) % 60;
-            sH = (int)((*it)->startTime / (1000 * 60 *60));
-
-            eMs = (int)(*it)->endTime % 1000;
-            eS = (int)((*it)->endTime / 1000) % 60;
-            eM = (int)((*it)->endTime / (1000 * 60)) % 60;
-            eH = (int)((*it)->endTime / (1000 * 60 *60));
+            HMS((*it)->startTime, sH, sM, sS, sMs);
+            HMS((*it)->endTime, eH, eM, eS, eMs);
 
             fprintf(fp,"%d\r\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\r\n", app->srtIndex, sH, sM, sS, sMs, eH, eM, eS, eMs);
         }
@@ -819,10 +813,7 @@ int _tmain(int argc, _TCHAR *argv[])
                 }
 
                 unsigned short sH, sM, sS, sMs;
-                sMs = (int)(PTS - app.startPCR) % 1000;
-                sS = (int)((PTS - app.startPCR) / 1000) % 60;
-                sM = (int)((PTS - app.startPCR) / (1000 * 60)) % 60;
-                sH = (int)((PTS - app.startPCR) / (1000 * 60 *60));
+                HMS(PTS - app.startPCR, sH, sM, sS, sMs);
 
                 lastStamp = (PTS - app.startPCR);
                 _tMyPrintf(_T("Caption Time: %01d:%02d:%02d.%03d\r\n"), sH, sM, sS, sMs);
@@ -841,10 +832,7 @@ int _tmain(int argc, _TCHAR *argv[])
                 PTS = PTS + app.basePTS;
 
                 unsigned short sH, sM, sS, sMs;
-                sMs = (int)(PTS - app.startPCR) % 1000;
-                sS = (int)((PTS - app.startPCR) / 1000) % 60;
-                sM = (int)((PTS - app.startPCR) / (1000 * 60)) % 60;
-                sH = (int)((PTS - app.startPCR) / (1000 * 60 *60));
+                HMS(PTS - app.startPCR, sH, sM, sS, sMs);
 
                 if (app.fpLogFile) {
                     fprintf(app.fpLogFile, "2nd Caption Time: %01d:%02d:%02d.%03d\r\n", sH, sM, sS, sMs);
