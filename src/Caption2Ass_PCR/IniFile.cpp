@@ -2,9 +2,7 @@
 //IniFile.cpp
 //------------------------------------------------------------------------------
 
-#include <windows.h>
-#include <stdio.h>
-#include <tchar.h>
+#include "stdafx.h"
 #include <shlwapi.h>
 
 #include "IniFile.h"

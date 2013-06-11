@@ -2,9 +2,7 @@
 // ass_header.cpp
 //------------------------------------------------------------------------------
 
-#include <windows.h>
-#include <stdio.h>
-#include <tchar.h>
+#include "stdafx.h"
 
 #include "ass_header.h"
 #include "Caption2Ass_PCR.h"

@@ -2,9 +2,7 @@
 // cmdline.cpp
 //------------------------------------------------------------------------------
 
-#include <windows.h>
-#include <stdio.h>
-#include <tchar.h>
+#include "stdafx.h"
 #include <strsafe.h>
 
 #include "cmdline.h"
