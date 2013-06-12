@@ -19,7 +19,7 @@ CCaptionDllUtil::~CCaptionDllUtil(void)
 
 BOOL CCaptionDllUtil::LoadDll(void)
 {
-    if (m_hModule != NULL)
+    if (m_hModule)
         return FALSE;
 
     pfnInitializeCP = NULL;
@@ -33,7 +33,7 @@ BOOL CCaptionDllUtil::LoadDll(void)
 
     m_hModule = ::LoadLibrary(_T("Caption.dll"));
 
-    if (m_hModule == NULL)
+    if (!m_hModule)
         return FALSE;
 
     pfnInitializeCP = (InitializeCP)(::GetProcAddress(m_hModule, "InitializeCP"));
@@ -77,7 +77,7 @@ ERR_END:
 
 BOOL CCaptionDllUtil::UnLoadDll(void)
 {
-    if (m_hModule != NULL) {
+    if (m_hModule) {
         pfnUnInitializeCP();
         ::FreeLibrary(m_hModule);
     }
@@ -88,7 +88,7 @@ BOOL CCaptionDllUtil::UnLoadDll(void)
 BOOL CCaptionDllUtil::CheckUNICODE(void)
 {
     pfnInitializeUNICODE = NULL;
-    if (m_hModule == NULL)
+    if (!m_hModule)
         if (LoadDll() == FALSE)
             return FALSE;
 
@@ -113,7 +113,7 @@ DWORD CCaptionDllUtil::Initialize(void)
 
 DWORD CCaptionDllUtil::UnInitialize(void)
 {
-    if (m_hModule == NULL)
+    if (!m_hModule)
         return ERR_INIT;
     DWORD dwRet = pfnUnInitializeCP();
     UnLoadDll();
@@ -122,35 +122,35 @@ DWORD CCaptionDllUtil::UnInitialize(void)
 
 DWORD CCaptionDllUtil::AddTSPacket(BYTE* pbPacket)
 {
-    if (m_hModule == NULL)
+    if (!m_hModule)
         return ERR_INIT;
     return pfnAddTSPacketCP(pbPacket);
 }
 
 DWORD CCaptionDllUtil::Clear(void)
 {
-    if (m_hModule == NULL)
+    if (!m_hModule)
         return ERR_INIT;
     return pfnClearCP();
 }
 
 DWORD CCaptionDllUtil::GetTagInfo(LANG_TAG_INFO_DLL **ppList, DWORD *pdwListCount)
 {
-    if (m_hModule == NULL)
+    if (!m_hModule)
         return ERR_INIT;
     return pfnGetTagInfoCP(ppList, pdwListCount);
 }
 
 DWORD CCaptionDllUtil::GetCaptionData(unsigned char ucLangTag, CAPTION_DATA_DLL **ppList, DWORD *pdwListCount)
 {
-    if (m_hModule == NULL)
+    if (!m_hModule)
         return ERR_INIT;
     return pfnGetCaptionDataCP(ucLangTag, ppList, pdwListCount);
 }
 
 DWORD CCaptionDllUtil::GetTagInfo(vector<LANG_TAG_INFO> *pList)
 {
-    if (m_hModule == NULL)
+    if (!m_hModule)
         return ERR_INIT;
 
     LANG_TAG_INFO_DLL* pListDll;
@@ -175,7 +175,7 @@ DWORD CCaptionDllUtil::GetTagInfo(vector<LANG_TAG_INFO> *pList)
 
 DWORD CCaptionDllUtil::GetCaptionData(unsigned char ucLangTag, vector<CAPTION_DATA> *pList)
 {
-    if (m_hModule == NULL)
+    if (!m_hModule)
         return ERR_INIT;
 
     CAPTION_DATA_DLL* pListDll;

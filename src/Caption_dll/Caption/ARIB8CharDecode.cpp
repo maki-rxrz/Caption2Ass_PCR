@@ -393,7 +393,7 @@ void CARIB8CharDecode::InitCaption(void)
 
 BOOL CARIB8CharDecode::Caption(const BYTE *pbSrc, DWORD dwSrcSize, vector<CAPTION_DATA> *pCaptionList)
 {
-    if (pbSrc == NULL || dwSrcSize == 0 || pCaptionList == NULL)
+    if (!pbSrc || dwSrcSize == 0 || !pCaptionList)
         return FALSE;
 
     m_wSWFMode = 0;
@@ -460,7 +460,7 @@ BOOL CARIB8CharDecode::IsSmallCharMode(void)
 
 BOOL CARIB8CharDecode::Analyze(const BYTE *pbSrc, DWORD dwSrcSize, DWORD *pdwReadSize)
 {
-    if (pbSrc == NULL || dwSrcSize == 0 || pdwReadSize == NULL)
+    if (!pbSrc || dwSrcSize == 0 || !pdwReadSize)
         return FALSE;
 
     BOOL bRet = TRUE;
@@ -509,7 +509,7 @@ BOOL CARIB8CharDecode::Analyze(const BYTE *pbSrc, DWORD dwSrcSize, DWORD *pdwRea
 BOOL CARIB8CharDecode::C0(const BYTE *pbSrc, DWORD *pdwReadSize)
 {
     m_bGaiji = FALSE;
-    if (pbSrc == NULL || pdwReadSize == NULL)
+    if (!pbSrc || !pdwReadSize)
         return FALSE;
 
     DWORD dwReadSize = 0;
@@ -626,7 +626,7 @@ BOOL CARIB8CharDecode::C0(const BYTE *pbSrc, DWORD *pdwReadSize)
             CAPTION_DATA Item;
             Item.bClear = TRUE;
             Item.dwWaitTime = m_dwWaitTime * 100;
-            if (m_pCaptionList != NULL)
+            if (m_pCaptionList)
                 m_pCaptionList->push_back(Item);
             bRet = 2;
             m_dwWaitTime = 0;
@@ -669,7 +669,7 @@ BOOL CARIB8CharDecode::C0(const BYTE *pbSrc, DWORD *pdwReadSize)
 BOOL CARIB8CharDecode::C1(const BYTE *pbSrc, DWORD *pdwReadSize)
 {
     m_bGaiji = FALSE;
-    if (pbSrc == NULL || pdwReadSize == NULL)
+    if (!pbSrc || !pdwReadSize)
         return FALSE;
 
     DWORD dwReadSize = 0;
@@ -863,7 +863,7 @@ BOOL CARIB8CharDecode::C1(const BYTE *pbSrc, DWORD *pdwReadSize)
 BOOL CARIB8CharDecode::GL(const BYTE *pbSrc, DWORD *pdwReadSize)
 {
     m_bGaiji = FALSE;
-    if (pbSrc == NULL || pdwReadSize == NULL)
+    if (!pbSrc || !pdwReadSize)
         return FALSE;
 
     DWORD dwReadSize = 0;
@@ -1057,7 +1057,7 @@ BOOL CARIB8CharDecode::GL(const BYTE *pbSrc, DWORD *pdwReadSize)
 BOOL CARIB8CharDecode::GR(const BYTE *pbSrc, DWORD *pdwReadSize)
 {
     m_bGaiji = FALSE;
-    if (pbSrc == NULL || pdwReadSize == NULL)
+    if (!pbSrc || !pdwReadSize)
         return FALSE;
 
     DWORD dwReadSize = 0;
@@ -1385,7 +1385,7 @@ BOOL CARIB8CharDecode::AddToString(const char *cDec, BOOL m_bGaiji)
 
 BOOL CARIB8CharDecode::ESC(const BYTE *pbSrc, DWORD *pdwReadSize)
 {
-    if (pbSrc == NULL)
+    if (!pbSrc)
         return FALSE;
 
     DWORD dwReadSize = 0;
@@ -1611,7 +1611,7 @@ BOOL CARIB8CharDecode::SS3(const BYTE *pbSrc, DWORD *pdwReadSize)
 
 BOOL CARIB8CharDecode::CSI(const BYTE *pbSrc, DWORD *pdwReadSize)
 {
-    if (pbSrc == NULL || pdwReadSize == NULL)
+    if (!pbSrc || !pdwReadSize)
         return FALSE;
 
     DWORD dwReadSize = 0;
@@ -1925,7 +1925,7 @@ void CARIB8CharDecode::CreateCaptionCharData(CAPTION_CHAR_DATA *pItem)
 
 BOOL CARIB8CharDecode::IsChgPos(void)
 {
-    if (m_pCaptionList == NULL || m_strDecode.length() == 0)
+    if (!m_pCaptionList || m_strDecode.length() == 0)
         return FALSE;
 
     if (m_pCaptionList->size() == 0)
@@ -1958,7 +1958,7 @@ BOOL CARIB8CharDecode::IsChgPos(void)
 
 BOOL CARIB8CharDecode::DRCSHeaderparse(const BYTE *pbSrc, DWORD dwSrcSize, BOOL bDRCS_0)
 {
-    if (pbSrc == NULL || dwSrcSize == 0)
+    if (!pbSrc || dwSrcSize == 0)
         return FALSE;
 
     BYTE bNumberOfCode = pbSrc[0];

@@ -49,11 +49,11 @@ CCaptionMain::~CCaptionMain(void)
 
     m_PayloadList.clear();
 
-    if (m_pLangList != NULL) {
+    if (m_pLangList) {
         SAFE_DELETE_ARRAY(m_pLangList);
         m_dwLangListCount = 0;
     }
-    if (m_pCapList != NULL) {
+    if (m_pCapList) {
         for (DWORD i = 0; i < m_dwCapListCount; i++) {
             for (DWORD j = 0; j < m_pCapList[i].dwListCount; j++)
                 SAFE_DELETE(m_pCapList[i].pstCharList[j].pszDecode);
@@ -81,7 +81,7 @@ DWORD CCaptionMain::Clear(void)
 
 DWORD CCaptionMain::AddTSPacket(BYTE *pbPacket)
 {
-    if (pbPacket == NULL) {
+    if (!pbPacket) {
         Clear();
         return FALSE;
     }
@@ -275,7 +275,7 @@ DWORD CCaptionMain::ParseListData(void)
 
 DWORD CCaptionMain::ParseCaption(BYTE *pbBuff, DWORD dwSize)
 {
-    if (pbBuff == NULL || dwSize < 3)
+    if (!pbBuff || dwSize < 3)
         return ERR_INVALID_PACKET;
 
     if (pbBuff[0] != 0x80 && pbBuff[0] != 0x81)
@@ -325,7 +325,7 @@ DWORD CCaptionMain::ParseCaption(BYTE *pbBuff, DWORD dwSize)
 
 DWORD CCaptionMain::ParseCaptionManagementData(BYTE *pbBuff, DWORD dwSize, vector<CAPTION_DATA> *pCaptionList)
 {
-    if (pbBuff == NULL)
+    if (!pbBuff)
         return ERR_INVALID_PACKET;
 
     DWORD dwRet = NO_ERR;
@@ -387,7 +387,7 @@ DWORD CCaptionMain::ParseCaptionManagementData(BYTE *pbBuff, DWORD dwSize, vecto
 
 DWORD CCaptionMain::ParseCaptionData(BYTE *pbBuff, DWORD dwSize, vector<CAPTION_DATA> *pCaptionList)
 {
-    if (pbBuff == NULL)
+    if (!pbBuff)
         return ERR_INVALID_PACKET;
 
     DWORD dwRet = NO_ERR;
@@ -428,7 +428,7 @@ DWORD CCaptionMain::ParseCaptionData(BYTE *pbBuff, DWORD dwSize, vector<CAPTION_
 
 DWORD CCaptionMain::ParseUnitData(BYTE *pbBuff, DWORD dwSize, DWORD *pdwReadSize, vector<CAPTION_DATA> *pCaptionList)
 {
-    if (pbBuff == NULL || dwSize < 5 || pdwReadSize == NULL)
+    if (!pbBuff || dwSize < 5 || !pdwReadSize)
         return FALSE;
 
     if (pbBuff[0] != 0x1F)
@@ -492,11 +492,11 @@ DWORD CCaptionMain::GetCaptionData(unsigned char ucLangTag, vector<CAPTION_DATA>
 
 DWORD CCaptionMain::GetTagInfo(LANG_TAG_INFO_DLL **ppList, DWORD *pdwListCount)
 {
-    if (m_pLangList != NULL) {
+    if (m_pLangList) {
         SAFE_DELETE_ARRAY(m_pLangList);
         m_dwLangListCount = 0;
     }
-    if (ppList == NULL || pdwListCount == NULL)
+    if (!ppList || !pdwListCount)
         return FALSE;
 
     vector<CCaptionMain::LANG_TAG_INFO> List;
@@ -523,7 +523,7 @@ DWORD CCaptionMain::GetTagInfo(LANG_TAG_INFO_DLL **ppList, DWORD *pdwListCount)
 
 DWORD CCaptionMain::GetCaptionData(unsigned char ucLangTag, CAPTION_DATA_DLL **ppList, DWORD *pdwListCount)
 {
-    if (m_pCapList != NULL) {
+    if (m_pCapList) {
         for (DWORD i = 0; i < m_dwCapListCount; i++) {
             for (DWORD j = 0; j < m_pCapList[i].dwListCount; j++)
                 SAFE_DELETE(m_pCapList[i].pstCharList[j].pszDecode);
@@ -532,7 +532,7 @@ DWORD CCaptionMain::GetCaptionData(unsigned char ucLangTag, CAPTION_DATA_DLL **p
         SAFE_DELETE_ARRAY(m_pCapList);
         m_dwCapListCount = 0;
     }
-    if (ppList == NULL || pdwListCount == NULL)
+    if (!ppList || !pdwListCount)
         return FALSE;
 
     vector<CAPTION_DATA> List;

@@ -29,7 +29,7 @@ extern BOOL resync(BYTE *pbPacket, FILE *fp)
     char *p;
 
     p = (char *)memchr(pbPacket, 'G', 188);
-    if (p == NULL) {
+    if (!p) {
         for (int i = 0; i < 20; i++) {
             if (fread(pbPacket, 188, 1, fp) != 1) {
                 fprintf(stderr, "Unexpected EOF\n");
@@ -37,13 +37,13 @@ extern BOOL resync(BYTE *pbPacket, FILE *fp)
                 return FALSE;
             }
             p = (char *)memchr(pbPacket, 'G', 188);
-            if (p == NULL)
+            if (!p)
                 continue;
             else
                 break;
         }
     }
-    if (p == NULL) {
+    if (!p) {
         fprintf(stderr, "Missing syncbyte\n");
         Sleep(2000);
         return FALSE;
