@@ -44,9 +44,9 @@ CCaptionMain::CCaptionMain(BOOL bUNICODE)
 
 CCaptionMain::~CCaptionMain(void)
 {
-    for (int i = 0; i < (int)m_PayloadList.size(); i++) {
+    for (int i = 0; i < (int)m_PayloadList.size(); i++)
         SAFE_DELETE(m_PayloadList[i]);
-    }
+
     m_PayloadList.clear();
 
     if (m_pLangList != NULL) {
@@ -55,9 +55,8 @@ CCaptionMain::~CCaptionMain(void)
     }
     if (m_pCapList != NULL) {
         for (DWORD i = 0; i < m_dwCapListCount; i++) {
-            for (DWORD j = 0; j < m_pCapList[i].dwListCount; j++) {
+            for (DWORD j = 0; j < m_pCapList[i].dwListCount; j++)
                 SAFE_DELETE(m_pCapList[i].pstCharList[j].pszDecode);
-            }
             SAFE_DELETE_ARRAY(m_pCapList[i].pstCharList);
         }
         SAFE_DELETE_ARRAY(m_pCapList);
@@ -66,9 +65,9 @@ CCaptionMain::~CCaptionMain(void)
 
 DWORD CCaptionMain::Clear(void)
 {
-    for (int i = 0; i < (int)m_PayloadList.size(); i++) {
+    for (int i = 0; i < (int)m_PayloadList.size(); i++)
         SAFE_DELETE(m_PayloadList[i]);
-    }
+
     m_PayloadList.clear();
 
     m_LangTagList.clear();
@@ -106,21 +105,19 @@ DWORD CCaptionMain::AddTSPacket(BYTE *pbPacket)
     }
 
     //パケットカウンターチェック
-    if (m_iLastCounter == -1) {
+    if (m_iLastCounter == -1)
         m_iLastCounter = (int)ph.Counter;
-    } else {
+    else {
         if (ph.Counter == 0x00) {
-            if (m_iLastCounter != 0x0F) {
+            if (m_iLastCounter != 0x0F)
                 Clear();
-            } else {
+            else
                 m_iLastCounter = (int)ph.Counter;
-            }
         } else {
-            if (ph.Counter != m_iLastCounter + 1) {
+            if (ph.Counter != m_iLastCounter + 1)
                 Clear();
-            } else {
+            else
                 m_iLastCounter = (int)ph.Counter;
-            }
         }
     }
 
@@ -151,10 +148,10 @@ DWORD CCaptionMain::AddTSPacket(BYTE *pbPacket)
         }
         if (ucPayloadOffset != 0 && m_PayloadList.size()>0) {
             //オフセットあるということは前のデータあり
-            if (dwStart + ucPayloadOffset > 188) {
+            if (dwStart + ucPayloadOffset > 188)
                 //サイズ188以上とかありえない
                 return ERR_INVALID_PACKET;
-            }
+
             PAYLOAD_DATA *stData = new PAYLOAD_DATA;
             stData->wSize = ucPayloadOffset;
             memcpy(stData->bBuff, pbPacket + dwStart, stData->wSize);
@@ -162,9 +159,8 @@ DWORD CCaptionMain::AddTSPacket(BYTE *pbPacket)
             //全部貯まったはずなので解析作業に入る
 
             dwRet = ParseListData();
-            for (int i = 0; i < (int)m_PayloadList.size(); i++) {
+            for (int i = 0; i < (int)m_PayloadList.size(); i++)
                 SAFE_DELETE(m_PayloadList[i]);
-            }
             m_PayloadList.clear();
 
             if (dwRet == NO_ERR) {
@@ -210,31 +206,27 @@ DWORD CCaptionMain::AddTSPacket(BYTE *pbPacket)
                 DWORD dwSecSize = 0;
                 dwSecSize += (((DWORD)(stData->bBuff[4])) << 8 | stData->bBuff[5]) + 6;
                 m_dwNeedSize += dwSecSize;
-                if (stData->wSize < m_dwNeedSize) {
+                if (stData->wSize < m_dwNeedSize)
                     m_dwNowReadSize = stData->wSize;
-                } else {
+                else
                     m_dwNowReadSize += dwSecSize;
-                }
 
                 //まだ続きあり？
-                if (m_dwNeedSize<stData->wSize) {
+                if (m_dwNeedSize<stData->wSize)
                     if (stData->bBuff[m_dwNeedSize] == 0xFF) {
                         //後はNULLデータ
                         bNext = FALSE;
                         break;
                     }
-                }
             }
-        } else {
+        } else
             m_dwNowReadSize += stData->wSize;
-        }
 
         if (m_dwNeedSize <= m_dwNowReadSize || bNext == FALSE) {
             //全部貯まったので解析作業に入る
             dwRet = ParseListData();
-            for (int i = 0; i < (int)m_PayloadList.size(); i++) {
+            for (int i = 0; i < (int)m_PayloadList.size(); i++)
                 SAFE_DELETE(m_PayloadList[i]);
-            }
             m_PayloadList.clear();
         } else {
 
@@ -247,9 +239,9 @@ DWORD CCaptionMain::AddTSPacket(BYTE *pbPacket)
         }
     }
 
-    if (dwRet == NO_ERR || dwRet >= 20) {
+    if (dwRet == NO_ERR || dwRet >= 20)
         m_bAnalyz = TRUE;
-    }
+
 CREATE_DATA:
 
     return dwRet;
@@ -260,9 +252,8 @@ DWORD CCaptionMain::ParseListData(void)
     //まずバッファを作る
     BYTE *pbBuff = NULL;
     DWORD dwBuffSize = 0;
-    for (int i = 0; i < (int)m_PayloadList.size(); i++) {
+    for (int i = 0; i < (int)m_PayloadList.size(); i++)
         dwBuffSize += m_PayloadList[i]->wSize;
-    }
     pbBuff = new BYTE[dwBuffSize];
     DWORD dwReadBuff = 0;
     for (int i = 0; i < (int)m_PayloadList.size(); i++) {
@@ -284,15 +275,15 @@ DWORD CCaptionMain::ParseListData(void)
 
 DWORD CCaptionMain::ParseCaption(BYTE *pbBuff, DWORD dwSize)
 {
-    if (pbBuff == NULL || dwSize < 3) {
+    if (pbBuff == NULL || dwSize < 3)
         return ERR_INVALID_PACKET;
-    }
-    if (pbBuff[0] != 0x80 && pbBuff[0] != 0x81) {
+
+    if (pbBuff[0] != 0x80 && pbBuff[0] != 0x81)
         return ERR_INVALID_PACKET;
-    }
-    if (pbBuff[1] != 0xFF) {
+
+    if (pbBuff[1] != 0xFF)
         return ERR_INVALID_PACKET;
-    }
+
     unsigned char ucHeadSize = pbBuff[2] & 0x0F;
 
     DWORD dwStartPos = 3 + ucHeadSize;
@@ -315,36 +306,28 @@ DWORD CCaptionMain::ParseCaption(BYTE *pbBuff, DWORD dwSize)
         //字幕管理
         vector<CAPTION_DATA> CaptionList;
         dwRet = ParseCaptionManagementData(pbBuff + dwStartPos, usDataGroupSize - 2, &CaptionList);
-        if (CaptionList.size() > 0) {
+        if (CaptionList.size() > 0)
             InsertCaptionList(ucDataGroupID,&CaptionList);
-        }
-        if (dwRet == NO_ERR) {
+        if (dwRet == NO_ERR)
             dwRet = NO_ERR_TAG_INFO;
-        }
     } else {
         //字幕データ
         vector<CAPTION_DATA> CaptionList;
         dwRet = ParseCaptionData(pbBuff + dwStartPos, usDataGroupSize - 2, &CaptionList);
-        if (CaptionList.size() > 0) {
+        if (CaptionList.size() > 0)
             InsertCaptionList(ucDataGroupID,&CaptionList);
-        }
-        if (dwRet == NO_ERR) {
+        if (dwRet == NO_ERR)
             dwRet = NO_ERR_CAPTION;
-        }
     }
-    if (bChg == TRUE) {
-        return CHANGE_VERSION;
-    } else {
-        return dwRet;
-    }
+    return (bChg == TRUE) ? CHANGE_VERSION : dwRet;
 }
 
 
 DWORD CCaptionMain::ParseCaptionManagementData(BYTE *pbBuff, DWORD dwSize, vector<CAPTION_DATA> *pCaptionList)
 {
-    if (pbBuff == NULL) {
+    if (pbBuff == NULL)
         return ERR_INVALID_PACKET;
-    }
+
     DWORD dwRet = NO_ERR;
     DWORD dwPos = 0;
     unsigned char ucTMD = pbBuff[dwPos] >> 6;
@@ -404,9 +387,8 @@ DWORD CCaptionMain::ParseCaptionManagementData(BYTE *pbBuff, DWORD dwSize, vecto
 
 DWORD CCaptionMain::ParseCaptionData(BYTE *pbBuff, DWORD dwSize, vector<CAPTION_DATA> *pCaptionList)
 {
-    if (pbBuff == NULL) {
+    if (pbBuff == NULL)
         return ERR_INVALID_PACKET;
-    }
 
     DWORD dwRet = NO_ERR;
     DWORD dwPos = 0;
@@ -446,26 +428,24 @@ DWORD CCaptionMain::ParseCaptionData(BYTE *pbBuff, DWORD dwSize, vector<CAPTION_
 
 DWORD CCaptionMain::ParseUnitData(BYTE *pbBuff, DWORD dwSize, DWORD *pdwReadSize, vector<CAPTION_DATA> *pCaptionList)
 {
-    if (pbBuff == NULL || dwSize < 5 || pdwReadSize == NULL) {
+    if (pbBuff == NULL || dwSize < 5 || pdwReadSize == NULL)
         return FALSE;
-    }
-    if (pbBuff[0] != 0x1F) {
+
+    if (pbBuff[0] != 0x1F)
         return FALSE;
-    }
 
     UINT uiUnitSize = ((UINT)(pbBuff[2])) << 16 | ((UINT)(pbBuff[3])) << 8 | pbBuff[4];
-    if (dwSize < 5 + uiUnitSize) {
+    if (dwSize < 5 + uiUnitSize)
         return FALSE;
-    }
+
     if (pbBuff[1] != 0x20) {
         //字幕文(本文)以外
-        if (pbBuff[1] == 0x30 || pbBuff[1] == 0x31) {
+        if (pbBuff[1] == 0x30 || pbBuff[1] == 0x31)
             //DRCS処理
             if (uiUnitSize > 0) {
                 CARIB8CharDecode cDec;
                 cDec.DRCSHeaderparse(pbBuff + 5, uiUnitSize, (pbBuff[1] == 0x31) ? TRUE : FALSE);
             }
-        }
         *pdwReadSize = uiUnitSize + 5;
         return TRUE;
     }
@@ -484,9 +464,8 @@ BOOL CCaptionMain::InsertCaptionList(WORD wGroupID, vector<CAPTION_DATA> *pCapti
     WORD wID = wGroupID & 0x0F;
     map<WORD, CAPTION_LIST>::iterator itr;
     itr  = m_CaptionMap.find(wID);
-    if (itr != m_CaptionMap.end()) {
+    if (itr != m_CaptionMap.end())
         m_CaptionMap.erase(itr);
-    }
     CAPTION_LIST Item;
     Item.wGroupID = wID;
     Item.CaptionList = *pCaptionList;
@@ -497,9 +476,8 @@ BOOL CCaptionMain::InsertCaptionList(WORD wGroupID, vector<CAPTION_DATA> *pCapti
 DWORD CCaptionMain::GetTagInfo(vector<CCaptionMain::LANG_TAG_INFO> *pList)
 {
     map<WORD, LANG_TAG_INFO>::iterator itr;
-    for (itr = m_LangTagList.begin(); itr != m_LangTagList.end(); itr++) {
+    for (itr = m_LangTagList.begin(); itr != m_LangTagList.end(); itr++)
         pList->push_back(itr->second);
-    }
     return TRUE;
 }
 
@@ -507,9 +485,8 @@ DWORD CCaptionMain::GetCaptionData(unsigned char ucLangTag, vector<CAPTION_DATA>
 {
     map<WORD, CAPTION_LIST>::iterator itr;
     itr = m_CaptionMap.find(ucLangTag + 1);
-    if (itr != m_CaptionMap.end()) {
+    if (itr != m_CaptionMap.end())
         *pList = itr->second.CaptionList;
-    }
     return TRUE;
 }
 
@@ -519,9 +496,9 @@ DWORD CCaptionMain::GetTagInfo(LANG_TAG_INFO_DLL **ppList, DWORD *pdwListCount)
         SAFE_DELETE_ARRAY(m_pLangList);
         m_dwLangListCount = 0;
     }
-    if (ppList == NULL || pdwListCount == NULL) {
+    if (ppList == NULL || pdwListCount == NULL)
         return FALSE;
-    }
+
     vector<CCaptionMain::LANG_TAG_INFO> List;
     DWORD dwRet = GetTagInfo(&List);
     if (List.size() > 0) {
@@ -538,27 +515,25 @@ DWORD CCaptionMain::GetTagInfo(LANG_TAG_INFO_DLL **ppList, DWORD *pdwListCount)
         }
         *pdwListCount = m_dwLangListCount;
         *ppList = m_pLangList;
-    } else {
-        return FALSE;
+
+        return dwRet;
     }
-    return dwRet;
+    return FALSE;
 }
 
 DWORD CCaptionMain::GetCaptionData(unsigned char ucLangTag, CAPTION_DATA_DLL **ppList, DWORD *pdwListCount)
 {
     if (m_pCapList != NULL) {
         for (DWORD i = 0; i < m_dwCapListCount; i++) {
-            for (DWORD j = 0; j < m_pCapList[i].dwListCount; j++) {
+            for (DWORD j = 0; j < m_pCapList[i].dwListCount; j++)
                 SAFE_DELETE(m_pCapList[i].pstCharList[j].pszDecode);
-            }
             SAFE_DELETE_ARRAY(m_pCapList[i].pstCharList);
         }
         SAFE_DELETE_ARRAY(m_pCapList);
         m_dwCapListCount = 0;
     }
-    if (ppList == NULL || pdwListCount == NULL) {
+    if (ppList == NULL || pdwListCount == NULL)
         return FALSE;
-    }
 
     vector<CAPTION_DATA> List;
     DWORD dwRet = GetCaptionData(ucLangTag, &List);
@@ -573,9 +548,8 @@ DWORD CCaptionMain::GetCaptionData(unsigned char ucLangTag, CAPTION_DATA_DLL **p
                     m_pCapList[i].pstCharList[j].pszDecode = new char[List[i].CharList[j].strDecode.length() + 1];
                     ZeroMemory(m_pCapList[i].pstCharList[j].pszDecode, List[i].CharList[j].strDecode.length() + 1);
                     strcpy_s(m_pCapList[i].pstCharList[j].pszDecode, List[i].CharList[j].strDecode.length() + 1, List[i].CharList[j].strDecode.c_str());
-                } else {
+                } else
                     m_pCapList[i].pstCharList[j].pszDecode = NULL;
-                }
 
                 m_pCapList[i].pstCharList[j].wCharSizeMode = (DWORD)List[i].CharList[j].emCharSizeMode;
                 m_pCapList[i].pstCharList[j].stCharColor.ucAlpha = List[i].CharList[j].stCharColor.ucAlpha;
@@ -614,8 +588,8 @@ DWORD CCaptionMain::GetCaptionData(unsigned char ucLangTag, CAPTION_DATA_DLL **p
         }
         *pdwListCount = m_dwCapListCount;
         *ppList = m_pCapList;
-    } else {
-        return FALSE;
+
+        return dwRet;
     }
-    return dwRet;
+    return FALSE;
 }

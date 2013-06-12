@@ -83,11 +83,11 @@ ERROR_PARAM:
             if (i > argc)
                 goto ERROR_PARAM;
             _tcscpy_s(cp->ass_type, string_length, argv[i]);
-        } else if (_tcsicmp(argv[i], _T("-log")) == 0) {
+        } else if (_tcsicmp(argv[i], _T("-log")) == 0)
             cp->LogMode = TRUE;
-        } else if (_tcsicmp(argv[i], _T("-srtornament")) == 0) {
+        else if (_tcsicmp(argv[i], _T("-srtornament")) == 0)
             cp->srtornament = TRUE;
-        } else if (_tcsicmp(argv[i], _T("-hlc")) == 0) {
+        else if (_tcsicmp(argv[i], _T("-hlc")) == 0) {
             i++;
             if (i > argc)
                 goto ERROR_PARAM;
@@ -99,22 +99,21 @@ ERROR_PARAM:
                 cp->HLCmode = HLC_draw;
             else
                 goto ERROR_PARAM;
-        } else if (_tcsicmp(argv[i], _T("-norubi")) == 0) {
+        } else if (_tcsicmp(argv[i], _T("-norubi")) == 0)
             cp->norubi = TRUE;
-        } else if (_tcsicmp(argv[i], _T("-detect_length")) == 0) {
+        else if (_tcsicmp(argv[i], _T("-detect_length")) == 0) {
             i++;
             if (i > argc)
                 goto ERROR_PARAM;
             if (_stscanf_s(argv[i], _T("%d"), &cp->detectLength) < 0)
                 goto ERROR_PARAM;
             cp->detectLength *= 10000;
-        } else if (_tcsicmp(cp->FileName, _T("")) == 0) {
+        } else if (_tcsicmp(cp->FileName, _T("")) == 0)
             _tcscpy_s(cp->FileName, string_length, argv[i]);
-        } else if (_tcsicmp(cp->TargetFileName1, _T("")) == 0) {
+        else if (_tcsicmp(cp->TargetFileName1, _T("")) == 0)
             _tcscpy_s(cp->TargetFileName1, string_length, argv[i]);
-        } else if (_tcsicmp(cp->TargetFileName2, _T("")) == 0) {
+        else if (_tcsicmp(cp->TargetFileName2, _T("")) == 0)
             _tcscpy_s(cp->TargetFileName2, string_length, argv[i]);
-        }
     }
     return 0;
 }
@@ -141,6 +140,7 @@ extern void _tMyPrintf(IN  LPCTSTR tracemsg, ...)
         }
     }
     __finally {
+        ;
     }
 
     return;

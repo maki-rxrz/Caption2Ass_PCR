@@ -57,7 +57,7 @@ extern long long GetPTS(BYTE *pbPacket)
 {
     long long PTS = 0;
     // Get PTS in PES Header(00 00 01 BD)
-    for (int i = 4; i < 188 - 10; i++) {
+    for (int i = 4; i < 188 - 10; i++)
         if (pbPacket[i + 0] == 0x00
          && pbPacket[i + 1] == 0x00
          && pbPacket[i + 2] == 0x01
@@ -83,7 +83,7 @@ extern long long GetPTS(BYTE *pbPacket)
 
             return PTS;
         }
-    }
+
     return 0;
 }
 
@@ -98,9 +98,8 @@ extern void parse_PAT(BYTE *pbPacket, USHORT *PMTPid)
             break;
         _tMyPrintf(_T("Program %d, PID: %03x\r\n"), wProgramID, wPID);
 
-        if (wProgramID != 0 && *PMTPid == 0) {   //the first PMTPid found
+        if (wProgramID != 0 && *PMTPid == 0)    //the first PMTPid found
             *PMTPid = wPID;
-        }
     }
 
     _tMyPrintf(_T("Set PMT_PID to %x\r\n"), *PMTPid);
@@ -113,9 +112,8 @@ extern void parse_PMT(BYTE *pbPacket, USHORT *PCRPid, USHORT *CaptionPid)
 {
     PMT_HEADER *pmt = (PMT_HEADER *)(pbPacket + sizeof(_Packet_Header) + 1);
 
-    if (*PCRPid == 0) {
+    if (*PCRPid == 0)
         *PCRPid = swap16(pmt->pcrpid) & 0x1FFF;
-    }
 
     INT length = swap16(pmt->program_info_length) & 0x0FFF;
     BYTE *pData = (BYTE *)&pmt->program_info_length + 2;

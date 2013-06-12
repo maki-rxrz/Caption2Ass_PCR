@@ -72,39 +72,33 @@ static int count_UTF8(const unsigned char *string)
     int len = 0;
 
     while (*string) {
-        if (string[0] == 0x00) {
+        if (string[0] == 0x00)
             break;
-        }
+
         if (string[0] < 0x1f || string[0] == 0x7f) {
             // 制御コード
         } else {
-            if (string[0] <= 0x7f) {
+            if (string[0] <= 0x7f)
                 ++len; // 1バイト文字
-            } else if (string[0] <= 0xbf) {
+            else if (string[0] <= 0xbf)
                 ; // 文字の続き
-            } else if (string[0] <= 0xdf) {
+            else if (string[0] <= 0xdf) {
                 ++len; // 2バイト文字
                 ++len; // 2バイト文字
-                if ((string[0] == 0xc2) && (string[1] == 0xa5)) {
+                if ((string[0] == 0xc2) && (string[1] == 0xa5))
                     --len; // 2バイト文字
-                }
             } else if (string[0] <= 0xef) {
                 ++len; // 3バイト文字
                 ++len; // 3バイト文字
-                if ((string[0] == 0xe2) && (string[1] == 0x80) && (string[2] == 0xbe)) {
+                if ((string[0] == 0xe2) && (string[1] == 0x80) && (string[2] == 0xbe))
                     --len; // 2バイト文字
-                }
                 if (string[0] == 0xef) {
-                    if (string[1] == 0xbd) {
-                        if ((string[2] >= 0xa1) && (string[2] == 0xbf)) {
+                    if (string[1] == 0xbd)
+                        if ((string[2] >= 0xa1) && (string[2] == 0xbf))
                             --len; // 2バイト文字
-                        }
-                    }
-                    if (string[1] == 0xbe) {
-                        if ((string[2] >= 0x80) && (string[2] == 0x9f)) {
+                    if (string[1] == 0xbe)
+                        if ((string[2] >= 0x80) && (string[2] == 0x9f))
                             --len; // 2バイト文字
-                        }
-                    }
                 }
             } else if (string[0] <= 0xf7) {
                 ++len; // 4バイト文字
@@ -115,9 +109,8 @@ static int count_UTF8(const unsigned char *string)
             } else if (string[0] <= 0xfd) {
                 ++len; // 6バイト文字
                 ++len; // 6バイト文字
-            } else {
+            } else
                 ; // 使われていない範囲
-            }
         }
         ++string;
     }
@@ -170,31 +163,29 @@ static void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS, app_handler_t 
             int iBoxScaleY = 100;   //*((*it)->outCharH + (*it)->outCharVInterval) / (*it)->outCharH;
             fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\3c&H%06x&\\p1}m 0 0 l %d 0 %d %d 0 %d{\\p0}\r\n", sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, (*it)->outCharColor, iBoxScaleX, iBoxScaleX, iBoxScaleY, iBoxScaleY);
         }
-        if ((*it)->outCharSizeMode == STR_SMALL) {
+        if ((*it)->outCharSizeMode == STR_SMALL)
             fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Rubi,,0000,0000,0000,,{\\pos(%d,%d)", sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX, (*it)->outPosY);
-        } else {
+        else
             fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Default,,0000,0000,0000,,{\\pos(%d,%d)", sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX, (*it)->outPosY);
-        }
-        if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff) {
+
+        if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff)
             fprintf(fp, "\\c&H%06x&", (*it)->outCharColor);
-        }
-        if ((*it)->outUnderLine) {
+        if ((*it)->outUnderLine)
             fprintf(fp, "\\u1");
-        }
-        if ((*it)->outBold) {
+        if ((*it)->outBold)
             fprintf(fp, "\\b1");
-        }
-        if ((*it)->outItalic) {
+        if ((*it)->outItalic)
             fprintf(fp, "\\i1");
-        }
         fprintf(fp, "}");
 
         if (((*it)->outCharSizeMode == STR_SMALL) && (app->norubi)) {
             fprintf(fp, "\\N");
         } else {
-            if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_kigou)) fprintf(fp, "[");
+            if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_kigou))
+                fprintf(fp, "[");
             fwrite((*it)->str.c_str(), (*it)->str.size(), 1, fp);
-            if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_kigou)) fprintf(fp, "]");
+            if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_kigou))
+                fprintf(fp, "]");
             fprintf(fp, "\\N");
         }
         fprintf(fp, "\r\n");
@@ -225,47 +216,36 @@ static void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS, app_handler_t 
             continue;
         bNoSRT = FALSE;
         if ((*it)->outornament) {
-            if ((*it)->outItalic) {
+            if ((*it)->outItalic)
                 fprintf(fp, "<i>");
-            }
-            if ((*it)->outBold) {
+            if ((*it)->outBold)
                 fprintf(fp, "<b>");
-            }
-            if ((*it)->outUnderLine) {
+            if ((*it)->outUnderLine)
                 fprintf(fp, "<u>");
-            }
-            if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff) {
+            if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff)
                 fprintf(fp, "<font color=\"#%02x%02x%02x\">", (*it)->outCharColor.ucR, (*it)->outCharColor.ucG, (*it)->outCharColor.ucB);
-            }
         }
-        if ((*it)->outHLC != 0) {
+        if ((*it)->outHLC != 0)
             fprintf(fp, "[");
-        }
         fwrite((*it)->str.c_str(), (*it)->str.size(), 1, fp);
-        if ((*it)->outHLC != 0) {
+        if ((*it)->outHLC != 0)
             fprintf(fp, "]");
-        }
         if ((*it)->outornament) {
-            if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff) {
+            if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff)
                 fprintf(fp, "</font>");
-            }
-            if ((*it)->outUnderLine) {
+            if ((*it)->outUnderLine)
                 fprintf(fp, "</u>");
-            }
-            if ((*it)->outBold) {
+            if ((*it)->outBold)
                 fprintf(fp, "</b>");
-            }
-            if ((*it)->outItalic) {
+            if ((*it)->outItalic)
                 fprintf(fp, "</i>");
-            }
         }
         fprintf(fp, "\r\n");
     }
 
     if (list->size() > 0) {
-        if (bNoSRT) {
+        if (bNoSRT)
             fprintf(fp, "\r\n");
-        }
         fprintf(fp, "\r\n");
         ++(app->srtIndex);
     }
@@ -314,9 +294,8 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
             // 字幕のスキップをチェック
             if ((app->basePTS + app->lastPTS + it->dwWaitTime) <= app->startPCR) {
                 _tMyPrintf(_T("%d Caption skip\r\n"), srtList->size());
-                if (app->fpLogFile) {
+                if (app->fpLogFile)
                     fprintf(app->fpLogFile, "%d Caption skip\r\n", srtList->size());
-                }
                 srtList->clear();
                 continue;
             }
@@ -383,8 +362,7 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
                 workBold = it2->bBold;
                 workItalic = it2->bItalic;
                 workFlushMode = it2->bFlushMode;
-                workHLC = it2->bHLC;
-                if (it2->bHLC != 0) workHLC = cp->HLCmode;
+                workHLC = (it2->bHLC != 0) ? workHLC = cp->HLCmode : it2->bHLC;
                 workCharW = it2->wCharW;
                 workCharH = it2->wCharH;
                 workCharHInterval = it2->wCharHInterval;
@@ -416,11 +394,10 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
                     workPosY = (int)((float)(it->wPosY + offsetPosY + 0 + as->SWF7offset) * ratioY);
                 } else if (wLastSWFMode == 9) {
                     workPosX = (int)((float)(it->wPosX + offsetPosX) * ratioX);
-                    if (app->bUnicode) {
+                    if (app->bUnicode)
                         workPosY = (int)((float)(it->wPosY + offsetPosY + as->SWF9offset) * ratioY);
-                    } else {
+                    else
                         workPosY = (int)((float)(it->wPosY + offsetPosY - 50 + as->SWF9offset) * ratioY);
-                    }
                 } else if (wLastSWFMode == 11) {
                     workPosX = (int)((float)(it->wPosX + offsetPosX) * ratioX);
                     workPosY = (int)((float)(it->wPosY + offsetPosY - 0 + as->SWF11offset) * ratioY);
@@ -429,25 +406,26 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
                     workPosY = it->wPosY + offsetPosY;
                 }
                 workPosX -= app->sidebar_size;
-                if (workPosX < 0) {
+                if (workPosX < 0)
                     workPosX = 0;
-                }
 
                 // ふりがな Skip
                 // ふりがな Skip は 出力時に
-                if ((it2->emCharSizeMode == STR_SMALL) &&  (!(app->bUnicode))) {
+                if ((it2->emCharSizeMode == STR_SMALL) &&  (!(app->bUnicode)))
                     workPosY += (int)(10 * ratioY);
-                }
-                if ((it2->emCharSizeMode == STR_MEDIUM) &&  (!(app->bUnicode))) {
+                if ((it2->emCharSizeMode == STR_MEDIUM) &&  (!(app->bUnicode)))
                     // 全角 -> 半角
                     it2->strDecode = GetHalfChar(it2->strDecode);
-                }
 
                 if (app->fpLogFile) {
-                    if (it2->bUnderLine) fprintf(app->fpLogFile, "UnderLine : on\r\n");
-                    if (it2->bBold) fprintf(app->fpLogFile, "Bold : on\r\n");
-                    if (it2->bItalic) fprintf(app->fpLogFile, "Italic : on\r\n");
-                    if (it2->bHLC != 0) fprintf(app->fpLogFile, "HLC : on\r\n");
+                    if (it2->bUnderLine)
+                        fprintf(app->fpLogFile, "UnderLine : on\r\n");
+                    if (it2->bBold)
+                        fprintf(app->fpLogFile, "Bold : on\r\n");
+                    if (it2->bItalic)
+                        fprintf(app->fpLogFile, "Italic : on\r\n");
+                    if (it2->bHLC != 0)
+                        fprintf(app->fpLogFile, "HLC : on\r\n");
                     fprintf(app->fpLogFile, "Color : %#.X   ", it2->stCharColor);
                     fprintf(app->fpLogFile, "Char M,W,H,HI,VI : %4d, %4d, %4d, %4d, %4d   ", it2->emCharSizeMode , it2->wCharW, it2->wCharH,  it2->wCharHInterval,  it2->wCharVInterval);
                     fprintf(app->fpLogFile, "%s\r\n", it2->strDecode.c_str());
@@ -456,9 +434,9 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
                 WCHAR str[1024] = { 0 };
                 CHAR strUTF8_2[1024] = { 0 };
 
-                if ((cp->format == FORMAT_TAW) || (app->bUnicode)) {
+                if ((cp->format == FORMAT_TAW) || (app->bUnicode))
                     strcat_s(strUTF8, 1024, it2->strDecode.c_str());
-                } else {
+                else {
                     // CP 932 to UTF-8
                     MultiByteToWideChar(932, 0, it2->strDecode.c_str(), -1, str, 1024);
                     WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8_2, 1024, NULL, NULL);
@@ -562,9 +540,9 @@ int _tmain(int argc, _TCHAR *argv[])
         if (_tcsicmp(pExt, _T(".ts")) == 0)
             not_specified = 1;
     }
-    if (not_specified) {
+    if (not_specified)
         _tcscpy_s(cp->TargetFileName1, string_length, cp->FileName);
-    }
+
     if ((cp->format == FORMAT_ASS) || (cp->format == FORMAT_DUAL)) {
         TCHAR *pExt = PathFindExtension(cp->TargetFileName1);
         _tcscpy_s(pExt, 5, _T(".ass"));
@@ -674,21 +652,17 @@ int _tmain(int argc, _TCHAR *argv[])
         }
         if (app.fpLogFile) {
             if (packetCount < 100000) {
-                if ((packetCount % 10000) == 0) {
+                if ((packetCount % 10000) == 0)
                     fprintf(app.fpLogFile, "Process  %dw packets.\r\n", packetCount / 10000);
-                }
             } else if (packetCount < 1000000) {
-                if ((packetCount % 100000) == 0) {
+                if ((packetCount % 100000) == 0)
                     fprintf(app.fpLogFile, "Process  %dw packets.\r\n", packetCount / 10000);
-                }
             } else if (packetCount < 10000000) {
-                if ((packetCount % 1000000) == 0) {
+                if ((packetCount % 1000000) == 0)
                     fprintf(app.fpLogFile, "Process  %dw packets.\r\n", packetCount / 10000);
-                }
             } else {
-                if ((packetCount % 10000000) == 0) {
+                if ((packetCount % 10000000) == 0)
                     fprintf(app.fpLogFile, "Process  %dw packets.\r\n", packetCount / 10000);
-                }
             }
         }
 
@@ -718,17 +692,15 @@ int _tmain(int argc, _TCHAR *argv[])
         // PMT
         if (pi->PMTPid != 0 && packet.PID == pi->PMTPid) {
             if (0x2b == (pbPacket[5] << 4) + ((pbPacket[6] & 0xf0) >> 4)) {
-            } else {
+                ;
+            } else
                 continue; // next packet
-            }
 
             parse_PMT(&pbPacket[0], &(pi->PCRPid), &(pi->CaptionPid));
 
-            if (app.fpLogFile) {
-                if (app.lastPTS == 0) {
+            if (app.fpLogFile)
+                if (app.lastPTS == 0)
                     fprintf(app.fpLogFile, "PMT, PCR, Caption : %04x, %04x, %04x\r\n", pi->PMTPid, pi->PCRPid, pi->CaptionPid);
-                }
-            }
 
             continue; // next packet
         }
@@ -737,13 +709,12 @@ int _tmain(int argc, _TCHAR *argv[])
 
         if (pi->PCRPid != 0 && packet.PID == pi->PCRPid) {
             DWORD bADP = (((DWORD)pbPacket[3] & 0x30) >> 4);
-            if (!(bADP & 0x2)) {
+            if (!(bADP & 0x2))
                 continue; // next packet
-            }
+
             DWORD bAF = (DWORD)pbPacket[5];
-            if (!(bAF & 0x10)) {
+            if (!(bAF & 0x10))
                 continue; // next packet
-            }
 
             /*     90kHz           27kHz
              *  +--------+-------+-------+
@@ -757,11 +728,9 @@ int _tmain(int argc, _TCHAR *argv[])
                     | ((DWORD)pbPacket[10] / 128);
             PCR = PCR / 90;
 
-            if (app.fpLogFile) {
-                if (app.lastPTS == 0) {
+            if (app.fpLogFile)
+                if (app.lastPTS == 0)
                     fprintf(app.fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n", PCR, app.startPCR, app.lastPCR, app.basePCR);
-                }
-            }
 
             if (app.startPCR == 0) {
                 app.startPCR = PCR - cp->DelayTime;
@@ -790,50 +759,48 @@ int _tmain(int argc, _TCHAR *argv[])
             if (packet.PayloadStartFlag) {
                 PTS = GetPTS(pbPacket);
 
-                if (app.fpLogFile) {
+                if (app.fpLogFile)
                     fprintf(app.fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ", PTS, app.lastPTS, app.basePTS, app.startPCR);
-                }
-                if ((PTS > 0) && (app.lastPTS == 0) && (PTS < app.lastPCR) && ((app.lastPCR - PTS) > (0x0FFFFFFFF / 90))) {
+
+                if ((PTS > 0) && (app.lastPTS == 0) && (PTS < app.lastPCR) && ((app.lastPCR - PTS) > (0x0FFFFFFFF / 90)))
                     app.startPCR -= WRAP_AROUND_VALUE / 90;
-                }
-                if (PTS == 0) {
+
+                if (PTS == 0)
                     PTS = app.lastPTS;
-                }
+
                 if (PTS < app.lastPTS) {
                     app.basePTS += WRAP_AROUND_VALUE / 90;
                     app.lastPTS = PTS;
-                } else {
+                } else
                     app.lastPTS = PTS;
-                }
+
                 PTS = PTS + app.basePTS;
-                if ((PTS - app.startPCR) <= 0) {
+                if ((PTS - app.startPCR) <= 0)
                     PTS = app.startPCR;
-                }
 
                 unsigned short sH, sM, sS, sMs;
                 HMS(PTS - app.startPCR, sH, sM, sS, sMs);
 
                 _tMyPrintf(_T("Caption Time: %01d:%02d:%02d.%03d\r\n"), sH, sM, sS, sMs);
 
-                if (app.fpLogFile) {
+                if (app.fpLogFile)
                     fprintf(app.fpLogFile, "1st Caption Time: %01d:%02d:%02d.%03d\r\n", sH, sM, sS, sMs);
-                }
+
             } else {
                 PTS = GetPTS(pbPacket);
-                if (app.fpLogFile) {
+                if (app.fpLogFile)
                     fprintf(app.fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ", PTS, app.lastPTS, app.basePTS, app.startPCR);
-                }
-                if (!PTS) {
+
+                if (!PTS)
                     PTS = app.lastPTS;
-                }
+
                 PTS = PTS + app.basePTS;
 
                 unsigned short sH, sM, sS, sMs;
                 HMS(PTS - app.startPCR, sH, sM, sS, sMs);
 
-                if (app.fpLogFile) {
+                if (app.fpLogFile)
                     fprintf(app.fpLogFile, "2nd Caption Time: %01d:%02d:%02d.%03d\r\n", sH, sM, sS, sMs);
-                }
             }
 
             // Parse caption.
@@ -841,9 +808,8 @@ int _tmain(int argc, _TCHAR *argv[])
             if (ret == CHANGE_VERSION) {
                 std::vector<LANG_TAG_INFO> tagInfoList;
                 ret = capUtil.GetTagInfo(&tagInfoList);
-            } else if (ret == NO_ERR_CAPTION) {
+            } else if (ret == NO_ERR_CAPTION)
                 output_caption(param, &app, &capUtil, &srtList, PTS);
-            }
         }
 
     }
@@ -861,9 +827,8 @@ EXIT:
     if ((app.assIndex == 1) && (app.srtIndex == 1)) {
         Sleep(2000);
         remove(cp->TargetFileName1);
-        if (cp->format == FORMAT_DUAL) {
+        if (cp->format == FORMAT_DUAL)
             remove(cp->TargetFileName2);
-        }
     }
 
     SAFE_DELETE(param);

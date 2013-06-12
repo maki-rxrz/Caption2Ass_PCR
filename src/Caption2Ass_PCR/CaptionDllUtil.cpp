@@ -19,9 +19,8 @@ CCaptionDllUtil::~CCaptionDllUtil(void)
 
 BOOL CCaptionDllUtil::LoadDll(void)
 {
-    if (m_hModule != NULL) {
+    if (m_hModule != NULL)
         return FALSE;
-    }
 
     pfnInitializeCP = NULL;
     pfnUnInitializeCP = NULL;
@@ -34,9 +33,8 @@ BOOL CCaptionDllUtil::LoadDll(void)
 
     m_hModule = ::LoadLibrary(_T("Caption.dll"));
 
-    if (m_hModule == NULL) {
+    if (m_hModule == NULL)
         return FALSE;
-    }
 
     pfnInitializeCP = (InitializeCP)(::GetProcAddress(m_hModule, "InitializeCP"));
     if (!pfnInitializeCP) {
@@ -90,38 +88,33 @@ BOOL CCaptionDllUtil::UnLoadDll(void)
 BOOL CCaptionDllUtil::CheckUNICODE(void)
 {
     pfnInitializeUNICODE = NULL;
-    if (m_hModule == NULL) {
-        if (LoadDll() == FALSE) {
+    if (m_hModule == NULL)
+        if (LoadDll() == FALSE)
             return FALSE;
-        }
-    }
+
     pfnInitializeUNICODE = (InitializeUNICODECP)(::GetProcAddress(m_hModule, "InitializeUNICODE"));
-    if (!pfnInitializeUNICODE) {
+    if (!pfnInitializeUNICODE)
         return FALSE;
-    }
     return TRUE;
 }
 DWORD CCaptionDllUtil::InitializeUNICODE(void)
 {
-    if (!pfnInitializeUNICODE) {
+    if (!pfnInitializeUNICODE)
         return ERR_INIT;
-    }
     return pfnInitializeUNICODE();
 }
 
 DWORD CCaptionDllUtil::Initialize(void)
 {
-    if (!pfnInitializeCP) {
+    if (!pfnInitializeCP)
         return ERR_INIT;
-    }
     return pfnInitializeCP();
 }
 
 DWORD CCaptionDllUtil::UnInitialize(void)
 {
-    if (m_hModule == NULL) {
+    if (m_hModule == NULL)
         return ERR_INIT;
-    }
     DWORD dwRet = pfnUnInitializeCP();
     UnLoadDll();
     return dwRet;
@@ -129,50 +122,42 @@ DWORD CCaptionDllUtil::UnInitialize(void)
 
 DWORD CCaptionDllUtil::AddTSPacket(BYTE* pbPacket)
 {
-    if (m_hModule == NULL) {
+    if (m_hModule == NULL)
         return ERR_INIT;
-    }
     return pfnAddTSPacketCP(pbPacket);
 }
 
 DWORD CCaptionDllUtil::Clear(void)
 {
-    if (m_hModule == NULL) {
+    if (m_hModule == NULL)
         return ERR_INIT;
-    }
-
     return pfnClearCP();
 }
 
 DWORD CCaptionDllUtil::GetTagInfo(LANG_TAG_INFO_DLL **ppList, DWORD *pdwListCount)
 {
-    if (m_hModule == NULL) {
+    if (m_hModule == NULL)
         return ERR_INIT;
-    }
-
     return pfnGetTagInfoCP(ppList, pdwListCount);
 }
 
 DWORD CCaptionDllUtil::GetCaptionData(unsigned char ucLangTag, CAPTION_DATA_DLL **ppList, DWORD *pdwListCount)
 {
-    if (m_hModule == NULL) {
+    if (m_hModule == NULL)
         return ERR_INIT;
-    }
-
     return pfnGetCaptionDataCP(ucLangTag, ppList, pdwListCount);
 }
 
 DWORD CCaptionDllUtil::GetTagInfo(vector<LANG_TAG_INFO> *pList)
 {
-    if (m_hModule == NULL) {
+    if (m_hModule == NULL)
         return ERR_INIT;
-    }
 
     LANG_TAG_INFO_DLL* pListDll;
     DWORD dwListCount;
 
     DWORD dwRet = pfnGetTagInfoCP(&pListDll,&dwListCount);
-    if (dwRet == TRUE) {
+    if (dwRet == TRUE)
         for (DWORD i = 0; i < dwListCount; i++) {
             LANG_TAG_INFO Item;
             Item.ucLangTag=pListDll[i].ucLangTag;
@@ -184,20 +169,20 @@ DWORD CCaptionDllUtil::GetTagInfo(vector<LANG_TAG_INFO> *pList)
             Item.ucRollupMode = pListDll[i].ucRollupMode;
             pList->push_back(Item);
         }
-    }
+
     return dwRet;
 }
 
 DWORD CCaptionDllUtil::GetCaptionData(unsigned char ucLangTag, vector<CAPTION_DATA> *pList)
 {
-    if (m_hModule == NULL) {
+    if (m_hModule == NULL)
         return ERR_INIT;
-    }
+
     CAPTION_DATA_DLL* pListDll;
     DWORD dwListCount = 0;
 
     DWORD dwRet = pfnGetCaptionDataCP(ucLangTag, &pListDll, &dwListCount);
-    if (dwRet == TRUE) {
+    if (dwRet == TRUE)
         for (DWORD i = 0; i < dwListCount; i++) {
             CAPTION_DATA Item;
             Item.bClear = pListDll[i].bClear;
@@ -239,6 +224,6 @@ DWORD CCaptionDllUtil::GetCaptionData(unsigned char ucLangTag, vector<CAPTION_DA
             }
             pList->push_back(Item);
         }
-    }
+
     return dwRet;
 }

@@ -393,9 +393,9 @@ void CARIB8CharDecode::InitCaption(void)
 
 BOOL CARIB8CharDecode::Caption(const BYTE *pbSrc, DWORD dwSrcSize, vector<CAPTION_DATA> *pCaptionList)
 {
-    if (pbSrc == NULL || dwSrcSize == 0 || pCaptionList == NULL) {
+    if (pbSrc == NULL || dwSrcSize == 0 || pCaptionList == NULL)
         return FALSE;
-    }
+
     m_wSWFMode = 0;
     InitCaption();
     m_pCaptionList = pCaptionList;
@@ -406,9 +406,8 @@ BOOL CARIB8CharDecode::Caption(const BYTE *pbSrc, DWORD dwSrcSize, vector<CAPTIO
         DWORD dwReadSize = 0;
         BOOL bRet = Analyze(pbSrc + dwReadCount, dwSrcSize - dwReadCount, &dwReadSize);
         if (bRet == TRUE) {
-            if (m_strDecode.size() > 0) {
+            if (m_strDecode.size() > 0)
                 CheckModify();
-            }
         } else {
             pCaptionList->clear();
             break;
@@ -421,9 +420,9 @@ BOOL CARIB8CharDecode::Caption(const BYTE *pbSrc, DWORD dwSrcSize, vector<CAPTIO
 
 BOOL CARIB8CharDecode::IsSmallCharMode(void)
 {
-    if (m_bPSI == FALSE) {
+    if (m_bPSI == FALSE)
         return FALSE;
-    }
+
     BOOL bRet = FALSE;
     switch (m_emStrSize) {
     case STR_SMALL:
@@ -461,9 +460,9 @@ BOOL CARIB8CharDecode::IsSmallCharMode(void)
 
 BOOL CARIB8CharDecode::Analyze(const BYTE *pbSrc, DWORD dwSrcSize, DWORD *pdwReadSize)
 {
-    if (pbSrc == NULL || dwSrcSize == 0 || pdwReadSize == NULL) {
+    if (pbSrc == NULL || dwSrcSize == 0 || pdwReadSize == NULL)
         return FALSE;
-    }
+
     BOOL bRet = TRUE;
     DWORD dwReadSize = 0;
 
@@ -474,33 +473,31 @@ BOOL CARIB8CharDecode::Analyze(const BYTE *pbSrc, DWORD dwSrcSize, DWORD *pdwRea
             //C0制御コード
             bRet = C0(pbSrc + dwReadSize, &dwReadBuff);
             dwReadSize += dwReadBuff;
-            if (bRet == FALSE) {
+            if (bRet == FALSE)
                 return FALSE;
-            } else if (bRet == 2) {
+            else if (bRet == 2) {
                 bRet = TRUE;
                 break;
             }
         } else if (pbSrc[dwReadSize] > 0x20 && pbSrc[dwReadSize] < 0x7F) {
             //GL符号領域
-            if (GL(pbSrc + dwReadSize, &dwReadBuff) == FALSE) {
+            if (GL(pbSrc + dwReadSize, &dwReadBuff) == FALSE)
                 return FALSE;
-            }
             dwReadSize += dwReadBuff;
         } else if (pbSrc[dwReadSize] >= 0x7F && pbSrc[dwReadSize] <= 0xA0) {
             //C1制御コード
             bRet = C1(pbSrc + dwReadSize, &dwReadBuff);
             dwReadSize += dwReadBuff;
-            if (bRet == FALSE) {
+            if (bRet == FALSE)
                 return FALSE;
-            } else if (bRet == 2) {
+            else if (bRet == 2) {
                 bRet = TRUE;
                 break;
             }
         } else if (pbSrc[dwReadSize] > 0xA0 && pbSrc[dwReadSize] < 0xFF) {
             //GR符号領域
-            if (GR(pbSrc + dwReadSize, &dwReadBuff) == FALSE) {
+            if (GR(pbSrc + dwReadSize, &dwReadBuff) == FALSE)
                 return FALSE;
-            }
             dwReadSize += dwReadBuff;
         }
     }
@@ -512,9 +509,8 @@ BOOL CARIB8CharDecode::Analyze(const BYTE *pbSrc, DWORD dwSrcSize, DWORD *pdwRea
 BOOL CARIB8CharDecode::C0(const BYTE *pbSrc, DWORD *pdwReadSize)
 {
     m_bGaiji = FALSE;
-    if (pbSrc == NULL || pdwReadSize == NULL) {
+    if (pbSrc == NULL || pdwReadSize == NULL)
         return FALSE;
-    }
 
     DWORD dwReadSize = 0;
     DWORD dwReadBuff = 0;
@@ -525,20 +521,19 @@ BOOL CARIB8CharDecode::C0(const BYTE *pbSrc, DWORD *pdwReadSize)
     case 0x20:
         //SP 空白
         //空白は文字サイズの影響あり
-        if ((IsSmallCharMode() == FALSE) && (m_emStrSize != STR_MEDIUM)) {
+        if ((IsSmallCharMode() == FALSE) && (m_emStrSize != STR_MEDIUM))
             // "　"
             AddToString(SpaceTable[0], m_bGaiji);
-        } else {
+        else
             // ' '
             AddToString(SpaceTable[1], m_bGaiji);
-        }
         dwReadSize = 1;
         break;
     case 0x0D:
         //APR 改行
-        if (!m_bUnicode) {
-        m_strDecode += "\r\n";
-        } else {
+        if (!m_bUnicode)
+            m_strDecode += "\r\n";
+        else {
             CheckModify();
             m_wPosX = 0;
             m_wPosY += (m_wCharH + m_wCharVInterval);
@@ -560,34 +555,30 @@ BOOL CARIB8CharDecode::C0(const BYTE *pbSrc, DWORD *pdwReadSize)
         break;
     case 0x19:
         //SS2 シングルシフト
-        if (SS2(pbSrc + 1, &dwReadBuff) == FALSE) {
+        if (SS2(pbSrc + 1, &dwReadBuff) == FALSE)
             return FALSE;
-        }
         dwReadSize = 1 + dwReadBuff;
         break;
     case 0x1D:
         //SS3 シングルシフト
-        if (SS3(pbSrc + 1, &dwReadBuff) == FALSE) {
+        if (SS3(pbSrc + 1, &dwReadBuff) == FALSE)
             return FALSE;
-        }
         dwReadSize = 1 + dwReadBuff;
         break;
     case 0x1B:
         //ESC エスケープシーケンス
-        if (ESC(pbSrc + 1, &dwReadBuff) == FALSE) {
+        if (ESC(pbSrc + 1, &dwReadBuff) == FALSE)
             return FALSE;
-        }
         dwReadSize = 1 + dwReadBuff;
         break;
     case 0x16:
         //PAPF
         CheckModify();
         WORD m_wTmpCharW;
-        if (m_emStrSize == STR_SMALL || m_emStrSize == STR_MEDIUM) {
+        if (m_emStrSize == STR_SMALL || m_emStrSize == STR_MEDIUM)
             m_wTmpCharW = (m_wCharW + m_wCharHInterval) / 2;
-        } else {
+        else
             m_wTmpCharW = (m_wCharW + m_wCharHInterval);
-        }
         m_wPosX = m_wTmpPosX - m_wClientX;
         WORD CTLtmp;
         CTLtmp = (pbSrc[1] & 0x7F) - 0x40;
@@ -611,22 +602,18 @@ BOOL CARIB8CharDecode::C0(const BYTE *pbSrc, DWORD *pdwReadSize)
             // modified by odaru
             m_wPosY = 60 * (pbSrc[1] - 0x40) + 30;
             m_wPosX = m_wCharW * (pbSrc[2] - 0x40);
-            if (m_emStrSize == STR_SMALL || m_emStrSize == STR_MEDIUM) {
+            if (m_emStrSize == STR_SMALL || m_emStrSize == STR_MEDIUM)
                 m_wPosX=m_wPosX / 2;
-            }
 
-            if (m_emStrSize == STR_SMALL) {
+            if (m_emStrSize == STR_SMALL)
                 m_wPosY = 30 * (pbSrc[1] - 0x40);
-            }
         } else {
             m_wPosY = (m_wCharH + m_wCharVInterval) * (pbSrc[1] - 0x40 + 1);
             m_wPosX = (m_wCharW + m_wCharHInterval) * (pbSrc[2] - 0x40);
-            if (m_emStrSize == STR_SMALL || m_emStrSize == STR_MEDIUM) {
+            if (m_emStrSize == STR_SMALL || m_emStrSize == STR_MEDIUM)
                 m_wPosX = m_wPosX / 2;
-            }
-            if (m_emStrSize == STR_SMALL) {
+            if (m_emStrSize == STR_SMALL)
                 m_wPosY = m_wPosY / 2;
-            }
         }
         m_wTmpPosX = m_wClientX + m_wPosX;
 
@@ -639,9 +626,8 @@ BOOL CARIB8CharDecode::C0(const BYTE *pbSrc, DWORD *pdwReadSize)
             CAPTION_DATA Item;
             Item.bClear = TRUE;
             Item.dwWaitTime = m_dwWaitTime * 100;
-            if (m_pCaptionList != NULL) {
+            if (m_pCaptionList != NULL)
                 m_pCaptionList->push_back(Item);
-            }
             bRet = 2;
             m_dwWaitTime = 0;
         }
@@ -651,20 +637,20 @@ BOOL CARIB8CharDecode::C0(const BYTE *pbSrc, DWORD *pdwReadSize)
         {
             CheckModify();
             WORD m_wTmpCharW;
-            if (m_emStrSize == STR_SMALL || m_emStrSize == STR_MEDIUM) {
+            if (m_emStrSize == STR_SMALL || m_emStrSize == STR_MEDIUM)
                 m_wTmpCharW = (m_wCharW + m_wCharHInterval) / 2;
-            } else {
+            else
                 m_wTmpCharW = (m_wCharW + m_wCharHInterval);
-            }
+
             m_wPosX = m_wTmpPosX - m_wClientX;
-                if (m_wTmpPosX > (m_wMaxPosX - m_wTmpCharW)) {
-                    CheckModify();
-                    m_wPosX = 0;
-                    m_wPosY += (m_wCharH + m_wCharVInterval);
-                    m_wTmpPosX = m_wClientX;
-                }
-                m_wPosX += m_wTmpCharW;
-                m_wTmpPosX += m_wTmpCharW;
+            if (m_wTmpPosX > (m_wMaxPosX - m_wTmpCharW)) {
+                CheckModify();
+                m_wPosX = 0;
+                m_wPosY += (m_wCharH + m_wCharVInterval);
+                m_wTmpPosX = m_wClientX;
+            }
+            m_wPosX += m_wTmpCharW;
+            m_wTmpPosX += m_wTmpCharW;
             dwReadSize = 1;
         }
         break;
@@ -683,9 +669,9 @@ BOOL CARIB8CharDecode::C0(const BYTE *pbSrc, DWORD *pdwReadSize)
 BOOL CARIB8CharDecode::C1(const BYTE *pbSrc, DWORD *pdwReadSize)
 {
     m_bGaiji = FALSE;
-    if (pbSrc == NULL || pdwReadSize == NULL) {
+    if (pbSrc == NULL || pdwReadSize == NULL)
         return FALSE;
-    }
+
     DWORD dwReadSize = 0;
     DWORD dwReadBuff = 0;
 
@@ -751,19 +737,18 @@ BOOL CARIB8CharDecode::C1(const BYTE *pbSrc, DWORD *pdwReadSize)
         break;
     case 0x8B:
         //SZX 指定サイズ
-        if (pbSrc[1] == 0x60) {
+        if (pbSrc[1] == 0x60)
             m_emStrSize = STR_MICRO;
-        } else if (pbSrc[1] == 0x41) {
+        else if (pbSrc[1] == 0x41)
             m_emStrSize = STR_HIGH_W;
-        } else if (pbSrc[1] == 0x44) {
+        else if (pbSrc[1] == 0x44)
             m_emStrSize = STR_WIDTH_W;
-        } else if (pbSrc[1] == 0x45) {
+        else if (pbSrc[1] == 0x45)
             m_emStrSize = STR_W;
-        } else if (pbSrc[1] == 0x6B) {
+        else if (pbSrc[1] == 0x6B)
             m_emStrSize = STR_SPECIAL_1;
-        } else if (pbSrc[1] == 0x64) {
+        else if (pbSrc[1] == 0x64)
             m_emStrSize = STR_SPECIAL_2;
-        }
         dwReadSize = 2;
         break;
     case 0x90:
@@ -793,13 +778,12 @@ BOOL CARIB8CharDecode::C1(const BYTE *pbSrc, DWORD *pdwReadSize)
         break;
     case 0x91:
         //FLC フラッシング制御
-        if (pbSrc[1] == 0x40) {
+        if (pbSrc[1] == 0x40)
             m_bFlushMode = 1;
-        } else if (pbSrc[1] == 0x47) {
+        else if (pbSrc[1] == 0x47)
             m_bFlushMode = 2;
-        } else if (pbSrc[1] == 0x4F) {
+        else if (pbSrc[1] == 0x4F)
             m_bFlushMode = 0;
-        }
         dwReadSize = 2;
         break;
     case 0x93:
@@ -816,11 +800,11 @@ BOOL CARIB8CharDecode::C1(const BYTE *pbSrc, DWORD *pdwReadSize)
         //MACRO マクロ定義
         //未サポート
         {
-        DWORD dwCount = 0;
-        do{
-            dwCount++;
-        } while (pbSrc[dwCount] != 0x4F);
-        dwReadSize = dwCount;
+            DWORD dwCount = 0;
+            do {
+                dwCount++;
+            } while (pbSrc[dwCount] != 0x4F);
+            dwReadSize = dwCount;
         }
         break;
     case 0x97:
@@ -853,7 +837,7 @@ BOOL CARIB8CharDecode::C1(const BYTE *pbSrc, DWORD *pdwReadSize)
             dwReadSize = 3;
         } else {
             DWORD dwCount = 0;
-            do{
+            do {
                 dwCount++;
             } while (pbSrc[dwCount] != 0x43 && pbSrc[dwCount] != 0x40 && pbSrc[dwCount] != 0x41 && pbSrc[dwCount] != 0x42);
             dwReadSize = dwCount;
@@ -861,9 +845,8 @@ BOOL CARIB8CharDecode::C1(const BYTE *pbSrc, DWORD *pdwReadSize)
         break;
     case 0x9B:
         //CSI コントロールシーケンス
-        if (CSI(pbSrc, &dwReadBuff) == FALSE) {
+        if (CSI(pbSrc, &dwReadBuff) == FALSE)
             return FALSE;
-        }
         dwReadSize = dwReadBuff;
         break;
     default:
@@ -880,9 +863,8 @@ BOOL CARIB8CharDecode::C1(const BYTE *pbSrc, DWORD *pdwReadSize)
 BOOL CARIB8CharDecode::GL(const BYTE *pbSrc, DWORD *pdwReadSize)
 {
     m_bGaiji = FALSE;
-    if (pbSrc == NULL || pdwReadSize == NULL) {
+    if (pbSrc == NULL || pdwReadSize == NULL)
         return FALSE;
-    }
 
     DWORD dwReadSize = 0;
     if (m_GL->iMode == MF_MODE_G) {
@@ -893,13 +875,12 @@ BOOL CARIB8CharDecode::GL(const BYTE *pbSrc, DWORD *pdwReadSize)
         case MF_ASCII:
         case MF_PROP_ASCII:
             {
-                if ((IsSmallCharMode() == FALSE) && (m_emStrSize != STR_MEDIUM)) {
+                if ((IsSmallCharMode() == FALSE) && (m_emStrSize != STR_MEDIUM))
                     //全角なのでテーブルからSJISコード取得
                     AddToString(AsciiTable[pbSrc[0] - 0x21], m_bGaiji);
-                } else {
+                else
                     //半角なのでそのまま入れる
                     AddToString(HalfAsciiTable[pbSrc[0] - 0x21], m_bGaiji);
-                }
                 dwReadSize = 1;
             }
             break;
@@ -987,9 +968,8 @@ BOOL CARIB8CharDecode::GL(const BYTE *pbSrc, DWORD *pdwReadSize)
         case MF_KIGOU:
             //漢字
             {
-                if (ToSJIS(pbSrc[0], pbSrc[1]) == FALSE) {
+                if (ToSJIS(pbSrc[0], pbSrc[1]) == FALSE)
                     ToCustomFont(pbSrc[0], pbSrc[1]);
-                }
                 dwReadSize = 2;
             }
             break;
@@ -1060,14 +1040,12 @@ BOOL CARIB8CharDecode::GL(const BYTE *pbSrc, DWORD *pdwReadSize)
 
             string tmpDRCSChar = Get_dicCharcode_Char(DRCSCharCode);
             string tmpStr = tmpDRCSChar.substr(0, 4);
-            if (tmpStr != "[外:") {
+            if (tmpStr != "[外:")
                 m_bGaiji = TRUE;
-            }
             AddToString(tmpDRCSChar.c_str(), m_bGaiji);
             dwReadSize = m_GL->iByte;
-        } else {
+        } else
             dwReadSize = m_GL->iByte;
-        }
     }
 
     *pdwReadSize = dwReadSize;
@@ -1079,9 +1057,8 @@ BOOL CARIB8CharDecode::GL(const BYTE *pbSrc, DWORD *pdwReadSize)
 BOOL CARIB8CharDecode::GR(const BYTE *pbSrc, DWORD *pdwReadSize)
 {
     m_bGaiji = FALSE;
-    if (pbSrc == NULL || pdwReadSize == NULL) {
+    if (pbSrc == NULL || pdwReadSize == NULL)
         return FALSE;
-    }
 
     DWORD dwReadSize = 0;
     if (m_GR->iMode == MF_MODE_G) {
@@ -1090,13 +1067,12 @@ BOOL CARIB8CharDecode::GR(const BYTE *pbSrc, DWORD *pdwReadSize)
         case MF_ASCII:
         case MF_PROP_ASCII:
             {
-                if ((IsSmallCharMode() == FALSE) && (m_emStrSize != STR_MEDIUM)) {
+                if ((IsSmallCharMode() == FALSE) && (m_emStrSize != STR_MEDIUM))
                     //全角なのでテーブルからSJISコード取得
                     AddToString(AsciiTable[(pbSrc[0] & 0x7F) - 0x21], m_bGaiji);
-                } else {
+                else
                     //半角なのでそのまま入れる
                     AddToString(HalfAsciiTable[(pbSrc[0] & 0x7F) - 0x21], m_bGaiji);
-                }
                 dwReadSize = 1;
             }
             break;
@@ -1186,9 +1162,8 @@ BOOL CARIB8CharDecode::GR(const BYTE *pbSrc, DWORD *pdwReadSize)
         case MF_KIGOU:
             {
                 //漢字
-                if (ToSJIS((pbSrc[0] & 0x7F), (pbSrc[1] & 0x7F)) == FALSE) {
+                if (ToSJIS((pbSrc[0] & 0x7F), (pbSrc[1] & 0x7F)) == FALSE)
                     ToCustomFont((pbSrc[0] & 0x7F), (pbSrc[1] & 0x7F));
-                }
                 dwReadSize = 2;
             }
             break;
@@ -1259,14 +1234,12 @@ BOOL CARIB8CharDecode::GR(const BYTE *pbSrc, DWORD *pdwReadSize)
 
             string tmpDRCSChar = Get_dicCharcode_Char(DRCSCharCode);
             string tmpStr = tmpDRCSChar.substr(0, 4);
-            if (tmpStr != "[外:") {
+            if (tmpStr != "[外:")
                 m_bGaiji = TRUE;
-            }
             AddToString(tmpDRCSChar.c_str(), m_bGaiji);
             dwReadSize = m_GR->iByte;
-        } else {
+        } else
             dwReadSize = m_GR->iByte;
-        }
     }
 
     *pdwReadSize = dwReadSize;
@@ -1277,9 +1250,8 @@ BOOL CARIB8CharDecode::GR(const BYTE *pbSrc, DWORD *pdwReadSize)
 BOOL CARIB8CharDecode::ToSJIS(const BYTE bFirst, const BYTE bSecond)
 {
     m_bGaiji = FALSE;
-    if (bFirst >= 0x75 && bSecond >= 0x21) {
+    if (bFirst >= 0x75 && bSecond >= 0x21)
         return FALSE;
-    }
 
     unsigned char ucFirst = bFirst;
     unsigned char ucSecond = bSecond;
@@ -1287,18 +1259,16 @@ BOOL CARIB8CharDecode::ToSJIS(const BYTE bFirst, const BYTE bSecond)
     ucFirst = ucFirst - 0x21;
     if ((ucFirst & 0x01) == 0) {
         ucSecond += 0x1F;
-        if (ucSecond >= 0x7F) {
+        if (ucSecond >= 0x7F)
             ucSecond += 0x01;
-        }
-    } else {
+    } else
         ucSecond += 0x7E;
-    }
+
     ucFirst = ucFirst >> 1;
-    if (ucFirst >= 0x1F) {
+    if (ucFirst >= 0x1F)
         ucFirst += 0xC1;
-    } else {
+    else
         ucFirst += 0x81;
-    }
 
     char cDec[3] = "";
     cDec[0] = ucFirst;
@@ -1315,26 +1285,26 @@ BOOL CARIB8CharDecode::ToCustomFont(const BYTE bFirst, const BYTE bSecond)
     m_bGaiji = TRUE;
     string tmpGaiji = "";
     //  ARIB 追加漢字
-    if (0x7521 <= usSrc && usSrc <= 0x757E) {
+    if (0x7521 <= usSrc && usSrc <= 0x757E)
         tmpGaiji = GaijiTbl2[usSrc - 0x7521].strChar;
-    } else if (0x7621 <= usSrc && usSrc <= 0x764B) {
+    else if (0x7621 <= usSrc && usSrc <= 0x764B)
         tmpGaiji = GaijiTbl2[usSrc - 0x7621 + 94].strChar;
     //  ARIB 追加記号
-    } else if (0x7A21 <= usSrc && usSrc <= 0x7A7E) {
+    else if (0x7A21 <= usSrc && usSrc <= 0x7A7E)
         tmpGaiji = GaijiTable[usSrc - 0x7A20].strChar;
-    } else if (0x7B21 <= usSrc && usSrc <= 0x7B7E) {
+    else if (0x7B21 <= usSrc && usSrc <= 0x7B7E)
         tmpGaiji = GaijiTable[usSrc - 0x7B20 + 100].strChar;
-    } else if (0x7C21 <= usSrc && usSrc <= 0x7C7E) {
+    else if (0x7C21 <= usSrc && usSrc <= 0x7C7E)
         tmpGaiji = GaijiTable[usSrc - 0x7C20 + 200].strChar;
-    } else if (0x7D21 <= usSrc && usSrc <= 0x7D7E) {
+    else if (0x7D21 <= usSrc && usSrc <= 0x7D7E)
         tmpGaiji = GaijiTable[usSrc - 0x7D20 + 300].strChar;
-    } else if (0x7E21 <= usSrc && usSrc <= 0x7E7E) {
+    else if (0x7E21 <= usSrc && usSrc <= 0x7E7E)
         tmpGaiji = GaijiTable[usSrc - 0x7E20 + 400].strChar;
-    }
+
     if (tmpGaiji == "") {
-        if (GaijiTable[0].strChar != "") {
+        if (GaijiTable[0].strChar != "")
             tmpGaiji = GaijiTable[0].strChar;
-        } else {
+        else {
             m_bGaiji = FALSE;
             AddToString("・", m_bGaiji);
             return FALSE;
@@ -1346,34 +1316,34 @@ BOOL CARIB8CharDecode::ToCustomFont(const BYTE bFirst, const BYTE bSecond)
 
 BOOL CARIB8CharDecode::AddToString(const char *cDec, BOOL m_bGaiji)
 {
-    if ((m_wPosX == 0) && (m_wPosY == 0)) {
+    if ((m_wPosX == 0) && (m_wPosY == 0))
         m_wPosY = (m_wCharH + m_wCharVInterval);
-    }
+
     int wkLen = 256;
     CHAR cTmpDec[256] = { 0 };
     WCHAR str[256] = { 0 };
     CHAR strUTF8[256] = { 0 };
     string tmpcDec;
-    if (m_emStrSize == STR_MEDIUM) {
+    if (m_emStrSize == STR_MEDIUM)
         // 全角 -> 半角
         tmpcDec = GetHalfChar(cDec);
-    } else {
+    else
         tmpcDec = cDec;
-    }
+
     if ((m_bUnicode) && (!m_bGaiji)) {
         // CP 932 to UTF-8
         MultiByteToWideChar(932, 0, tmpcDec.c_str(), -1, str, wkLen);
         WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8, wkLen, NULL, NULL);
         strcpy_s(cTmpDec, wkLen, strUTF8);
-    } else {
+    } else
         strcpy_s(cTmpDec, wkLen, tmpcDec.c_str());
-    }
+
     WORD m_wTmpCharW;
-    if (m_emStrSize == STR_SMALL || m_emStrSize == STR_MEDIUM) {
+    if (m_emStrSize == STR_SMALL || m_emStrSize == STR_MEDIUM)
         m_wTmpCharW = (m_wCharW + m_wCharHInterval) / 2;
-    } else {
+    else
         m_wTmpCharW = (m_wCharW + m_wCharHInterval);
-    }
+
     m_wMaxPosX = m_wClientX + m_wClientW;
     if (m_bRPC) {
         if (m_wRPC == 0) {
@@ -1415,9 +1385,8 @@ BOOL CARIB8CharDecode::AddToString(const char *cDec, BOOL m_bGaiji)
 
 BOOL CARIB8CharDecode::ESC(const BYTE *pbSrc, DWORD *pdwReadSize)
 {
-    if (pbSrc == NULL) {
+    if (pbSrc == NULL)
         return FALSE;
-    }
 
     DWORD dwReadSize = 0;
     if (pbSrc[0] == 0x24) {
@@ -1605,9 +1574,9 @@ BOOL CARIB8CharDecode::SS2(const BYTE *pbSrc, DWORD *pdwReadSize)
     m_GL = &m_G2;
     //GL符号領域
     BOOL bRet = GL(pbSrc, pdwReadSize);
-    if (m_bModGL != FALSE) {
+    if (m_bModGL != FALSE)
         return bRet;
-    }
+
     if (bRet != FALSE) {
         //元に戻す
         m_GL = LastG;
@@ -1627,9 +1596,9 @@ BOOL CARIB8CharDecode::SS3(const BYTE *pbSrc, DWORD *pdwReadSize)
     m_GL = &m_G3;
     //GL符号領域
     BOOL bRet = GL(pbSrc, pdwReadSize);
-    if (m_bModGL != FALSE) {
+    if (m_bModGL != FALSE)
         return bRet;
-    }
+
     if (bRet != FALSE) {
         //元に戻す
         m_GL = LastG;
@@ -1642,12 +1611,12 @@ BOOL CARIB8CharDecode::SS3(const BYTE *pbSrc, DWORD *pdwReadSize)
 
 BOOL CARIB8CharDecode::CSI(const BYTE *pbSrc, DWORD *pdwReadSize)
 {
-    if (pbSrc == NULL || pdwReadSize == NULL) {
+    if (pbSrc == NULL || pdwReadSize == NULL)
         return FALSE;
-    }
+
     DWORD dwReadSize = 0;
 
-    do{
+    do {
         dwReadSize++;
     } while (pbSrc[dwReadSize] != 0x20);
     dwReadSize++;
@@ -1660,16 +1629,15 @@ BOOL CARIB8CharDecode::CSI(const BYTE *pbSrc, DWORD *pdwReadSize)
             WORD wParam = 0;
             for (DWORD i = 1; i < dwReadSize; i++) {
                 if (pbSrc[i] == 0x20) {
-                    if (bCharMode == FALSE) {
+                    if (bCharMode == FALSE)
                         m_wSWFMode = wParam;
-                    } else {
+                    else {
                         //未サポート
                     }
-                } else if (pbSrc[i] == 0x3B) {
+                } else if (pbSrc[i] == 0x3B)
                     bCharMode = TRUE;
-                } else {
+                else
                     wParam = wParam * 10 + (pbSrc[i] & 0x0F);
-                }
             }
         }
         break;
@@ -1678,11 +1646,10 @@ BOOL CARIB8CharDecode::CSI(const BYTE *pbSrc, DWORD *pdwReadSize)
         {
             WORD wParam = 0;
             for (DWORD i = 1; i < dwReadSize; i++) {
-                if (pbSrc[i] == 0x20) {
+                if (pbSrc[i] == 0x20)
                     m_bRasterColorIndex = (BYTE)wParam;
-                } else {
+                else
                     wParam = wParam * 10 + (pbSrc[i] & 0x0F);
-                }
             }
         }
         break;
@@ -1693,18 +1660,16 @@ BOOL CARIB8CharDecode::CSI(const BYTE *pbSrc, DWORD *pdwReadSize)
             WORD wParam = 0;
             for (DWORD i = 1; i < dwReadSize; i++) {
                 if (pbSrc[i] == 0x20) {
-                    if (bSeparate == FALSE) {
+                    if (bSeparate == FALSE)
                         m_wPosX = wParam;
-                    } else {
+                    else
                         m_wPosY = wParam;
-                    }
                 } else if (pbSrc[i] == 0x3B) {
                     bSeparate = TRUE;
                     m_wPosX = wParam;
                     wParam = 0;
-                } else {
+                } else
                     wParam = wParam * 10 + (pbSrc[i] & 0x0F);
-                }
             }
             m_wTmpPosX = m_wPosX;
             if (m_bUnicode) {
@@ -1720,25 +1685,21 @@ BOOL CARIB8CharDecode::CSI(const BYTE *pbSrc, DWORD *pdwReadSize)
             WORD wParam = 0;
             for (DWORD i = 1; i < dwReadSize; i++) {
                 if (pbSrc[i] == 0x20) {
-                    if (bSeparate == FALSE) {
+                    if (bSeparate == FALSE)
                         m_wClientW = wParam;
-                    } else {
+                    else
                         m_wClientH = wParam;
-                    }
                 } else if (pbSrc[i] == 0x3B) {
                     bSeparate = TRUE;
                     m_wClientW = wParam;
                     wParam = 0;
-                } else {
+                } else
                     wParam = wParam * 10 + (pbSrc[i] & 0x0F);
-                }
             }
-            if (m_wCharHInterval == 0) {
+            if (m_wCharHInterval == 0)
                 m_wCharHInterval = ((m_wClientW * 10) / 155) - 36;
-            }
-            if (m_wCharVInterval == 0) {
+            if (m_wCharVInterval == 0)
                 m_wCharVInterval = (m_wClientH / 8) - 36;
-            }
         }
         break;
     case 0x5F:
@@ -1748,18 +1709,16 @@ BOOL CARIB8CharDecode::CSI(const BYTE *pbSrc, DWORD *pdwReadSize)
             WORD wParam = 0;
             for (DWORD i = 1; i < dwReadSize; i++) {
                 if (pbSrc[i] == 0x20) {
-                    if (bSeparate == FALSE) {
+                    if (bSeparate == FALSE)
                         m_wClientX = wParam;
-                    } else {
+                    else
                         m_wClientY = wParam;
-                    }
                 } else if (pbSrc[i] == 0x3B) {
                     bSeparate = TRUE;
                     m_wClientX = wParam;
                     wParam = 0;
-                } else {
+                } else
                     wParam = wParam * 10 + (pbSrc[i] & 0x0F);
-                }
             }
         }
         break;
@@ -1770,18 +1729,16 @@ BOOL CARIB8CharDecode::CSI(const BYTE *pbSrc, DWORD *pdwReadSize)
             WORD wParam = 0;
             for (DWORD i = 1; i < dwReadSize; i++) {
                 if (pbSrc[i] == 0x20) {
-                    if (bSeparate == FALSE) {
+                    if (bSeparate == FALSE)
                         m_wCharW = wParam;
-                    } else {
+                    else
                         m_wCharH = wParam;
-                    }
                 } else if (pbSrc[i] == 0x3B) {
                     bSeparate = TRUE;
                     m_wCharW = wParam;
                     wParam = 0;
-                } else {
+                } else
                     wParam = wParam * 10 + (pbSrc[i] & 0x0F);
-                }
             }
         }
         break;
@@ -1790,11 +1747,10 @@ BOOL CARIB8CharDecode::CSI(const BYTE *pbSrc, DWORD *pdwReadSize)
         {
             WORD wParam = 0;
             for (DWORD i = 1; i < dwReadSize; i++) {
-                if (pbSrc[i] == 0x20) {
+                if (pbSrc[i] == 0x20)
                     m_wCharHInterval = wParam;
-                } else {
+                else
                     wParam = wParam * 10 + (pbSrc[i] & 0x0F);
-                }
             }
         }
         break;
@@ -1803,11 +1759,10 @@ BOOL CARIB8CharDecode::CSI(const BYTE *pbSrc, DWORD *pdwReadSize)
         {
             WORD wParam = 0;
             for (DWORD i = 1; i < dwReadSize; i++) {
-                if (pbSrc[i] == 0x20) {
+                if (pbSrc[i] == 0x20)
                     m_wCharVInterval = wParam;
-                } else {
+                else
                     wParam = wParam * 10 + (pbSrc[i] & 0x0F);
-                }
             }
         }
         break;
@@ -1838,20 +1793,16 @@ BOOL CARIB8CharDecode::CSI(const BYTE *pbSrc, DWORD *pdwReadSize)
             WORD wParam = 0;
             for (DWORD i = 1; i < dwReadSize; i++) {
                 if (pbSrc[i] == 0x20) {
-                    if (bSeparate == FALSE) {
-                        if (wParam == 0x02) {
+                    if (bSeparate == FALSE)
+                        if (wParam == 0x02)
                             m_bShadow = TRUE;
-                        }
-                    }
                 } else if (pbSrc[i] == 0x3B) {
                     bSeparate = TRUE;
-                    if (wParam == 0x02) {
+                    if (wParam == 0x02)
                         m_bShadow = TRUE;
-                    }
                     wParam = 0;
-                } else {
+                } else
                     wParam = wParam * 10 + (pbSrc[i] & 0x0F);
-                }
             }
         }
         break;
@@ -1864,17 +1815,16 @@ BOOL CARIB8CharDecode::CSI(const BYTE *pbSrc, DWORD *pdwReadSize)
                     if (wParam == 0) {
                         m_bBold = FALSE;
                         m_bItalic = FALSE;
-                    } else if (wParam == 1) {
+                    } else if (wParam == 1)
                         m_bBold = TRUE;
-                    } else if (wParam == 2) {
+                    else if (wParam == 2)
                         m_bItalic = TRUE;
-                    } else if (wParam == 3) {
+                    else if (wParam == 3) {
                         m_bBold = TRUE;
                         m_bItalic = TRUE;
                     }
-                } else {
+                } else
                     wParam = wParam * 10 + (pbSrc[i] & 0x0F);
-                }
             }
         }
         break;
@@ -1975,31 +1925,30 @@ void CARIB8CharDecode::CreateCaptionCharData(CAPTION_CHAR_DATA *pItem)
 
 BOOL CARIB8CharDecode::IsChgPos(void)
 {
-    if (m_pCaptionList == NULL || m_strDecode.length() == 0) {
+    if (m_pCaptionList == NULL || m_strDecode.length() == 0)
         return FALSE;
-    }
-    if (m_pCaptionList->size() == 0) {
+
+    if (m_pCaptionList->size() == 0)
         return TRUE;
-    }
+
     int iIndex = (int)m_pCaptionList->size() - 1;
-    if ((*m_pCaptionList)[iIndex].wClientH != m_wClientH) {
+    if ((*m_pCaptionList)[iIndex].wClientH != m_wClientH)
         return TRUE;
-    }
-    if ((*m_pCaptionList)[iIndex].wClientW != m_wClientW) {
+
+    if ((*m_pCaptionList)[iIndex].wClientW != m_wClientW)
         return TRUE;
-    }
-    if ((*m_pCaptionList)[iIndex].wClientX != m_wClientX) {
+
+    if ((*m_pCaptionList)[iIndex].wClientX != m_wClientX)
         return TRUE;
-    }
-    if ((*m_pCaptionList)[iIndex].wClientY != m_wClientY) {
+
+    if ((*m_pCaptionList)[iIndex].wClientY != m_wClientY)
         return TRUE;
-    }
-    if ((*m_pCaptionList)[iIndex].wPosX != m_wPosX) {
+
+    if ((*m_pCaptionList)[iIndex].wPosX != m_wPosX)
         return TRUE;
-    }
-    if ((*m_pCaptionList)[iIndex].wPosY != m_wPosY) {
+
+    if ((*m_pCaptionList)[iIndex].wPosY != m_wPosY)
         return TRUE;
-    }
 
     return FALSE;
 }
@@ -2009,16 +1958,15 @@ BOOL CARIB8CharDecode::IsChgPos(void)
 
 BOOL CARIB8CharDecode::DRCSHeaderparse(const BYTE *pbSrc, DWORD dwSrcSize, BOOL bDRCS_0)
 {
-    if (pbSrc == NULL || dwSrcSize == 0) {
+    if (pbSrc == NULL || dwSrcSize == 0)
         return FALSE;
-    }
 
     BYTE bNumberOfCode = pbSrc[0];
     DWORD dwRead = 1;
     for (int i = 0; i < bNumberOfCode; i++) {
-        if (dwSrcSize < dwRead + 3) {
+        if (dwSrcSize < dwRead + 3)
             return FALSE;
-        }
+
         WORD wDRCCode = (pbSrc[dwRead] << 8) | pbSrc[dwRead + 1];
     //  WORD wDRCCode = bDRCS_0 ? (pbSrc[dwRead] << 8) | pbSrc[dwRead + 1] :
     //                           ((pbSrc[dwRead] - MF_DRCS_0) << 8) | pbSrc[dwRead + 1];
@@ -2029,22 +1977,21 @@ BOOL CARIB8CharDecode::DRCSHeaderparse(const BYTE *pbSrc, DWORD dwSrcSize, BOOL 
         BOOL bFirstFont = TRUE;
         dwRead += 3;
         for (int j = 0; j < bNumberOfFont; j++) {
-            if (dwSrcSize < dwRead + 4) {
+            if (dwSrcSize < dwRead + 4)
                 return FALSE;
-            }
+
             BYTE bMode = pbSrc[dwRead] & 0x0F;
             BYTE bDepth = pbSrc[dwRead + 1];
             BYTE bPixPerByte = (bDepth == 0) ? 8 : 4;
             BYTE bWidth = pbSrc[dwRead + 2];
             BYTE bHeight = pbSrc[dwRead + 3];
-            if (!(bMode == 0 && bDepth == 0 || bMode == 1 && bDepth == 2) || bWidth>DRCS_SIZE_MAX || bHeight>DRCS_SIZE_MAX) {
+            if (!(bMode == 0 && bDepth == 0 || bMode == 1 && bDepth == 2) || bWidth>DRCS_SIZE_MAX || bHeight>DRCS_SIZE_MAX)
                 //未サポート(運用規定外)
                 return FALSE;
-            }
+
             dwRead += 4;
-            if (dwSrcSize < dwRead + (bHeight * bWidth + bPixPerByte - 1) / bPixPerByte) {
+            if (dwSrcSize < dwRead + (bHeight * bWidth + bPixPerByte - 1) / bPixPerByte)
                 return FALSE;
-            }
 
             if (bFirstFont) {
                 bFirstFont = FALSE;
@@ -2076,11 +2023,10 @@ BOOL CARIB8CharDecode::DRCSHeaderparse(const BYTE *pbSrc, DWORD dwSrcSize, BOOL 
                             for (int x = 0; x < bWidth; x++) {
                                 int nPix = (bDepth == 0) ? GET_PIXEL_1(pbSrc + dwRead, y * bWidth + x) * 3
                                                          : GET_PIXEL_2(pbSrc + dwRead, y * bWidth + x);
-                                if ((x % 2) == 0) {
+                                if ((x % 2) == 0)
                                     drcs.bBitmap[dwSizeImage++] = (BYTE)(nPix << 4);
-                                } else {
+                                else
                                     drcs.bBitmap[dwSizeImage - 1] |= (BYTE)nPix;
-                                }
                             }
                             //ビットマップの仕様によりストライドを4バイト境界にする
                             dwSizeImage = (dwSizeImage + 3) / 4 * 4;
@@ -2109,9 +2055,8 @@ BOOL CARIB8CharDecode::DRCSHeaderparse(const BYTE *pbSrc, DWORD dwSrcSize, BOOL 
                         CloseHandle(hFile);
                     }
                 }
-                if (Get_dicCharcode_Char(wDRCCode) != DRCSGaiji_str) {
+                if (Get_dicCharcode_Char(wDRCCode) != DRCSGaiji_str)
                     Add_dicCharcode_Char(wDRCCode, DRCSGaiji_str);
-                }
             }
             dwRead += (bHeight * bWidth + bPixPerByte - 1) / bPixPerByte;
         }

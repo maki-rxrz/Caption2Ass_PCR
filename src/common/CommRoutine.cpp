@@ -111,9 +111,8 @@ extern VOID DbgString(IN  LPCTSTR tracemsg, ...)
             ptr
             );
 
-        if (ret == S_OK) {
+        if (ret == S_OK)
             OutputDebugString(buf);
-        }
     }
     __finally {
     }
