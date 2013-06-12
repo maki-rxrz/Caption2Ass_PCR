@@ -101,11 +101,11 @@ ERROR_PARAM:
                 goto ERROR_PARAM;
         } else if (_tcsicmp(argv[i], _T("-norubi")) == 0) {
             cp->norubi = TRUE;
-        } else if(_tcsicmp(argv[i], _T("-detect_length")) == 0) {
+        } else if (_tcsicmp(argv[i], _T("-detect_length")) == 0) {
             i++;
-            if(i > argc)
+            if (i > argc)
                 goto ERROR_PARAM;
-            if(_stscanf_s(argv[i], _T("%d"), &cp->detectLength) < 0)
+            if (_stscanf_s(argv[i], _T("%d"), &cp->detectLength) < 0)
                 goto ERROR_PARAM;
             cp->detectLength *= 10000;
         } else if (_tcsicmp(cp->FileName, _T("")) == 0) {
@@ -119,17 +119,14 @@ ERROR_PARAM:
     return 0;
 }
 
-extern void _tMyPrintf(
-    IN  LPCTSTR tracemsg,
-    ...
-    )
+extern void _tMyPrintf(IN  LPCTSTR tracemsg, ...)
 {
-    TCHAR buf[MAX_PATH + 2048] = {0};
+    TCHAR buf[MAX_PATH + 2048] = { 0 };
     HRESULT ret;
 
     __try {
         va_list ptr;
-        va_start(ptr,tracemsg);
+        va_start(ptr, tracemsg);
 
         ret = StringCchVPrintf(
             buf,

@@ -48,54 +48,50 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 //DLLの初期化
 //戻り値：エラーコード
-DWORD WINAPI InitializeCP()
+DWORD WINAPI InitializeCP(void)
 {
     return initialize(FALSE);
 }
 
 //DLLの初期化 UNICODE対応
 //戻り値：エラーコード
-DWORD WINAPI InitializeUNICODE()
+DWORD WINAPI InitializeUNICODE(void)
 {
     return initialize(TRUE);
 }
 
 //DLLの開放
 //戻り値：エラーコード
-DWORD WINAPI UnInitializeCP()
+DWORD WINAPI UnInitializeCP(void)
 {
     uninitialize();
     return NO_ERR;
 }
 
-DWORD WINAPI AddTSPacketCP(BYTE* pbPacket)
+DWORD WINAPI AddTSPacketCP(BYTE *pbPacket)
 {
-    if (g_sys == NULL) {
+    if (!g_sys)
         return ERR_NOT_INIT;
-    }
     return g_sys->AddTSPacket(pbPacket);
 }
 
-DWORD WINAPI ClearCP()
+DWORD WINAPI ClearCP(void)
 {
-    if (g_sys == NULL) {
+    if (!g_sys)
         return ERR_NOT_INIT;
-    }
     return g_sys->Clear();
 }
 
-DWORD WINAPI GetTagInfoCP(LANG_TAG_INFO_DLL** ppList, DWORD* pdwListCount)
+DWORD WINAPI GetTagInfoCP(LANG_TAG_INFO_DLL **ppList, DWORD *pdwListCount)
 {
-    if (g_sys == NULL) {
+    if (!g_sys)
         return ERR_NOT_INIT;
-    }
     return g_sys->GetTagInfo(ppList, pdwListCount);
 }
 
-DWORD WINAPI GetCaptionDataCP(unsigned char ucLangTag, CAPTION_DATA_DLL** ppList, DWORD* pdwListCount)
+DWORD WINAPI GetCaptionDataCP(unsigned char ucLangTag, CAPTION_DATA_DLL **ppList, DWORD *pdwListCount)
 {
-    if (g_sys == NULL) {
+    if (!g_sys)
         return ERR_NOT_INIT;
-    }
     return g_sys->GetCaptionData(ucLangTag, ppList, pdwListCount);
 }

@@ -18,7 +18,7 @@ typedef struct Packet_Header {
     BYTE    Counter;
 } Packet_Header;
 
-#pragma pack(push,1)
+#pragma pack(push, 1)
 
 typedef struct _Packet_Header {
     BYTE    Sync;

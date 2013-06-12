@@ -8,12 +8,12 @@
 
 #include "packet_types.h"
 
-extern BOOL FindStartOffset(FILE *);
-extern BOOL resync(BYTE *, FILE *);
+extern BOOL FindStartOffset(FILE *fp);
+extern BOOL resync(BYTE *pbPacket, FILE *fp);
 
-extern void parse_PAT(BYTE *, USHORT *);
-extern void parse_PMT(BYTE *, USHORT *, USHORT *);
-extern long long GetPTS(BYTE *);
-extern void parse_Packet_Header(Packet_Header *, BYTE *);
+extern long long GetPTS(BYTE *pbPacket);
+extern void parse_PAT(BYTE *pbPacket, USHORT *PMTPid);
+extern void parse_PMT(BYTE *pbPacket, USHORT *PCRPid, USHORT *CaptionPid);
+extern void parse_Packet_Header(Packet_Header *packet_header, BYTE *pbPacket);
 
 #endif // __TSL_UTIL_H__

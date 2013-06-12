@@ -13,17 +13,11 @@
 #define DBG_PREFIX      _T("TC!") _T(__FUNCTION__) _T(":")
 
 #ifdef _DEBUG
-VOID
-DbgString(
-    IN  LPCTSTR tracemsg,
-    ...
-    );
+extern VOID DbgString(IN  LPCTSTR tracemsg, ...);
 #else
-
-#define DbgString(x,...)
-
+#define DbgString(x, ...)
 #endif
 
-std::string GetHalfChar(std::string key);
+extern std::string GetHalfChar(std::string key);
 
 #endif // __COMM_ROUTINE_H__

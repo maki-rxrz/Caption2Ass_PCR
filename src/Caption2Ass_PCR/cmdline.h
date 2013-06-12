@@ -9,7 +9,7 @@
 
 #include "Caption2Ass_PCR.h"
 
-extern int ParseCmd(int, TCHAR **, CCaption2AssParameter *);
+extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param);
 extern void _tMyPrintf(IN  LPCTSTR tracemsg, ...);
 
 #endif // __CMD_LINE_H__

@@ -65,7 +65,7 @@ protected:
 
 public:
     CCaption2AssParameter(void);
-    CCaption2AssParameter(size_t);
+    CCaption2AssParameter(size_t _string_length);
     ~CCaption2AssParameter(void);
 
     int Allocate(size_t string_length = 0);

@@ -122,16 +122,16 @@ public:
     CCaptionDllUtil(void);
     ~CCaptionDllUtil(void);
 
-    DWORD Initialize();
-    BOOL CheckUNICODE();
-    DWORD InitializeUNICODE();
-    DWORD UnInitialize();
-    DWORD AddTSPacket(BYTE* pbPacket);
-    DWORD Clear();
-    DWORD GetTagInfo(LANG_TAG_INFO_DLL** ppList, DWORD* pdwListCount);
-    DWORD GetTagInfo(vector<LANG_TAG_INFO>* pList);
-    DWORD GetCaptionData(unsigned char ucLangTag, CAPTION_DATA_DLL** ppList, DWORD* pdwListCount);
-    DWORD GetCaptionData(unsigned char ucLangTag, vector<CAPTION_DATA>* pList);
+    DWORD Initialize(void);
+    BOOL CheckUNICODE(void);
+    DWORD InitializeUNICODE(void);
+    DWORD UnInitialize(void);
+    DWORD AddTSPacket(BYTE *pbPacket);
+    DWORD Clear(void);
+    DWORD GetTagInfo(LANG_TAG_INFO_DLL **ppList, DWORD *pdwListCount);
+    DWORD GetTagInfo(vector<LANG_TAG_INFO> *pList);
+    DWORD GetCaptionData(unsigned char ucLangTag, CAPTION_DATA_DLL **ppList, DWORD *pdwListCount);
+    DWORD GetCaptionData(unsigned char ucLangTag, vector<CAPTION_DATA> *pList);
 
 protected:
     HMODULE m_hModule;

@@ -8,16 +8,17 @@
 
 #include "Caption2AssParameter.h"
 
-extern void assHeaderWrite(FILE *, ass_setting_t *);
-extern int IniFileRead(TCHAR *, ass_setting_t *);
+extern void assHeaderWrite(FILE *fp, ass_setting_t *as);
+extern int IniFileRead(TCHAR *ass_type, ass_setting_t *as);
 
-enum {
+typedef enum {
     FORMAT_INVALID = 0,
     FORMAT_SRT     = 1,
     FORMAT_ASS     = 2,
     FORMAT_TAW     = 3,
-    FORMAT_DUAL    = 4
-};
+    FORMAT_DUAL    = 4,
+    FORMAT_MAX
+} format_type;
 
 enum {
     HLC_INVALID = 0,

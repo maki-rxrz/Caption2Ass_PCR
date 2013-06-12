@@ -138,7 +138,7 @@ struct DRCS_PATTERN {
     WORD wDRCCode;
     WORD wGradation;
     BITMAPINFOHEADER bmiHeader;
-    BYTE bBitmap[(DRCS_SIZE_MAX*4+31)/32*4 * DRCS_SIZE_MAX];
+    BYTE bBitmap[(DRCS_SIZE_MAX * 4 + 31) / 32 * 4 * DRCS_SIZE_MAX];
     DRCS_PATTERN() {}
 };
 
@@ -149,13 +149,13 @@ public:
     ~CARIB8CharDecode(void);
 
     //字幕を想定したSJISへの変換
-    BOOL Caption( const BYTE* pbSrc, DWORD dwSrcSize, vector<CAPTION_DATA>* pCaptionList );
+    BOOL Caption(const BYTE *pbSrc, DWORD dwSrcSize, vector<CAPTION_DATA> *pCaptionList);
     //dllのパスの取得
-    string GetAppPath()
+    string GetAppPath(void)
     {
         CHAR wkPath[_MAX_PATH], wkDrive[_MAX_DRIVE], wkDir[_MAX_DIR], wkFileName[_MAX_FNAME], wkExt[_MAX_EXT];
         DWORD dwRet = GetModuleFileNameA(NULL, wkPath, sizeof(wkPath));
-        if(dwRet == 0) {
+        if (dwRet == 0) {
             //エラー処理など(省略)
         }
         _splitpath_s(wkPath, wkDrive, _MAX_DRIVE, wkDir, _MAX_DIR, wkFileName, _MAX_FNAME, wkExt, _MAX_EXT);
@@ -164,7 +164,7 @@ public:
         strAppPath += wkDir;
         return strAppPath;
     }
-    BOOL CARIB8CharDecode::DRCSHeaderparse( const BYTE* pbSrc, DWORD dwSrcSize, BOOL bDRCS_0 );
+    BOOL CARIB8CharDecode::DRCSHeaderparse(const BYTE *pbSrc, DWORD dwSrcSize, BOOL bDRCS_0);
 
 protected:
     typedef struct _MF_MODE {
@@ -182,12 +182,12 @@ protected:
 
     BOOL m_bPSI;
 
-    MF_MODE m_G0;
-    MF_MODE m_G1;
-    MF_MODE m_G2;
-    MF_MODE m_G3;
-    MF_MODE* m_GL;
-    MF_MODE* m_GR;
+    MF_MODE  m_G0;
+    MF_MODE  m_G1;
+    MF_MODE  m_G2;
+    MF_MODE  m_G3;
+    MF_MODE *m_GL;
+    MF_MODE *m_GR;
 
     BOOL m_bModGL;
 
@@ -235,34 +235,34 @@ protected:
 
     DWORD m_dwWaitTime;
 
-    vector<CAPTION_DATA>* m_pCaptionList;
+    vector<CAPTION_DATA> *m_pCaptionList;
 protected:
     void InitCaption(void);
-    BOOL Analyze( const BYTE* pbSrc, DWORD dwSrcSize, DWORD* pdwReadSize );
+    BOOL Analyze(const BYTE *pbSrc, DWORD dwSrcSize, DWORD *pdwReadSize);
 
     BOOL IsSmallCharMode(void);
     BOOL IsChgPos(void);
-    void CreateCaptionData(CAPTION_DATA* pItem);
-    void CreateCaptionCharData(CAPTION_CHAR_DATA* pItem);
+    void CreateCaptionData(CAPTION_DATA *pItem);
+    void CreateCaptionCharData(CAPTION_CHAR_DATA *pItem);
     void CheckModify(void);
 
     //制御符号
-    BOOL C0( const BYTE* pbSrc, DWORD* pdwReadSize );
-    BOOL C1( const BYTE* pbSrc, DWORD* pdwReadSize );
-    BOOL GL( const BYTE* pbSrc, DWORD* pdwReadSize );
-    BOOL GR( const BYTE* pbSrc, DWORD* pdwReadSize );
+    BOOL C0(const BYTE *pbSrc, DWORD *pdwReadSize);
+    BOOL C1(const BYTE *pbSrc, DWORD *pdwReadSize);
+    BOOL GL(const BYTE *pbSrc, DWORD *pdwReadSize);
+    BOOL GR(const BYTE *pbSrc, DWORD *pdwReadSize);
     //シングルシフト
-    BOOL SS2( const BYTE* pbSrc, DWORD* pdwReadSize );
-    BOOL SS3( const BYTE* pbSrc, DWORD* pdwReadSize );
+    BOOL SS2(const BYTE *pbSrc, DWORD *pdwReadSize);
+    BOOL SS3(const BYTE *pbSrc, DWORD *pdwReadSize);
     //エスケープシーケンス
-    BOOL ESC( const BYTE* pbSrc, DWORD* pdwReadSize );
+    BOOL ESC(const BYTE *pbSrc, DWORD *pdwReadSize);
     //２バイト文字変換
-    BOOL ToSJIS( const BYTE bFirst, const BYTE bSecond );
-    BOOL ToCustomFont( const BYTE bFirst, const BYTE bSecond );
+    BOOL ToSJIS(const BYTE bFirst, const BYTE bSecond);
+    BOOL ToCustomFont(const BYTE bFirst, const BYTE bSecond);
 
-    BOOL CSI( const BYTE* pbSrc, DWORD* pdwReadSize );
+    BOOL CSI(const BYTE *pbSrc, DWORD *pdwReadSize);
 
-    BOOL AddToString( const char* cDec, BOOL m_bGaiji );
+    BOOL AddToString(const char *cDec, BOOL m_bGaiji);
 
 public:
     string Get_dicCharcode_Char(WORD DRCSCharCode)

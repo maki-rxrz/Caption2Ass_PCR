@@ -10,7 +10,7 @@
 
 using namespace std;
 
-char HiraTable[][3] = {
+static const char HiraTable[][3] = {
     "ぁ","あ","ぃ","い","ぅ","う","ぇ",
     "え","ぉ","お","か","が","き","ぎ","く",
     "ぐ","け","げ","こ","ご","さ","ざ","し",
@@ -37,7 +37,7 @@ char HiraTable[][3] = {
     "ｘ","ｙ","ｚ","｛","｜","｝","￣"
 };
 
-char HalfHiraTable[][3] = {
+static const char HalfHiraTable[][3] = {
     "ぁ","あ","ぃ","い","ぅ","う","ぇ",
     "え","ぉ","お","か","が","き","ぎ","く",
     "ぐ","け","げ","こ","ご","さ","ざ","し",
@@ -64,7 +64,7 @@ char HalfHiraTable[][3] = {
     "x","y","z","{","|","}","￣"
 };
 
-char KanaTable[][3] = {
+static const char KanaTable[][3] = {
     "ァ","ア","ィ","イ","ゥ","ウ","ェ",
     "エ","ォ","オ","カ","ガ","キ","ギ","ク",
     "グ","ケ","ゲ","コ","ゴ","サ","ザ","シ",
@@ -79,7 +79,7 @@ char KanaTable[][3] = {
     "ヾ","ー","。","「","」","、","・"
 };
 
-char HalfKanaTable[][3] = {
+static const char HalfKanaTable[][3] = {
     "ｧ","ｱ","ｨ","ｲ","ｩ","ｳ","ｪ",
     "ｴ","ｫ","ｵ","ｶ","ｶﾞ","ｷ","ｷﾞ","ｸ",
     "ｸﾞ","ｹ","ｹﾞ","ｺ","ｺﾞ","ｻ","ｻﾞ","ｼ",
@@ -95,18 +95,14 @@ char HalfKanaTable[][3] = {
 };
 
 #ifdef _DEBUG
-VOID
-DbgString(
-    IN  LPCTSTR tracemsg,
-    ...
-    )
+extern VOID DbgString(IN  LPCTSTR tracemsg, ...)
 {
-    TCHAR buf[MAX_DEBUG_OUTPUT_LENGTH] = {0};
+    TCHAR buf[MAX_DEBUG_OUTPUT_LENGTH] = { 0 };
     HRESULT ret;
 
     __try {
         va_list ptr;
-        va_start(ptr,tracemsg);
+        va_start(ptr, tracemsg);
 
         ret = StringCchVPrintf(
             buf,
@@ -115,7 +111,7 @@ DbgString(
             ptr
             );
 
-        if(ret == S_OK) {
+        if (ret == S_OK) {
             OutputDebugString(buf);
         }
     }
@@ -126,36 +122,36 @@ DbgString(
 }
 #endif
 
-std::string GetHalfChar(std::string key)
+extern std::string GetHalfChar(std::string key)
 {
 //  std::string ret;
-    CHAR ret[1024] = {0};
+    CHAR ret[1024] = { 0 };
     BOOL bMatch = FALSE;
 
     // マッチしない文字は、そのまま使用
-    const char * _p = key.c_str();
-//  const char * _pret = ret.c_str();
-    char * p = (char *)key.c_str();
-//  char * pret = (char *)ret.c_str();
+    const char *_p = key.c_str();
+//  const char *_pret = ret.c_str();
+    char *p = (char *)key.c_str();
+//  char *pret = (char *)ret.c_str();
 
-    for (; p < _p + key.size();) {
-        for (int i = 0; i < sizeof(HiraTable)/sizeof(HiraTable[0]) && p < _p + key.size(); i++) {
+    while (p < _p + key.size()) {
+        for (int i = 0; i < sizeof(HiraTable) / sizeof(HiraTable[0]) && p < _p + key.size(); i++) {
             bMatch = FALSE;
-            if(memcmp(p, HiraTable[i], 2) == 0) {
+            if (memcmp(p, HiraTable[i], 2) == 0) {
 //              ret += HalfHiraTable[i];
                 strcat_s( ret, 1024, HalfHiraTable[i] );
-                p+=2;
+                p += 2;
                 bMatch = TRUE;
                 i = -1;
             }
         }
 
-        for (int i = 0; i < sizeof(KanaTable)/sizeof(KanaTable[0]) && p < _p + key.size(); i++) {
+        for (int i = 0; i < sizeof(KanaTable) / sizeof(KanaTable[0]) && p < _p + key.size(); i++) {
             bMatch = FALSE;
-            if(memcmp(p, KanaTable[i], 2) == 0) {
+            if (memcmp(p, KanaTable[i], 2) == 0) {
 //              ret += HalfKanaTable[i];
-                strcat_s( ret, 1024, HalfKanaTable[i] );
-                p+=2;
+                strcat_s(ret, 1024, HalfKanaTable[i]);
+                p += 2;
                 bMatch = TRUE;
                 i = -1;
             }
@@ -163,8 +159,8 @@ std::string GetHalfChar(std::string key)
 
         if (p < _p + key.size()) {
 //          ret += strndup(p, 2);
-            strncat_s( ret, 1024, p, 2 );
-            p+=2;
+            strncat_s(ret, 1024, p, 2);
+            p += 2;
         }
     }
 
