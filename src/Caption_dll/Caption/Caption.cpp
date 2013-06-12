@@ -11,48 +11,60 @@
 #include "CaptionMain.h"
 #include "Caption.h"
 
-BOOL APIENTRY DllMain( HMODULE hModule,
-                       DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
-                     )
+static CCaptionMain* g_sys = NULL;
+
+static __inline DWORD initialize(BOOL bUNICODE)
 {
-    return TRUE;
+    if (g_sys || (g_sys = new CCaptionMain(bUNICODE)) == NULL)
+        return ERR_INIT;
+    return NO_ERR;
 }
 
-CCaptionMain* g_sys = NULL;
+static __inline void uninitialize(void)
+{
+    if (!g_sys)
+        return;
+    delete g_sys;
+    g_sys = NULL;
+}
+
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
+{
+    switch (ul_reason_for_call)
+    {
+    case DLL_PROCESS_ATTACH:
+        g_sys = NULL;
+        break;
+    case DLL_PROCESS_DETACH:
+        uninitialize();
+        break;
+    case DLL_THREAD_ATTACH:
+    case DLL_THREAD_DETACH:
+    default:
+        break;
+    }
+    return TRUE;
+}
 
 //DLLの初期化
 //戻り値：エラーコード
 DWORD WINAPI InitializeCP()
 {
-    if (g_sys != NULL) {
-        return ERR_INIT;
-    }
-    BOOL bUNICODE = FALSE;
-    g_sys = new CCaptionMain(bUNICODE);
-    return NO_ERR;
+    return initialize(FALSE);
 }
 
 //DLLの初期化 UNICODE対応
 //戻り値：エラーコード
 DWORD WINAPI InitializeUNICODE()
 {
-    if (g_sys != NULL) {
-        return ERR_INIT;
-    }
-    BOOL bUNICODE = TRUE;
-    g_sys = new CCaptionMain(bUNICODE);
-    return NO_ERR;
+    return initialize(TRUE);
 }
 
 //DLLの開放
 //戻り値：エラーコード
 DWORD WINAPI UnInitializeCP()
 {
-    if (g_sys != NULL) {
-        delete g_sys;
-        g_sys = NULL;
-    }
+    uninitialize();
     return NO_ERR;
 }
 
