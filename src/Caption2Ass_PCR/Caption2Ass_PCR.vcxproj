@@ -185,6 +185,7 @@
     <ClInclude Include="cmdline.h" />
     <ClInclude Include="IniFile.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="stdafx.h" />
     <ClInclude Include="tslUtil.h" />
   </ItemGroup>
   <ItemGroup>

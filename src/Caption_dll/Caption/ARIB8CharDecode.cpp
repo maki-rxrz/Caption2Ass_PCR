@@ -3,9 +3,8 @@
 //------------------------------------------------------------------------------
 #pragma warning(disable: 4100)
 
-#include <string>
+#include "stdafx.h"
 #include <map>
-#include <windows.h>
 
 #include "CalcMD5.h"
 #include "CommRoutine.h"

@@ -2,9 +2,7 @@
 // IniFile.cpp
 //------------------------------------------------------------------------------
 
-#include <windows.h>
-#include <stdio.h>
-#include <string>
+#include "stdafx.h"
 #include <map>
 
 #include "CaptionDef.h"

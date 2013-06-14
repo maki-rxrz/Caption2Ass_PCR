@@ -52,19 +52,22 @@
     <ClInclude Include="ARIB8CharDecode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CalcMD5.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="CaptionMain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ColorDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="IniFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CalcMD5.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IniFile.h">
+    <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\common\Caption.h">

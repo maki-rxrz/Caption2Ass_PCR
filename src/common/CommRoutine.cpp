@@ -2,12 +2,13 @@
 // CommRoutine.cpp
 //------------------------------------------------------------------------------
 
+#include <windows.h>
+#include <tchar.h>
+#include <string>
 #include <intrin.h>
-#include <string.h>
-#include "CommRoutine.h"
 #include <strsafe.h>
-#include <map>
 
+#include "CommRoutine.h"
 #include "CaptionDef.h"
 
 using namespace std;

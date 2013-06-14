@@ -3,7 +3,7 @@
 //------------------------------------------------------------------------------
 #pragma warning(disable: 4100)
 
-#include <windows.h>
+#include "stdafx.h"
 
 #include "CaptionDef.h"
 #include "ColorDef.h"

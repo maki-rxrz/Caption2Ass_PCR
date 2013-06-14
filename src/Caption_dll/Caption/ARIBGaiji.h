@@ -4,6 +4,8 @@
 #ifndef __ARIB_GAIJI_H__
 #define __ARIB_GAIJI_H__
 
+#include <string>
+
 #ifdef GLOBAL
 #define EXTERN
 #else
