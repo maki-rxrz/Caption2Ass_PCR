@@ -28,16 +28,16 @@ BOOL IniFile::ReadIni(void)
     if (fopen_s(&fpini, tmpFilename.c_str(), "rt") || !fpini)
         return FALSE;
     string tmprl;
-    CHAR strSJIS[1024] = { 0 };
+    CHAR strSJIS[STRING_BUFFER_SIZE] = { 0 };
     do {
-        fgets(strSJIS, 1024, fpini);
+        fgets(strSJIS, STRING_BUFFER_SIZE, fpini);
         size_t len = strlen(strSJIS);
         strSJIS[len - 1] = 0;
         tmprl = strSJIS;
     } while ((tmprl != "[外字代用字]") && (!feof(fpini)));
 
     do {
-        fgets(strSJIS, 1024, fpini);
+        fgets(strSJIS, STRING_BUFFER_SIZE, fpini);
         size_t len = strlen(strSJIS);
         strSJIS[len - 1] = 0;
         tmprl = strSJIS;
@@ -62,16 +62,16 @@ BOOL IniFile::ReadIniARIB(void)
     if (fopen_s(&fpini, tmpFilename.c_str(), "rt") || !fpini)
         return FALSE;
     string tmprl;
-    CHAR strSJIS[1024] = { 0 };
+    CHAR strSJIS[STRING_BUFFER_SIZE] = { 0 };
     do {
-        fgets(strSJIS, 1024, fpini);
+        fgets(strSJIS, STRING_BUFFER_SIZE, fpini);
         size_t len = strlen(strSJIS);
         strSJIS[len - 1] = 0;
         tmprl = strSJIS;
     } while ((tmprl != "[ARIB外字代用字]") && (!feof(fpini)));
     int iGaijiCtr = 0;
     do {
-        fgets(strSJIS, 1024, fpini);
+        fgets(strSJIS, STRING_BUFFER_SIZE, fpini);
         size_t len = strlen(strSJIS);
         strSJIS[len - 1] = 0;
         tmprl = strSJIS;
@@ -91,14 +91,14 @@ BOOL IniFile::ReadIniARIB(void)
     if (fopen_s(&fpini, tmpFilename.c_str(), "rt") || !fpini)
         return FALSE;
     do {
-        fgets(strSJIS, 1024, fpini);
+        fgets(strSJIS, STRING_BUFFER_SIZE, fpini);
         size_t len = strlen(strSJIS);
         strSJIS[len - 1] = 0;
         tmprl = strSJIS;
     } while ((tmprl != "[ARIB外字2代用字]") && (!feof(fpini)));
     int iGaijiCtr2 = 0;
     do {
-        fgets(strSJIS, 1024, fpini);
+        fgets(strSJIS, STRING_BUFFER_SIZE, fpini);
         size_t len = strlen(strSJIS);
         strSJIS[len - 1] = 0;
         tmprl = strSJIS;
@@ -132,25 +132,25 @@ BOOL IniFile::ReadIniUNICODE(void)
             return FALSE;
     }
     string tmprl;
-    WCHAR str[1024]    = { 0 };
-    CHAR strUTF8[1024] = { 0 };
-    CHAR strSJIS[1024] = { 0 };
+    WCHAR str[STRING_BUFFER_SIZE]    = { 0 };
+    CHAR strUTF8[STRING_BUFFER_SIZE] = { 0 };
+    CHAR strSJIS[STRING_BUFFER_SIZE] = { 0 };
     string tmpUTF8;
     do {
-        fgetws(str, 1024, fpini);
+        fgetws(str, STRING_BUFFER_SIZE, fpini);
         size_t len = wcslen(str);
         str[len - 2] = 0;
-        WideCharToMultiByte(CP_THREAD_ACP, 0, str, -1, strSJIS, 1024, NULL, NULL);
+        WideCharToMultiByte(CP_THREAD_ACP, 0, str, -1, strSJIS, STRING_BUFFER_SIZE, NULL, NULL);
         tmprl = strSJIS;
     } while ((tmprl != "[外字代用字]") && (!feof(fpini)));
 
     do {
-        fgetws(str, 1024, fpini);
+        fgetws(str, STRING_BUFFER_SIZE, fpini);
         size_t len = wcslen(str);
         str[len - 2] = 0;
-        WideCharToMultiByte(CP_THREAD_ACP, 0, str, -1, strSJIS, 1024, NULL, NULL);
+        WideCharToMultiByte(CP_THREAD_ACP, 0, str, -1, strSJIS, STRING_BUFFER_SIZE, NULL, NULL);
         tmprl = strSJIS;
-        WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8, 1024, NULL, NULL);
+        WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8, STRING_BUFFER_SIZE, NULL, NULL);
         tmpUTF8 = strUTF8;
         size_t iPos = tmpUTF8.find_first_of("=");
         if (iPos != string::npos)
@@ -184,25 +184,25 @@ BOOL IniFile::ReadIniARIBUNICODE(void)
             return FALSE;
     }
     string tmprl;
-    WCHAR str[1024]    = { 0 };
-    CHAR strUTF8[1024] = { 0 };
-    CHAR strSJIS[1024] = { 0 };
+    WCHAR str[STRING_BUFFER_SIZE]    = { 0 };
+    CHAR strUTF8[STRING_BUFFER_SIZE] = { 0 };
+    CHAR strSJIS[STRING_BUFFER_SIZE] = { 0 };
     string tmpUTF8;
     do {
-        fgetws(str, 1024, fpini);
+        fgetws(str, STRING_BUFFER_SIZE, fpini);
         size_t len = wcslen(str);
         str[len - 2] = 0;
-        WideCharToMultiByte(CP_THREAD_ACP, 0, str, -1, strSJIS, 1024, NULL, NULL);
+        WideCharToMultiByte(CP_THREAD_ACP, 0, str, -1, strSJIS, STRING_BUFFER_SIZE, NULL, NULL);
         tmprl = strSJIS;
     } while ((tmprl != "[ARIB外字代用字]") && (!feof(fpini)));
     int iGaijiCtr = 0;
     do {
-        fgetws(str, 1024, fpini);
+        fgetws(str, STRING_BUFFER_SIZE, fpini);
         size_t len = wcslen(str);
         str[len - 2] = 0;
-        WideCharToMultiByte(CP_THREAD_ACP, 0, str, -1, strSJIS, 1024, NULL, NULL);
+        WideCharToMultiByte(CP_THREAD_ACP, 0, str, -1, strSJIS, STRING_BUFFER_SIZE, NULL, NULL);
         tmprl = strSJIS;
-        WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8, 1024, NULL, NULL);
+        WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8, STRING_BUFFER_SIZE, NULL, NULL);
         tmpUTF8 = strUTF8;
         size_t iPos = tmpUTF8.find_first_of("=");
         if (iPos != string::npos)
@@ -230,22 +230,22 @@ BOOL IniFile::ReadIniARIBUNICODE(void)
             return FALSE;
     }
     do {
-        fgetws(str, 1024, fpini);
+        fgetws(str, STRING_BUFFER_SIZE, fpini);
         size_t len;
         len = wcslen(str);
         str[len - 2] = 0;
-        WideCharToMultiByte(CP_THREAD_ACP, 0, str, -1, strSJIS, 1024, NULL, NULL);
+        WideCharToMultiByte(CP_THREAD_ACP, 0, str, -1, strSJIS, STRING_BUFFER_SIZE, NULL, NULL);
         tmprl = strSJIS;
     } while ((tmprl != "[ARIB外字2代用字]") && (!feof(fpini)));
     int iGaijiCtr2 = 0;
     do {
-        fgetws(str, 1024, fpini);
+        fgetws(str, STRING_BUFFER_SIZE, fpini);
         size_t len;
         len = wcslen(str);
         str[len - 2] = 0;
-        WideCharToMultiByte(CP_THREAD_ACP, 0, str, -1, strSJIS, 1024, NULL, NULL);
+        WideCharToMultiByte(CP_THREAD_ACP, 0, str, -1, strSJIS, STRING_BUFFER_SIZE, NULL, NULL);
         tmprl = strSJIS;
-        WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8, 1024, NULL, NULL);
+        WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8, STRING_BUFFER_SIZE, NULL, NULL);
         tmpUTF8 = strUTF8;
         size_t iPos = tmpUTF8.find_first_of("=");
         if (iPos != string::npos)

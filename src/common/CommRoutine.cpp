@@ -8,6 +8,8 @@
 #include <strsafe.h>
 #include <map>
 
+#include "CaptionDef.h"
+
 using namespace std;
 
 static const char HiraTable[][3] = {
@@ -124,7 +126,7 @@ extern VOID DbgString(IN  LPCTSTR tracemsg, ...)
 extern std::string GetHalfChar(std::string key)
 {
 //  std::string ret;
-    CHAR ret[1024] = { 0 };
+    CHAR ret[STRING_BUFFER_SIZE] = { 0 };
     BOOL bMatch = FALSE;
 
     // マッチしない文字は、そのまま使用
@@ -138,7 +140,7 @@ extern std::string GetHalfChar(std::string key)
             bMatch = FALSE;
             if (memcmp(p, HiraTable[i], 2) == 0) {
 //              ret += HalfHiraTable[i];
-                strcat_s( ret, 1024, HalfHiraTable[i] );
+                strcat_s( ret, STRING_BUFFER_SIZE, HalfHiraTable[i] );
                 p += 2;
                 bMatch = TRUE;
                 i = -1;
@@ -149,7 +151,7 @@ extern std::string GetHalfChar(std::string key)
             bMatch = FALSE;
             if (memcmp(p, KanaTable[i], 2) == 0) {
 //              ret += HalfKanaTable[i];
-                strcat_s(ret, 1024, HalfKanaTable[i]);
+                strcat_s(ret, STRING_BUFFER_SIZE, HalfKanaTable[i]);
                 p += 2;
                 bMatch = TRUE;
                 i = -1;
@@ -158,7 +160,7 @@ extern std::string GetHalfChar(std::string key)
 
         if (p < _p + key.size()) {
 //          ret += strndup(p, 2);
-            strncat_s(ret, 1024, p, 2);
+            strncat_s(ret, STRING_BUFFER_SIZE, p, 2);
             p += 2;
         }
     }

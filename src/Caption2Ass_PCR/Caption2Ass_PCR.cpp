@@ -140,8 +140,8 @@ static void DumpAssLine(FILE *fp, SRT_LIST *list, long long PTS, app_handler_t *
 
         if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_box)) {
             int iHankaku;
-            unsigned char usTmpUTF8[1024] = { 0 };
-            memcpy_s(usTmpUTF8, 1024, (*it)->str.c_str(), (*it)->str.size());
+            unsigned char usTmpUTF8[STRING_BUFFER_SIZE] = { 0 };
+            memcpy_s(usTmpUTF8, STRING_BUFFER_SIZE, (*it)->str.c_str(), (*it)->str.size());
             iHankaku = count_UTF8(usTmpUTF8);
             int iBoxPosX = (*it)->outPosX + (iHankaku * (((*it)->outCharW + (*it)->outCharHInterval) / 4)) - ((*it)->outCharHInterval / 4);
             int iBoxPosY = (*it)->outPosY + ((*it)->outCharVInterval / 2);
@@ -155,8 +155,8 @@ static void DumpAssLine(FILE *fp, SRT_LIST *list, long long PTS, app_handler_t *
         }
         if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_draw)) {
             int iHankaku;
-            unsigned char usTmpUTF8[1024] = { 0 };
-            memcpy_s(usTmpUTF8, 1024, (*it)->str.c_str(), (*it)->str.size());
+            unsigned char usTmpUTF8[STRING_BUFFER_SIZE] = { 0 };
+            memcpy_s(usTmpUTF8, STRING_BUFFER_SIZE, (*it)->str.c_str(), (*it)->str.size());
             iHankaku = count_UTF8(usTmpUTF8);
             int iBoxPosX = (*it)->outPosX + (iHankaku * (((*it)->outCharW + (*it)->outCharHInterval) / 4));
             int iBoxPosY = (*it)->outPosY + ((*it)->outCharVInterval / 4);
@@ -292,7 +292,7 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
 
     std::vector<CAPTION_DATA>::iterator it = Captions.begin();
     for (; it != Captions.end(); it++) {
-        CHAR strUTF8[1024] = { 0 };
+        CHAR strUTF8[STRING_BUFFER_SIZE] = { 0 };
 
         if (it->bClear) {
             // 字幕のスキップをチェック
@@ -436,17 +436,17 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
                     fprintf(app->fpLogFile, "%s\r\n", it2->strDecode.c_str());
                 }
 
-                WCHAR str[1024] = { 0 };
-                CHAR strUTF8_2[1024] = { 0 };
+                WCHAR str[STRING_BUFFER_SIZE] = { 0 };
+                CHAR strUTF8_2[STRING_BUFFER_SIZE] = { 0 };
 
                 if ((cp->format == FORMAT_TAW) || (app->bUnicode))
-                    strcat_s(strUTF8, 1024, it2->strDecode.c_str());
+                    strcat_s(strUTF8, STRING_BUFFER_SIZE, it2->strDecode.c_str());
                 else {
                     // CP 932 to UTF-8
-                    MultiByteToWideChar(932, 0, it2->strDecode.c_str(), -1, str, 1024);
-                    WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8_2, 1024, NULL, NULL);
+                    MultiByteToWideChar(932, 0, it2->strDecode.c_str(), -1, str, STRING_BUFFER_SIZE);
+                    WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8_2, STRING_BUFFER_SIZE, NULL, NULL);
 
-                    strcat_s(strUTF8, 1024, strUTF8_2);
+                    strcat_s(strUTF8, STRING_BUFFER_SIZE, strUTF8_2);
                 }
             }
 

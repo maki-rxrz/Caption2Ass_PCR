@@ -23,6 +23,8 @@
 #define SAFE_DELETE(p)       { if (p) { delete (p);   (p) = NULL; } }
 #define SAFE_DELETE_ARRAY(p) { if (p) { delete[] (p); (p) = NULL; } }
 
+#define STRING_BUFFER_SIZE      (1024)
+
 typedef struct _CLUT_DAT_DLL {
     unsigned char ucR;
     unsigned char ucG;
