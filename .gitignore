@@ -11,11 +11,10 @@
 *.rej
 *.aps
 *.ncb
-*.vcproj.*.user
 *.opensdf
 *.sdf
 *.suo
-*.vcxproj.user
+*.user
 *.obj
 *.res
 *.exp
