@@ -70,7 +70,7 @@ BOOL CCaptionDllUtil::LoadDll(void)
 ERR_END:
     if (bRet == FALSE) {
         ::FreeLibrary(m_hModule);
-        m_hModule=NULL;
+        m_hModule = NULL;
     }
     return bRet;
 }
@@ -81,7 +81,7 @@ BOOL CCaptionDllUtil::UnLoadDll(void)
         pfnUnInitializeCP();
         ::FreeLibrary(m_hModule);
     }
-    m_hModule=NULL;
+    m_hModule = NULL;
     return TRUE;
 }
 
@@ -120,7 +120,7 @@ DWORD CCaptionDllUtil::UnInitialize(void)
     return dwRet;
 }
 
-DWORD CCaptionDllUtil::AddTSPacket(BYTE* pbPacket)
+DWORD CCaptionDllUtil::AddTSPacket(BYTE *pbPacket)
 {
     if (!m_hModule)
         return ERR_INIT;
@@ -153,7 +153,7 @@ DWORD CCaptionDllUtil::GetTagInfo(vector<LANG_TAG_INFO> *pList)
     if (!m_hModule)
         return ERR_INIT;
 
-    LANG_TAG_INFO_DLL* pListDll;
+    LANG_TAG_INFO_DLL *pListDll;
     DWORD dwListCount;
 
     DWORD dwRet = pfnGetTagInfoCP(&pListDll,&dwListCount);
@@ -178,7 +178,7 @@ DWORD CCaptionDllUtil::GetCaptionData(unsigned char ucLangTag, vector<CAPTION_DA
     if (!m_hModule)
         return ERR_INIT;
 
-    CAPTION_DATA_DLL* pListDll;
+    CAPTION_DATA_DLL *pListDll;
     DWORD dwListCount = 0;
 
     DWORD dwRet = pfnGetCaptionDataCP(ucLangTag, &pListDll, &dwListCount);

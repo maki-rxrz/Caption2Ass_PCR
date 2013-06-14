@@ -11,7 +11,7 @@
 #include "CaptionMain.h"
 #include "Caption.h"
 
-static CCaptionMain* g_sys = NULL;
+static CCaptionMain *g_sys = NULL;
 
 static __inline DWORD initialize(BOOL bUNICODE)
 {

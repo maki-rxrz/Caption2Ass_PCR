@@ -20,8 +20,8 @@
 #define NO_ERR_TAG_INFO     21
 #define NO_ERR_CAPTION      22
 
-#define SAFE_DELETE(p)       { if (p) { delete (p);     (p)=NULL; } }
-#define SAFE_DELETE_ARRAY(p) { if (p) { delete[] (p);   (p)=NULL; } }
+#define SAFE_DELETE(p)       { if (p) { delete (p);   (p) = NULL; } }
+#define SAFE_DELETE_ARRAY(p) { if (p) { delete[] (p); (p) = NULL; } }
 
 typedef struct _CLUT_DAT_DLL {
     unsigned char ucR;
@@ -31,7 +31,7 @@ typedef struct _CLUT_DAT_DLL {
 } CLUT_DAT_DLL;
 
 typedef struct _CAPTION_CHAR_DATA_DLL {
-    char* pszDecode;
+    char *pszDecode;
     DWORD wCharSizeMode;
 
     CLUT_DAT_DLL stCharColor;
@@ -61,7 +61,7 @@ typedef struct _CAPTION_DATA_DLL {
     WORD wPosX;
     WORD wPosY;
     DWORD dwListCount;
-    CAPTION_CHAR_DATA_DLL* pstCharList;
+    CAPTION_CHAR_DATA_DLL *pstCharList;
     DWORD dwWaitTime;
 } CAPTION_DATA_DLL;
 

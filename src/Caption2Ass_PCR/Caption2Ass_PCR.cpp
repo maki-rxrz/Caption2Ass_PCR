@@ -126,7 +126,7 @@ do {                                    \
     h  = (int)((T) / (1000 * 60 * 60)); \
 } while(0)
 
-static void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS, app_handler_t *app)
+static void DumpAssLine(FILE *fp, SRT_LIST *list, long long PTS, app_handler_t *app)
 {
     SRT_LIST::iterator it = list->begin();
     for (int i = 0; it != list->end(); it++, i++) {
@@ -143,12 +143,13 @@ static void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS, app_handler_t 
             unsigned char usTmpUTF8[1024] = { 0 };
             memcpy_s(usTmpUTF8, 1024, (*it)->str.c_str(), (*it)->str.size());
             iHankaku = count_UTF8(usTmpUTF8);
-            int iBoxPosX = (*it)->outPosX + (iHankaku * (((*it)->outCharW + (*it)->outCharHInterval) / 4))- ((*it)->outCharHInterval / 4);
+            int iBoxPosX = (*it)->outPosX + (iHankaku * (((*it)->outCharW + (*it)->outCharHInterval) / 4)) - ((*it)->outCharHInterval / 4);
             int iBoxPosY = (*it)->outPosY + ((*it)->outCharVInterval / 2);
             int iBoxScaleX = (iHankaku + 1) * 50;
             int iBoxScaleY = 100 * ((*it)->outCharH + (*it)->outCharVInterval) / (*it)->outCharH;
-            fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\fscx%d\\fscy%d\\3c&H%06x&}", sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, iBoxScaleX, iBoxScaleY, (*it)->outCharColor);
-            unsigned char utf8box[] = {0xE2, 0x96, 0xA0};
+            fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\fscx%d\\fscy%d\\3c&H%06x&}",
+                    sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, iBoxScaleX, iBoxScaleY, (*it)->outCharColor);
+            static const unsigned char utf8box[] = { 0xE2, 0x96, 0xA0 };
             fwrite(utf8box, 3, 1, fp);
             fprintf(fp, "\r\n");
         }
@@ -161,12 +162,15 @@ static void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS, app_handler_t 
             int iBoxPosY = (*it)->outPosY + ((*it)->outCharVInterval / 4);
             int iBoxScaleX = iHankaku * 55;
             int iBoxScaleY = 100;   //*((*it)->outCharH + (*it)->outCharVInterval) / (*it)->outCharH;
-            fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\3c&H%06x&\\p1}m 0 0 l %d 0 %d %d 0 %d{\\p0}\r\n", sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, (*it)->outCharColor, iBoxScaleX, iBoxScaleX, iBoxScaleY, iBoxScaleY);
+            fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\3c&H%06x&\\p1}m 0 0 l %d 0 %d %d 0 %d{\\p0}\r\n",
+                    sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, (*it)->outCharColor, iBoxScaleX, iBoxScaleX, iBoxScaleY, iBoxScaleY);
         }
         if ((*it)->outCharSizeMode == STR_SMALL)
-            fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Rubi,,0000,0000,0000,,{\\pos(%d,%d)", sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX, (*it)->outPosY);
+            fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Rubi,,0000,0000,0000,,{\\pos(%d,%d)",
+                    sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX, (*it)->outPosY);
         else
-            fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Default,,0000,0000,0000,,{\\pos(%d,%d)", sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX, (*it)->outPosY);
+            fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Default,,0000,0000,0000,,{\\pos(%d,%d)",
+                    sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX, (*it)->outPosY);
 
         if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff)
             fprintf(fp, "\\c&H%06x&", (*it)->outCharColor);
@@ -195,7 +199,7 @@ static void DumpAssLine(FILE *fp, SRT_LIST * list, long long PTS, app_handler_t 
         ++(app->assIndex);
 }
 
-static void DumpSrtLine(FILE *fp, SRT_LIST * list, long long PTS, app_handler_t *app)
+static void DumpSrtLine(FILE *fp, SRT_LIST *list, long long PTS, app_handler_t *app)
 {
     BOOL bNoSRT = TRUE;
     SRT_LIST::iterator it = list->begin();
@@ -427,7 +431,8 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
                     if (it2->bHLC != 0)
                         fprintf(app->fpLogFile, "HLC : on\r\n");
                     fprintf(app->fpLogFile, "Color : %#.X   ", it2->stCharColor);
-                    fprintf(app->fpLogFile, "Char M,W,H,HI,VI : %4d, %4d, %4d, %4d, %4d   ", it2->emCharSizeMode , it2->wCharW, it2->wCharH,  it2->wCharHInterval,  it2->wCharVInterval);
+                    fprintf(app->fpLogFile, "Char M,W,H,HI,VI : %4d, %4d, %4d, %4d, %4d   ",
+                            it2->emCharSizeMode, it2->wCharW, it2->wCharH, it2->wCharHInterval, it2->wCharVInterval);
                     fprintf(app->fpLogFile, "%s\r\n", it2->strDecode.c_str());
                 }
 
@@ -613,23 +618,19 @@ int _tmain(int argc, _TCHAR *argv[])
     }
 
     // Output header.
-    if (cp->format == FORMAT_SRT) {
-        unsigned char tag[] = {0xEF, 0xBB, 0xBF};
-        fwrite(tag, 3, 1, app.fpTarget1);
-    } else if (cp->format == FORMAT_ASS) {
-        unsigned char tag[] = {0xEF, 0xBB, 0xBF};
-        fwrite(tag, 3, 1, app.fpTarget1);
+    static const unsigned char utf8_bom[3] = { 0xEF, 0xBB, 0xBF };
+    if (cp->format == FORMAT_SRT)
+        fwrite(utf8_bom, 3, 1, app.fpTarget1);
+    else if (cp->format == FORMAT_ASS) {
+        fwrite(utf8_bom, 3, 1, app.fpTarget1);
         assHeaderWrite(app.fpTarget1, as);
     } else if (cp->format == FORMAT_DUAL) {
-        unsigned char tag[] = {0xEF, 0xBB, 0xBF};
-        fwrite(tag, 3, 1, app.fpTarget1);
+        fwrite(utf8_bom, 3, 1, app.fpTarget1);
         assHeaderWrite(app.fpTarget1, as);
-        fwrite(tag, 3, 1, app.fpTarget2);
+        fwrite(utf8_bom, 3, 1, app.fpTarget2);
     }
-    if ((app.fpLogFile) && (app.bUnicode)) {
-        unsigned char tag[] = {0xEF, 0xBB, 0xBF};
-        fwrite(tag, 3, 1, app.fpLogFile);
-    }
+    if ((app.fpLogFile) && (app.bUnicode))
+        fwrite(utf8_bom, 3, 1, app.fpLogFile);
 
     if (!FindStartOffset(app.fpInputTs)) {
         _tMyPrintf(_T("Invalid TS File.\r\n"));
@@ -730,7 +731,8 @@ int _tmain(int argc, _TCHAR *argv[])
 
             if (app.fpLogFile)
                 if (app.lastPTS == 0)
-                    fprintf(app.fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n", PCR, app.startPCR, app.lastPCR, app.basePCR);
+                    fprintf(app.fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n",
+                            PCR, app.startPCR, app.lastPCR, app.basePCR);
 
             if (app.startPCR == 0) {
                 app.startPCR = PCR - cp->DelayTime;
@@ -743,7 +745,8 @@ int _tmain(int argc, _TCHAR *argv[])
             if (PCR < app.lastPCR) {
                 if (app.fpLogFile) {
                     fprintf(app.fpLogFile, "====== PCR less than lastPCR ======\r\n");
-                    fprintf(app.fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n", PCR, app.startPCR, app.lastPCR, app.basePCR);
+                    fprintf(app.fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n",
+                            PCR, app.startPCR, app.lastPCR, app.basePCR);
                 }
                 app.basePCR += WRAP_AROUND_VALUE / 90;
             }
@@ -760,7 +763,8 @@ int _tmain(int argc, _TCHAR *argv[])
                 PTS = GetPTS(pbPacket);
 
                 if (app.fpLogFile)
-                    fprintf(app.fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ", PTS, app.lastPTS, app.basePTS, app.startPCR);
+                    fprintf(app.fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
+                            PTS, app.lastPTS, app.basePTS, app.startPCR);
 
                 if ((PTS > 0) && (app.lastPTS == 0) && (PTS < app.lastPCR) && ((app.lastPCR - PTS) > (0x0FFFFFFFF / 90)))
                     app.startPCR -= WRAP_AROUND_VALUE / 90;
@@ -768,11 +772,9 @@ int _tmain(int argc, _TCHAR *argv[])
                 if (PTS == 0)
                     PTS = app.lastPTS;
 
-                if (PTS < app.lastPTS) {
+                if (PTS < app.lastPTS)
                     app.basePTS += WRAP_AROUND_VALUE / 90;
-                    app.lastPTS = PTS;
-                } else
-                    app.lastPTS = PTS;
+                app.lastPTS = PTS;
 
                 PTS = PTS + app.basePTS;
                 if ((PTS - app.startPCR) <= 0)
@@ -789,7 +791,8 @@ int _tmain(int argc, _TCHAR *argv[])
             } else {
                 PTS = GetPTS(pbPacket);
                 if (app.fpLogFile)
-                    fprintf(app.fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ", PTS, app.lastPTS, app.basePTS, app.startPCR);
+                    fprintf(app.fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
+                            PTS, app.lastPTS, app.basePTS, app.startPCR);
 
                 if (!PTS)
                     PTS = app.lastPTS;

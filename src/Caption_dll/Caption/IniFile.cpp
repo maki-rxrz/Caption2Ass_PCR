@@ -62,7 +62,7 @@ BOOL IniFile::ReadIniARIB(void)
     if (fopen_s(&fpini, tmpFilename.c_str(), "rt") || !fpini)
         return FALSE;
     string tmprl;
-    CHAR strSJIS[1024] = {0};
+    CHAR strSJIS[1024] = { 0 };
     do {
         fgets(strSJIS, 1024, fpini);
         size_t len = strlen(strSJIS);
@@ -132,9 +132,9 @@ BOOL IniFile::ReadIniUNICODE(void)
             return FALSE;
     }
     string tmprl;
-    WCHAR str[1024] = {0};
-    CHAR strUTF8[1024] = {0};
-    CHAR strSJIS[1024] = {0};
+    WCHAR str[1024]    = { 0 };
+    CHAR strUTF8[1024] = { 0 };
+    CHAR strSJIS[1024] = { 0 };
     string tmpUTF8;
     do {
         fgetws(str, 1024, fpini);
@@ -184,9 +184,9 @@ BOOL IniFile::ReadIniARIBUNICODE(void)
             return FALSE;
     }
     string tmprl;
-    WCHAR str[1024] = {0};
-    CHAR strUTF8[1024] = {0};
-    CHAR strSJIS[1024] = {0};
+    WCHAR str[1024]    = { 0 };
+    CHAR strUTF8[1024] = { 0 };
+    CHAR strSJIS[1024] = { 0 };
     string tmpUTF8;
     do {
         fgetws(str, 1024, fpini);
