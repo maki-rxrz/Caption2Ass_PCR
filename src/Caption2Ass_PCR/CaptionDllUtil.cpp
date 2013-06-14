@@ -29,50 +29,31 @@ BOOL CCaptionDllUtil::LoadDll(void)
     pfnGetTagInfoCP = NULL;
     pfnGetCaptionDataCP = NULL;
 
-    BOOL bRet = TRUE;
-
     m_hModule = ::LoadLibrary(_T("Caption.dll"));
-
     if (!m_hModule)
         return FALSE;
 
-    pfnInitializeCP = (InitializeCP)(::GetProcAddress(m_hModule, "InitializeCP"));
-    if (!pfnInitializeCP) {
-        bRet = FALSE;
-        goto ERR_END;
-    }
-    pfnUnInitializeCP = (UnInitializeCP)(::GetProcAddress(m_hModule, "UnInitializeCP"));
-    if (!pfnUnInitializeCP) {
-        bRet = FALSE;
-        goto ERR_END;
-    }
-    pfnAddTSPacketCP = (AddTSPacketCP)(::GetProcAddress(m_hModule, "AddTSPacketCP"));
-    if (!pfnAddTSPacketCP) {
-        bRet = FALSE;
-        goto ERR_END;
-    }
-    pfnClearCP = (ClearCP)(::GetProcAddress(m_hModule, "ClearCP"));
-    if (!pfnClearCP) {
-        bRet = FALSE;
-        goto ERR_END;
-    }
-    pfnGetTagInfoCP = (GetTagInfoCP)(::GetProcAddress(m_hModule, "GetTagInfoCP"));
-    if (!pfnGetTagInfoCP) {
-        bRet = FALSE;
-        goto ERR_END;
-    }
-    pfnGetCaptionDataCP = (GetCaptionDataCP)(::GetProcAddress(m_hModule, "GetCaptionDataCP"));
-    if (!pfnGetCaptionDataCP) {
-        bRet = FALSE;
-        goto ERR_END;
-    }
+#define GetProcAddr(_func)                                          \
+do {                                                                \
+    pfn ## _func = (_func)(::GetProcAddress(m_hModule, #_func));    \
+    if (!pfn ## _func)                                              \
+        goto ERR_END;                                               \
+} while(0)
+    GetProcAddr(InitializeCP);
+    GetProcAddr(UnInitializeCP);
+    GetProcAddr(AddTSPacketCP);
+    GetProcAddr(ClearCP);
+    GetProcAddr(GetTagInfoCP);
+    GetProcAddr(GetCaptionDataCP);
+#undef GetProcAddr
+
+    return TRUE;
 
 ERR_END:
-    if (bRet == FALSE) {
-        ::FreeLibrary(m_hModule);
-        m_hModule = NULL;
-    }
-    return bRet;
+    ::FreeLibrary(m_hModule);
+    m_hModule = NULL;
+
+    return FALSE;
 }
 
 BOOL CCaptionDllUtil::UnLoadDll(void)
