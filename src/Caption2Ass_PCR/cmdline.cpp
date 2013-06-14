@@ -10,16 +10,27 @@
 
 static void usage(void)
 {
-    _tMyPrintf(_T("Caption2Ass_PCR.exe [OPTIONS] source.ts [target filename]\r\n\r\n"));
-    _tMyPrintf(_T("-PMT_PID PID  PID is HEX value. Ex: -PMT_PID 1f2\r\n"));
-    _tMyPrintf(_T("-format {srt|ass|taw|dual}. Ex: -format srt\r\n"));
-    _tMyPrintf(_T("-delay TIME   TIME is mili-sec. Ex: -delay 500\r\n"));
-    _tMyPrintf(_T("-asstype TYPE . Ex: -asstype Default\r\n"));
-    _tMyPrintf(_T("-norubi. not-out RUBI to ass-file\r\n"));
-    _tMyPrintf(_T("-srtornament. set ornament to srt-file\r\n"));
-    _tMyPrintf(_T("-hlc {kigou|box|draw}. Ex: -hlc kigou\r\n"));
-    _tMyPrintf(_T("-log. make log-file\r\n"));
-    _tMyPrintf(_T("-detect_length LENGTH. Ex: -detect_length 100\r\n"));
+    _tMyPrintf(_T("Usage:  Caption2Ass_PCR.exe [Options] source.ts [target filename]\r\n"));
+    _tMyPrintf(_T("\r\nOptions:\r\n"));
+    _tMyPrintf(_T("    -format <string>            Specify output format. {srt|ass|taw|dual}\r\n"));
+    _tMyPrintf(_T("                                    Default: ass\r\n"));
+    _tMyPrintf(_T("    -delay <integer>            Sepcify delay time. [mili-sec]\r\n"));
+    _tMyPrintf(_T("    -PMT_PID <hex>              Specify PID value.\r\n"));
+    _tMyPrintf(_T("    -detect_length <integer>    Specify upper limit value of packet counting\r\n"));
+    _tMyPrintf(_T("                                 for detecting caption data. [10k]\r\n"));
+    _tMyPrintf(_T("                                    Default: 300\r\n"));
+    _tMyPrintf(_T("    -log                        Make log-file.\r\n"));
+    _tMyPrintf(_T("  [srt]\r\n"));
+    _tMyPrintf(_T("    -srtornament                Set ornament to srt-file.\r\n"));
+    _tMyPrintf(_T("  [ass]\r\n"));
+    _tMyPrintf(_T("    -asstype <string>           Sepcify type name of ass setting.\r\n"));
+    _tMyPrintf(_T("    -hlc <string>               Sepcify HLC control type. {kigou|box|draw}\r\n"));
+    _tMyPrintf(_T("                                    Default: kigou\r\n"));
+    _tMyPrintf(_T("    -norubi                     Does not output the Rubi to ass-file.\r\n"));
+    _tMyPrintf(_T("\r\nExample:\r\n"));
+    _tMyPrintf(_T("    Caption2Ass_PCR.exe -format dual \"source.ts\"\r\n"));
+    _tMyPrintf(_T("    Caption2Ass_PCR.exe -format ass -asstype Default43 -hlc kigou \"source.ts\"\r\n"));
+    _tMyPrintf(_T("    Caption2Ass_PCR.exe -delay 500 -PMT_PID 1f2 -detect_length 400 \"source.ts\"\r\n"));
 }
 
 extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param)
