@@ -706,8 +706,7 @@ int _tmain(int argc, _TCHAR *argv[])
             continue; // next packet
         }
 
-        long long PCR = 0;
-
+        // PCR
         if (pi->PCRPid != 0 && packet.PID == pi->PCRPid) {
             DWORD bADP = (((DWORD)pbPacket[3] & 0x30) >> 4);
             if (!(bADP & 0x2))
@@ -717,17 +716,21 @@ int _tmain(int argc, _TCHAR *argv[])
             if (!(bAF & 0x10))
                 continue; // next packet
 
-            /*     90kHz           27kHz
+            // Get PCR.
+            /*     90kHz           27MHz
              *  +--------+-------+-------+
              *  | 33 bits| 6 bits| 9 bits|
              *  +--------+-------+-------+
              */
-            PCR = ((long long)pbPacket[6] << 25)
-                    | ((DWORD)pbPacket[7] << 17)
-                    | ((DWORD)pbPacket[8] << 9)
-                    | ((DWORD)pbPacket[9] << 1)
-                    | ((DWORD)pbPacket[10] / 128);
-            PCR = PCR / 90;
+            long long PCR, PCR_base, PCR_ext;
+            PCR_base = ((long long)pbPacket[ 6] << 25)
+                     | ((long long)pbPacket[ 7] << 17)
+                     | ((long long)pbPacket[ 8] <<  9)
+                     | ((long long)pbPacket[ 9] <<  1)
+                     | ((long long)pbPacket[10] >>  7);
+            PCR_ext = ((long long)(pbPacket[10] & 0x01) << 8)
+                    |  (long long) pbPacket[11];
+            PCR = (PCR_base * 300 + PCR_ext) / 27000;
 
             if (app.fpLogFile)
                 if (app.lastPTS == 0)
