@@ -515,11 +515,11 @@ int _tmain(int argc, _TCHAR *argv[])
     app_handler_t app = { 0 };
     app.assIndex = 1;
     app.srtIndex = 1;
-    app.norubi   = cp->norubi;
 
     // Parse arguments.
     if (ParseCmd(argc, argv, param))
         return 1;
+    app.norubi = cp->norubi;
 
     // Initialize Caption Utility.
     CCaptionDllUtil capUtil;
