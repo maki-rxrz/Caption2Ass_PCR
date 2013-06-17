@@ -16,10 +16,10 @@
 #define WRAP_AROUND_VALUE   (1LL << 33)
 
 typedef struct _ASS_COLOR {
-    unsigned char ucR;
-    unsigned char ucG;
-    unsigned char ucB;
-    unsigned char ucAlpha;
+    unsigned char   ucR;
+    unsigned char   ucG;
+    unsigned char   ucB;
+    unsigned char   ucAlpha;
 } ASS_COLOR;
 
 typedef struct _SRT_LINE {
@@ -418,9 +418,9 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
 
                 // ‚Ó‚è‚ª‚È Skip
                 // ‚Ó‚è‚ª‚È Skip ‚Í o—ÍŽž‚É
-                if ((it2->emCharSizeMode == STR_SMALL) &&  (!(app->bUnicode)))
+                if ((it2->emCharSizeMode == STR_SMALL) && (!(app->bUnicode)))
                     workPosY += (int)(10 * ratioY);
-                if ((it2->emCharSizeMode == STR_MEDIUM) &&  (!(app->bUnicode)))
+                if ((it2->emCharSizeMode == STR_MEDIUM) && (!(app->bUnicode)))
                     // ‘SŠp -> ”¼Šp
                     it2->strDecode = GetHalfChar(it2->strDecode);
 
@@ -454,28 +454,28 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
             }
 
             PSRT_LINE pSrtLine = new SRT_LINE();
-            pSrtLine->index = 0;    //useless
-            pSrtLine->startTime = (PTS > app->startPCR) ? (DWORD)(PTS - app->startPCR) : 0;
-            pSrtLine->endTime = 0;
-            pSrtLine->outCharSizeMode = workCharSizeMode;
+            pSrtLine->index                = 0;     //useless
+            pSrtLine->startTime            = (PTS > app->startPCR) ? (DWORD)(PTS - app->startPCR) : 0;
+            pSrtLine->endTime              = 0;
+            pSrtLine->outCharSizeMode      = workCharSizeMode;
             pSrtLine->outCharColor.ucAlpha = 0x00;
-            pSrtLine->outCharColor.ucR = workucR;
-            pSrtLine->outCharColor.ucG = workucG;
-            pSrtLine->outCharColor.ucB = workucB;
-            pSrtLine->outUnderLine = workUnderLine;
-            pSrtLine->outShadow = workShadow;
-            pSrtLine->outBold = workBold;
-            pSrtLine->outItalic = workItalic;
-            pSrtLine->outFlushMode = workFlushMode;
-            pSrtLine->outHLC = workHLC;
-            pSrtLine->outCharW = (WORD)(workCharW * ratioX);
-            pSrtLine->outCharH = (WORD)(workCharH * ratioY);
-            pSrtLine->outCharHInterval = (WORD)(workCharHInterval * ratioX);
-            pSrtLine->outCharVInterval = (WORD)(workCharVInterval * ratioY);
-            pSrtLine->outPosX = workPosX;
-            pSrtLine->outPosY = workPosY;
-            pSrtLine->outornament = cp->srtornament;
-            pSrtLine->str = strUTF8;
+            pSrtLine->outCharColor.ucR     = workucR;
+            pSrtLine->outCharColor.ucG     = workucG;
+            pSrtLine->outCharColor.ucB     = workucB;
+            pSrtLine->outUnderLine         = workUnderLine;
+            pSrtLine->outShadow            = workShadow;
+            pSrtLine->outBold              = workBold;
+            pSrtLine->outItalic            = workItalic;
+            pSrtLine->outFlushMode         = workFlushMode;
+            pSrtLine->outHLC               = workHLC;
+            pSrtLine->outCharW             = (WORD)(workCharW * ratioX);
+            pSrtLine->outCharH             = (WORD)(workCharH * ratioY);
+            pSrtLine->outCharHInterval     = (WORD)(workCharHInterval * ratioX);
+            pSrtLine->outCharVInterval     = (WORD)(workCharVInterval * ratioY);
+            pSrtLine->outPosX              = workPosX;
+            pSrtLine->outPosY              = workPosY;
+            pSrtLine->outornament          = cp->srtornament;
+            pSrtLine->str                  = strUTF8;
             if (pSrtLine->str == "") {
                 delete pSrtLine;
                 continue;
@@ -796,7 +796,7 @@ int _tmain(int argc, _TCHAR *argv[])
 
             } else {
 
-                if (!PTS)
+                if (PTS == 0)
                     PTS = app.lastPTS;
 
                 PTS = PTS + app.basePTS;
