@@ -274,8 +274,6 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
     int workPosX = 0;
     int workPosY = 0;
     WORD wLastSWFMode = 999;
-    int amariPosX = 0;
-    int amariPosY = 0;
     int offsetPosX = 0;
     int offsetPosY = 0;
     float ratioX = 2;
@@ -330,19 +328,18 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
 
             if (it->wSWFMode != wLastSWFMode) {
                 wLastSWFMode = it->wSWFMode;
-                if (wLastSWFMode == 5) {
-                    ratioX = (float)(as->PlayResX) / (float)(1920);
-                    ratioY = (float)(as->PlayResY) / (float)(1080);
-                } else if (wLastSWFMode == 9) {
-                    ratioX = (float)(as->PlayResX) / (float)(720);
-                    ratioY = (float)(as->PlayResY) / (float)(480);
-                } else if (wLastSWFMode == 11) {
-                    ratioX = (float)(as->PlayResX) / (float)(1280);
-                    ratioY = (float)(as->PlayResY) / (float)(720);
-                } else {
-                    ratioX = (float)(as->PlayResX) / (float)(960);
-                    ratioY = (float)(as->PlayResY) / (float)(540);
-                }
+                static const struct {
+                    int x;
+                    int y;
+                } resolution[4] = {
+                    {1920, 1080}, { 720,  480}, {1280,  720}, { 960,  540}
+                };
+                int index = (wLastSWFMode ==  5) ? 0
+                          : (wLastSWFMode ==  9) ? 1
+                          : (wLastSWFMode == 11) ? 2
+                          :                        3;
+                ratioX = (float)(as->PlayResX) / (float)(resolution[index].x);
+                ratioY = (float)(as->PlayResY) / (float)(resolution[index].y);
             }
             if (app->bUnicode) {
                 if ((it->wPosX < 2000) || (it->wPosY < 2000)) {
@@ -371,7 +368,10 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
                 workCharH = it2->wCharH;
                 workCharHInterval = it2->wCharHInterval;
                 workCharVInterval = it2->wCharVInterval;
+                // Calculate offsetPos[X/Y].
                 if (!(app->bUnicode)) {
+                    int amariPosX = 0;
+                    int amariPosY = 0;
                     if (wLastSWFMode == 9) {
                         amariPosX = it->wPosX % 18;
                         amariPosY = it->wPosY % 15;
@@ -387,31 +387,34 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
                         offsetPosY = 0;
                     }
                 }
-                if (wLastSWFMode == 0) {
-                    workPosX = (int)((float)(it->wPosX + offsetPosX) * ratioX);
-                    workPosY = (int)((float)(it->wPosY + offsetPosY + as->SWF0offset) * ratioY);
-                } else if (wLastSWFMode == 5) {
-                    workPosX = (int)((float)(it->wPosX + offsetPosX) * ratioX);
-                    workPosY = (int)((float)(it->wPosY + offsetPosY - 0 + as->SWF5offset) * ratioY);
-                } else if (wLastSWFMode == 7) {
-                    workPosX = (int)((float)(it->wPosX + offsetPosX) * ratioX);
-                    workPosY = (int)((float)(it->wPosY + offsetPosY + 0 + as->SWF7offset) * ratioY);
-                } else if (wLastSWFMode == 9) {
-                    workPosX = (int)((float)(it->wPosX + offsetPosX) * ratioX);
-                    if (app->bUnicode)
-                        workPosY = (int)((float)(it->wPosY + offsetPosY + as->SWF9offset) * ratioY);
-                    else
-                        workPosY = (int)((float)(it->wPosY + offsetPosY - 50 + as->SWF9offset) * ratioY);
-                } else if (wLastSWFMode == 11) {
-                    workPosX = (int)((float)(it->wPosX + offsetPosX) * ratioX);
-                    workPosY = (int)((float)(it->wPosY + offsetPosY - 0 + as->SWF11offset) * ratioY);
-                } else {
-                    workPosX = it->wPosX + offsetPosX;
-                    workPosY = it->wPosY + offsetPosY;
+                // Calculate workPos[X/Y].
+                int   y_swf_offset = 0;
+                float x_ratio      = ratioX;
+                float y_ratio      = ratioY;
+                switch (wLastSWFMode) {
+                case 0:
+                    y_swf_offset = as->SWF0offset;
+                    break;
+                case 5:
+                    y_swf_offset = as->SWF5offset /* - 0 */;
+                    break;
+                case 7:
+                    y_swf_offset = as->SWF7offset /* + 0 */;
+                    break;
+                case 9:
+                    y_swf_offset = as->SWF9offset + ((app->bUnicode) ? 0 : -50);
+                    break;
+                case 11:
+                    y_swf_offset = as->SWF11offset /* - 0 */;
+                    break;
+                default:
+                    x_ratio = y_ratio = 1.0;
+                    break;
                 }
-                workPosX -= app->sidebar_size;
-                if (workPosX < 0)
-                    workPosX = 0;
+                workPosX = (int)((float)(it->wPosX + offsetPosX               ) * x_ratio);
+                workPosY = (int)((float)(it->wPosY + offsetPosY + y_swf_offset) * y_ratio);
+                // Correction for workPosX.
+                workPosX = (workPosX > app->sidebar_size) ? workPosX - app->sidebar_size : 0;
 
                 // ‚Ó‚è‚ª‚È Skip
                 // ‚Ó‚è‚ª‚È Skip ‚Í o—ÍŽž‚É
@@ -758,16 +761,16 @@ int _tmain(int argc, _TCHAR *argv[])
             continue; // next packet
         }
 
+        // Caption
         if (pi->CaptionPid != 0 && packet.PID == pi->CaptionPid) {
-            long long PTS = 0;
 
             // Get Caption PTS.
-            if (packet.PayloadStartFlag) {
-                PTS = GetPTS(pbPacket);
+            long long PTS = GetPTS(pbPacket);
+            if (app.fpLogFile)
+                fprintf(app.fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
+                        PTS, app.lastPTS, app.basePTS, app.startPCR);
 
-                if (app.fpLogFile)
-                    fprintf(app.fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
-                            PTS, app.lastPTS, app.basePTS, app.startPCR);
+            if (packet.PayloadStartFlag) {
 
                 if ((PTS > 0) && (app.lastPTS == 0) && (PTS < app.lastPCR) && ((app.lastPCR - PTS) > (0x0FFFFFFFF / 90)))
                     app.startPCR -= WRAP_AROUND_VALUE / 90;
@@ -792,10 +795,6 @@ int _tmain(int argc, _TCHAR *argv[])
                     fprintf(app.fpLogFile, "1st Caption Time: %01d:%02d:%02d.%03d\r\n", sH, sM, sS, sMs);
 
             } else {
-                PTS = GetPTS(pbPacket);
-                if (app.fpLogFile)
-                    fprintf(app.fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
-                            PTS, app.lastPTS, app.basePTS, app.startPCR);
 
                 if (!PTS)
                     PTS = app.lastPTS;
