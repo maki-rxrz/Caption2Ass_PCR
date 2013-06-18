@@ -40,7 +40,6 @@ typedef struct _SRT_LINE {
     WORD            outCharVInterval;
     WORD            outPosX;
     WORD            outPosY;
-    BOOL            outornament;
     std::string     str;
 } SRT_LINE, *PSRT_LINE;
 
@@ -50,7 +49,8 @@ typedef struct {
     // Output handlers
     DWORD       assIndex;       // index for ASS
     DWORD       srtIndex;       // index for SRT
-    int         norubi;
+    BOOL        norubi;
+    BOOL        srtornament;
     int         sidebar_size;
     BOOL        bUnicode;
     BOOL        bCreateOutput;
@@ -65,6 +65,10 @@ typedef struct {
     FILE       *fpTarget1;
     FILE       *fpTarget2;
     FILE       *fpLogFile;
+    // Parameter handlers
+    CCaption2AssParameter  *param;
+    // Control informations
+    size_t      string_length;
 } app_handler_t;
 
 static int count_UTF8(const unsigned char *string)
@@ -219,7 +223,7 @@ static void DumpSrtLine(FILE *fp, SRT_LIST *list, long long PTS, app_handler_t *
         if ((*it)->outCharSizeMode == STR_SMALL)
             continue;
         bNoSRT = FALSE;
-        if ((*it)->outornament) {
+        if (app->srtornament) {
             if ((*it)->outItalic)
                 fprintf(fp, "<i>");
             if ((*it)->outBold)
@@ -234,7 +238,7 @@ static void DumpSrtLine(FILE *fp, SRT_LIST *list, long long PTS, app_handler_t *
         fwrite((*it)->str.c_str(), (*it)->str.size(), 1, fp);
         if ((*it)->outHLC != 0)
             fprintf(fp, "]");
-        if ((*it)->outornament) {
+        if (app->srtornament) {
             if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff)
                 fprintf(fp, "</font>");
             if ((*it)->outUnderLine)
@@ -255,7 +259,7 @@ static void DumpSrtLine(FILE *fp, SRT_LIST *list, long long PTS, app_handler_t *
     }
 }
 
-static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCaptionDllUtil *capUtil, SRT_LIST *srtList, long long PTS)
+static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, SRT_LIST *srtList, long long PTS)
 {
     int workCharSizeMode = 0;
     unsigned char workucB = 0;
@@ -280,9 +284,9 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
     float ratioY = 2;
 
     // Prepare the handlers.
-//  pid_information_t *pi = param->get_pid_information();
-    cli_parameter_t   *cp = param->get_cli_parameter();
-    ass_setting_t     *as = param->get_ass_setting();
+//  pid_information_t *pi = app->param->get_pid_information();
+    cli_parameter_t   *cp = app->param->get_cli_parameter();
+    ass_setting_t     *as = app->param->get_ass_setting();
 
     // Output
     std::vector<CAPTION_DATA> Captions;
@@ -474,7 +478,6 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
             pSrtLine->outCharVInterval     = (WORD)(workCharVInterval * ratioY);
             pSrtLine->outPosX              = workPosX;
             pSrtLine->outPosY              = workPosY;
-            pSrtLine->outornament          = cp->srtornament;
             pSrtLine->str                  = strUTF8;
             if (pSrtLine->str == "") {
                 delete pSrtLine;
@@ -487,9 +490,39 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
     }
 }
 
+static int prepare_app_handler(int argc, _TCHAR **argv, app_handler_t *app)
+{
+    size_t string_length = MAX_PATH;
+
+    // Check max of string length.
+    for (int i = 0; i < argc; i++) {
+        size_t length = _tcslen(argv[i]) + 1 + 20;  // +20: It's a margin for append the suffix.
+        if (length > string_length)
+            string_length = length;
+    }
+
+    // Create parameter handler.
+    CCaption2AssParameter *param = new CCaption2AssParameter(string_length);
+    if (!param) {
+        _tMyPrintf(_T("Failed to allocate the paramter handler.\r\n"));
+        return -1;
+    }
+    if (param->Allocate()) {
+        _tMyPrintf(_T("Failed to allocate the buffers for output.\r\n"));
+        SAFE_DELETE(param);
+        return -1;
+    }
+
+    // Setup.
+    app->string_length = string_length;
+    app->param         = param;
+    return 0;
+}
+
 int _tmain(int argc, _TCHAR *argv[])
 {
-    SRT_LIST srtList;
+    SRT_LIST        srtList;
+    app_handler_t   app = { 0 };
 
 #ifdef _DEBUG
 //  argc    = 5;
@@ -499,30 +532,20 @@ int _tmain(int argc, _TCHAR *argv[])
 //  argv[4] = _T("C:\\Users\\YourName\\Videos\\sample.ts");
 #endif
 
-    // Create parameter handler.
-    size_t string_length = MAX_PATH;
-    for (int i = 0; i < argc; i++) {
-        size_t length = _tcslen(argv[i]) + 1 + 20;  // +20: It's a margin for append the suffix.
-        if (length > string_length)
-            string_length = length;
-    }
-    CCaption2AssParameter *param = new CCaption2AssParameter(string_length);
-    if (param->Allocate()) {
-        _tMyPrintf(_T("Failed to allocate the buffers for output.\r\n"));
-        return -1;
-    }
     // Prepare the handlers.
-    pid_information_t *pi = param->get_pid_information();
-    cli_parameter_t   *cp = param->get_cli_parameter();
-    ass_setting_t     *as = param->get_ass_setting();
-    app_handler_t app = { 0 };
-    app.assIndex = 1;
-    app.srtIndex = 1;
+    if (prepare_app_handler(argc, argv, &app))
+        return 2;
+    pid_information_t *pi = app.param->get_pid_information();
+    cli_parameter_t   *cp = app.param->get_cli_parameter();
+    ass_setting_t     *as = app.param->get_ass_setting();
 
     // Parse arguments.
-    if (ParseCmd(argc, argv, param))
+    if (ParseCmd(argc, argv, app.param)) {
+        SAFE_DELETE(app.param);
         return 1;
-    app.norubi = cp->norubi;
+    }
+    app.norubi      = cp->norubi;
+    app.srtornament = (cp->format == FORMAT_TAW) ? FALSE : cp->srtornament;
 
     // Initialize Caption Utility.
     CCaptionDllUtil capUtil;
@@ -549,7 +572,7 @@ int _tmain(int argc, _TCHAR *argv[])
             not_specified = 1;
     }
     if (not_specified)
-        _tcscpy_s(cp->TargetFileName1, string_length, cp->FileName);
+        _tcscpy_s(cp->TargetFileName1, app.string_length, cp->FileName);
 
     if ((cp->format == FORMAT_ASS) || (cp->format == FORMAT_DUAL)) {
         TCHAR *pExt = PathFindExtension(cp->TargetFileName1);
@@ -559,7 +582,7 @@ int _tmain(int argc, _TCHAR *argv[])
         _tcscpy_s(pExt, 5, _T(".srt"));
     }
     if (cp->format == FORMAT_DUAL) {
-        _tcscpy_s(cp->TargetFileName2, string_length, cp->TargetFileName1);
+        _tcscpy_s(cp->TargetFileName2, app.string_length, cp->TargetFileName1);
         TCHAR *pExt = PathFindExtension(cp->TargetFileName2);
         _tcscpy_s(pExt, 5, _T(".srt"));
     }
@@ -575,10 +598,6 @@ int _tmain(int argc, _TCHAR *argv[])
     _tMyPrintf(_T("[Target] %s\r\n"), cp->TargetFileName1);
     _tMyPrintf(_T("[Format] %s\r\n"), format_name[cp->format]);
 
-    // Correct the parameters.
-    if (cp->format == FORMAT_TAW)
-        cp->srtornament = FALSE;
-
     // Open TS File.
     if (_tfopen_s(&(app.fpInputTs), cp->FileName, _T("rb")) || !(app.fpInputTs)) {
         _tMyPrintf(_T("Open TS File: %s failed\r\n"), cp->FileName);
@@ -590,6 +609,7 @@ int _tmain(int argc, _TCHAR *argv[])
         _tMyPrintf(_T("Open Target File: %s failed\r\n"), cp->TargetFileName1);
         goto EXIT;
     }
+    app.assIndex = app.srtIndex = 1;
     if (cp->format == FORMAT_DUAL) {
         if (_tfopen_s(&(app.fpTarget2), cp->TargetFileName2, _T("wb")) || !(app.fpTarget2)) {
             _tMyPrintf(_T("Open Target File: %s failed\r\n"), cp->TargetFileName2);
@@ -600,7 +620,7 @@ int _tmain(int argc, _TCHAR *argv[])
     if (cp->LogMode) {
         // Open Log File.
         if (_tcsicmp(cp->LogFileName, _T("")) == 0) {
-            _tcscpy_s(cp->LogFileName, string_length, cp->TargetFileName1);
+            _tcscpy_s(cp->LogFileName, app.string_length, cp->TargetFileName1);
             TCHAR *pExt = PathFindExtension(cp->LogFileName);
             _tcscpy_s(pExt, 13, _T("_Caption.log"));
         }
@@ -836,7 +856,7 @@ EXIT:
             remove(cp->TargetFileName2);
     }
 
-    SAFE_DELETE(param);
+    SAFE_DELETE(app.param);
 
     return 0;
 }
