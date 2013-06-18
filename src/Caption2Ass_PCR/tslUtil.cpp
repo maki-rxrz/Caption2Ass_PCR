@@ -6,6 +6,7 @@
 
 #include "cmdline.h"
 #include "tslUtil.h"
+#include "Caption2Ass_PCR.h"
 
 extern BOOL FindStartOffset(FILE *fp)
 {
@@ -55,7 +56,7 @@ extern BOOL resync(BYTE *pbPacket, FILE *fp)
 
 extern long long GetPTS(BYTE *pbPacket)
 {
-    long long PTS = 0;
+    long long PTS = TIMESTAMP_INVALID_VALUE;
     // Get PTS in PES Header(00 00 01 BD)
     for (int i = 4; i < 188 - 10; i++)
         if (pbPacket[i + 0] == 0x00
@@ -81,10 +82,10 @@ extern long long GetPTS(BYTE *pbPacket)
 
             PTS = PTS / 90;
 
-            return PTS;
+            break;
         }
 
-    return 0;
+    return PTS;
 }
 
 extern void parse_PAT(BYTE *pbPacket, USHORT *PMTPid)

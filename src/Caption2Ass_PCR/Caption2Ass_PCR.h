@@ -27,4 +27,6 @@ enum {
     HLC_draw    = 3
 };
 
+#define TIMESTAMP_INVALID_VALUE     (-1LL)
+
 #endif // __CAPTION2ASS_PCR_H__

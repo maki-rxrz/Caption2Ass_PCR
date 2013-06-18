@@ -540,6 +540,9 @@ static int prepare_app_handler(int argc, _TCHAR **argv, app_handler_t *app)
     }
 
     // Setup.
+    app->startPCR      = TIMESTAMP_INVALID_VALUE;
+    app->lastPCR       = TIMESTAMP_INVALID_VALUE;
+    app->lastPTS       = TIMESTAMP_INVALID_VALUE;
     app->string_length = string_length;
     app->param         = param;
     return 0;
@@ -761,7 +764,7 @@ int _tmain(int argc, _TCHAR *argv[])
             parse_PMT(&pbPacket[0], &(pi->PCRPid), &(pi->CaptionPid));
 
             if (app.fpLogFile)
-                if (app.lastPTS == 0)
+                if (app.lastPTS == TIMESTAMP_INVALID_VALUE)
                     fprintf(app.fpLogFile, "PMT, PCR, Caption : %04x, %04x, %04x\r\n", pi->PMTPid, pi->PCRPid, pi->CaptionPid);
 
             continue; // next packet
@@ -794,12 +797,12 @@ int _tmain(int argc, _TCHAR *argv[])
             PCR = (PCR_base * 300 + PCR_ext) / 27000;
 
             if (app.fpLogFile)
-                if (app.lastPTS == 0)
+                if (app.lastPTS == TIMESTAMP_INVALID_VALUE)
                     fprintf(app.fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n",
                             PCR, app.startPCR, app.lastPCR, app.basePCR);
 
             // Check startPCR.
-            if (app.startPCR == 0) {
+            if (app.startPCR == TIMESTAMP_INVALID_VALUE) {
                 app.startPCR = PCR;
                 app.correctTS = cp->DelayTime;
             } else {
@@ -849,7 +852,7 @@ int _tmain(int argc, _TCHAR *argv[])
                             PTS, app.lastPTS, app.basePTS, app.startPCR);
 
                 // Check skip.
-                if (PTS == 0 || app.startPCR == 0) {
+                if (PTS == TIMESTAMP_INVALID_VALUE || app.startPCR == TIMESTAMP_INVALID_VALUE) {
                     fprintf(app.fpLogFile, "Skip 1st caption\r\n");
                     continue;
                 }
@@ -858,7 +861,7 @@ int _tmain(int argc, _TCHAR *argv[])
                 // [case]
                 //   lastPCR:  Detection on the 1st packet.             [1st PCR  >>> w-around >>> 1st PTS]
                 //   lastPTS:  Detection on the packet of 2nd or later. [prev PTS >>> w-around >>> now PTS]
-                long long checkTS = (app.lastPTS == 0) ? app.lastPCR : app.lastPTS;
+                long long checkTS = (app.lastPTS == TIMESTAMP_INVALID_VALUE) ? app.lastPCR : app.lastPTS;
                 if ((PTS < checkTS) && ((checkTS - PTS) > (WRAP_AROUND_CHECK_VALUE / 90)))
                     app.basePTS += WRAP_AROUND_VALUE / 90;
 
@@ -871,7 +874,7 @@ int _tmain(int argc, _TCHAR *argv[])
                             PTS, app.lastPTS, app.basePTS, app.startPCR);
 
                 // Check skip.
-                if (app.lastPTS == 0 || app.startPCR == 0) {
+                if (app.lastPTS == TIMESTAMP_INVALID_VALUE || app.startPCR == TIMESTAMP_INVALID_VALUE) {
                     fprintf(app.fpLogFile, "Skip 2nd caption\r\n");
                     continue;
                 }
