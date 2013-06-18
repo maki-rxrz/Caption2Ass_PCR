@@ -10,6 +10,10 @@
 
 extern void assHeaderWrite(FILE *fp, ass_setting_t *as);
 extern int IniFileRead(TCHAR *ass_type, ass_setting_t *as);
+#ifdef _DEBUG
+extern int load_debug(int *argc_p, TCHAR ***argv_p);
+extern void unload_debug(int argc, TCHAR **argv);
+#endif
 
 typedef enum {
     FORMAT_INVALID = 0,

@@ -44,7 +44,7 @@ extern int IniFileRead(TCHAR *ass_type, ass_setting_t *as)
 {
     int ret = -1;
 
-    // Allocate string buffers
+    // Allocate string buffers.
     TCHAR *ini_file = new TCHAR[FILE_PATH_MAX];
     TCHAR *tmp_buff = new TCHAR[INI_STRING_MAX];
     WCHAR *utf8_str = new WCHAR[INI_STRING_MAX];
@@ -118,3 +118,91 @@ EXIT:
 
     return ret;
 }
+
+#ifdef _DEBUG
+extern int load_debug(int *argc_p, TCHAR ***argv_p)
+{
+    int ret = 0;
+    int argc = 0;
+    TCHAR **argv = NULL;
+
+    // Allocate string buffer.
+    TCHAR *ini_file = new TCHAR[FILE_PATH_MAX];
+    TCHAR *tmp_buff = new TCHAR[INI_STRING_MAX];
+    if (!ini_file || !tmp_buff)
+        return 0;
+    memset(ini_file, 0, sizeof(TCHAR) * FILE_PATH_MAX);
+    memset(tmp_buff, 0, sizeof(TCHAR) * INI_STRING_MAX);
+
+    // Get the file path of ini file.
+    if (GetPrivateProfilePath(ini_file))
+        goto EXIT;
+    // Open ini file.
+    FILE *fp = NULL;
+    if (_tfopen_s(&fp, ini_file, _T("r")) || !fp)
+        goto EXIT;
+
+    // Parse ini file.
+    int debug = 0;
+    while (1) {
+        if (_ftscanf_s(fp, _T("%s"), tmp_buff, INI_STRING_MAX) == EOF)
+            goto EXIT;
+        if (debug == 0) {
+            // Search debug section.
+            if (_tcsicmp(tmp_buff, _T("[Debug]")) == 0)
+                debug = 1;
+            continue;
+        }
+        if (argc == 0) {
+            // Check nums of debug settings.
+            if (_stscanf_s(tmp_buff, _T("argc=%d"), &argc) == 1)
+                break;
+        }
+    }
+
+    // Allocate buffers of debug strings.
+    argv = new TCHAR *[argc];
+    if (!argv)
+        goto EXIT;
+    memset(argv, 0, sizeof(TCHAR *) * argc);
+    for (int i = 1; i < argc; i++) {
+        argv[i] = new TCHAR[INI_STRING_MAX];
+        if (!(argv[i]))
+            goto EXIT;
+        memset(argv[i], 0, sizeof(TCHAR) * INI_STRING_MAX);
+    }
+    // Load debug settings.
+    int tmp_index = 0;
+    for (int i = 1; i < argc; i++) {
+        if (_ftscanf_s(fp, _T("%s"), tmp_buff, INI_STRING_MAX) == EOF)
+            goto EXIT;
+        if (_stscanf_s(tmp_buff, _T("argv%d=%s"), &tmp_index, argv[i], INI_STRING_MAX) != 2)
+            goto EXIT;
+    }
+
+    argv[0] = (*argv_p)[0];     // Copy pointer of process path.
+    *argv_p = argv;
+    *argc_p = argc;
+    ret = 1;
+
+EXIT:
+    if (ret == 0) {
+        for (int i = 1; i < argc; i++)
+            SAFE_DELETE_ARRAY(argv[i]);
+        SAFE_DELETE_ARRAY(argv);
+    }
+
+    fclose(fp);
+    SAFE_DELETE_ARRAY(ini_file);
+    SAFE_DELETE_ARRAY(tmp_buff);
+
+    return ret;
+}
+
+extern void unload_debug(int argc, TCHAR **argv)
+{
+    for (int i = 1; i < argc; i++)
+        SAFE_DELETE_ARRAY(argv[i]);
+    SAFE_DELETE_ARRAY(argv);
+}
+#endif

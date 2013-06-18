@@ -556,11 +556,9 @@ int _tmain(int argc, _TCHAR *argv[])
     app_handler_t   app = { 0 };
 
 #ifdef _DEBUG
-//  argc    = 5;
-//  argv[1] = _T("-log");
-//  argv[2] = _T("-format");
-//  argv[3] = _T("dual");
-//  argv[4] = _T("C:\\Users\\YourName\\Videos\\sample.ts");
+    int debug = 0;
+    if (argc < 2)
+        debug = load_debug(&argc, &argv);
 #endif
 
     // Prepare the handlers.
@@ -929,6 +927,11 @@ EXIT:
     }
 
     SAFE_DELETE(app.param);
+
+#ifdef _DEBUG
+    if (debug)
+        unload_debug(argc, argv);
+#endif
 
     return result;
 }
