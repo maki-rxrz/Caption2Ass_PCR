@@ -363,7 +363,7 @@ static void output_caption(CCaption2AssParameter *param, app_handler_t *app, CCa
                 workBold = it2->bBold;
                 workItalic = it2->bItalic;
                 workFlushMode = it2->bFlushMode;
-                workHLC = (it2->bHLC != 0) ? workHLC = cp->HLCmode : it2->bHLC;
+                workHLC = (it2->bHLC != 0) ? cp->HLCmode : it2->bHLC;
                 workCharW = it2->wCharW;
                 workCharH = it2->wCharH;
                 workCharHInterval = it2->wCharHInterval;
