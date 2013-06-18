@@ -13,6 +13,12 @@
 #include "tslutil.h"
 #include "Caption2Ass_PCR.h"
 
+#define C2A_SUCCESS         0
+#define C2A_FAILURE         1
+#define C2A_ERR_DLL         2
+#define C2A_ERR_PARAM       3
+#define C2A_ERR_MEMORY      4
+
 #define WRAP_AROUND_VALUE   (1LL << 33)
 
 typedef struct _ASS_COLOR {
@@ -534,7 +540,7 @@ int _tmain(int argc, _TCHAR *argv[])
 
     // Prepare the handlers.
     if (prepare_app_handler(argc, argv, &app))
-        return 2;
+        return C2A_ERR_MEMORY;
     pid_information_t *pi = app.param->get_pid_information();
     cli_parameter_t   *cp = app.param->get_cli_parameter();
     ass_setting_t     *as = app.param->get_ass_setting();
@@ -542,7 +548,7 @@ int _tmain(int argc, _TCHAR *argv[])
     // Parse arguments.
     if (ParseCmd(argc, argv, app.param)) {
         SAFE_DELETE(app.param);
-        return 1;
+        return C2A_ERR_PARAM;
     }
     app.norubi      = cp->norubi;
     app.srtornament = (cp->format == FORMAT_TAW) ? FALSE : cp->srtornament;
@@ -553,13 +559,13 @@ int _tmain(int argc, _TCHAR *argv[])
     if (!capUtil.CheckUNICODE() || (cp->format == FORMAT_TAW)) {
         if (capUtil.Initialize() != NO_ERR) {
             _tMyPrintf(_T("Load Caption.dll failed\r\n"));
-            return 1;
+            return C2A_ERR_DLL;
         }
         app.bUnicode = FALSE;
     } else {
         if (capUtil.InitializeUNICODE() != NO_ERR) {
             _tMyPrintf(_T("Load Caption.dll failed\r\n"));
-            return 1;
+            return C2A_ERR_DLL;
         }
         app.bUnicode = TRUE;
     }
@@ -858,5 +864,5 @@ EXIT:
 
     SAFE_DELETE(app.param);
 
-    return 0;
+    return C2A_SUCCESS;
 }
