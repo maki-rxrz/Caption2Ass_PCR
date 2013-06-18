@@ -28,7 +28,7 @@ typedef struct _ASS_COLOR {
     unsigned char   ucAlpha;
 } ASS_COLOR;
 
-typedef struct _SRT_LINE {
+typedef struct _CAPTION_LINE {
     UINT            index;
     DWORD           startTime;
     DWORD           endTime;
@@ -47,9 +47,9 @@ typedef struct _SRT_LINE {
     WORD            outPosX;
     WORD            outPosY;
     std::string     str;
-} SRT_LINE, *PSRT_LINE;
+} CAPTION_LINE, *PCAPTION_LINE;
 
-typedef std::list<PSRT_LINE> SRT_LIST;
+typedef std::list<PCAPTION_LINE> CAPTION_LIST;
 
 typedef struct {
     // Output handlers
@@ -136,9 +136,9 @@ do {                                    \
     h  = (int)((T) / (1000 * 60 * 60)); \
 } while(0)
 
-static void DumpAssLine(FILE *fp, SRT_LIST *list, long long PTS, app_handler_t *app)
+static void DumpAssLine(FILE *fp, CAPTION_LIST *list, long long PTS, app_handler_t *app)
 {
-    SRT_LIST::iterator it = list->begin();
+    CAPTION_LIST::iterator it = list->begin();
     for (int i = 0; it != list->end(); it++, i++) {
         (*it)->endTime = (DWORD)PTS;
 
@@ -209,10 +209,10 @@ static void DumpAssLine(FILE *fp, SRT_LIST *list, long long PTS, app_handler_t *
         ++(app->assIndex);
 }
 
-static void DumpSrtLine(FILE *fp, SRT_LIST *list, long long PTS, app_handler_t *app)
+static void DumpSrtLine(FILE *fp, CAPTION_LIST *list, long long PTS, app_handler_t *app)
 {
     BOOL bNoSRT = TRUE;
-    SRT_LIST::iterator it = list->begin();
+    CAPTION_LIST::iterator it = list->begin();
     for (int i = 0; it != list->end(); it++, i++) {
 
         if (i == 0) {
@@ -265,17 +265,17 @@ static void DumpSrtLine(FILE *fp, SRT_LIST *list, long long PTS, app_handler_t *
     }
 }
 
-static void clear_caption_list(SRT_LIST *list)
+static void clear_caption_list(CAPTION_LIST *list)
 {
     if (list->empty())
         return;
-    for(std::list<PSRT_LINE>::iterator it = list->begin(); it != list->end(); ++it) {
+    for(std::list<PCAPTION_LINE>::iterator it = list->begin(); it != list->end(); ++it) {
         delete *it;
     }
     list->clear();
 }
 
-static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, SRT_LIST *srtList, long long PTS)
+static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_LIST *capList, long long PTS)
 {
     int workCharSizeMode = 0;
     unsigned char workucB = 0;
@@ -315,24 +315,24 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, SRT_LIST
         if (it->bClear) {
             // 字幕のスキップをチェック
             if ((app->basePTS + app->lastPTS + it->dwWaitTime) <= app->startPCR) {
-                _tMyPrintf(_T("%d Caption skip\r\n"), srtList->size());
+                _tMyPrintf(_T("%d Caption skip\r\n"), capList->size());
                 if (app->fpLogFile)
-                    fprintf(app->fpLogFile, "%d Caption skip\r\n", srtList->size());
-                clear_caption_list(srtList);
+                    fprintf(app->fpLogFile, "%d Caption skip\r\n", capList->size());
+                clear_caption_list(capList);
                 continue;
             }
             app->bCreateOutput = TRUE;
             if (cp->format == FORMAT_ASS)
-                DumpAssLine(app->fpTarget1, srtList, (PTS + it->dwWaitTime) - app->startPCR, app);
+                DumpAssLine(app->fpTarget1, capList, (PTS + it->dwWaitTime) - app->startPCR, app);
             else if (cp->format == FORMAT_SRT)
-                DumpSrtLine(app->fpTarget1, srtList, (PTS + it->dwWaitTime) - app->startPCR, app);
+                DumpSrtLine(app->fpTarget1, capList, (PTS + it->dwWaitTime) - app->startPCR, app);
             else if (cp->format == FORMAT_TAW)
-                DumpSrtLine(app->fpTarget1, srtList, (PTS + it->dwWaitTime) - app->startPCR, app);
+                DumpSrtLine(app->fpTarget1, capList, (PTS + it->dwWaitTime) - app->startPCR, app);
             else if (cp->format == FORMAT_DUAL) {
-                DumpAssLine(app->fpTarget1, srtList, (PTS + it->dwWaitTime) - app->startPCR, app);
-                DumpSrtLine(app->fpTarget2, srtList, (PTS + it->dwWaitTime) - app->startPCR, app);
+                DumpAssLine(app->fpTarget1, capList, (PTS + it->dwWaitTime) - app->startPCR, app);
+                DumpSrtLine(app->fpTarget2, capList, (PTS + it->dwWaitTime) - app->startPCR, app);
             }
-            clear_caption_list(srtList);
+            clear_caption_list(capList);
 
             continue;
         } else {
@@ -473,36 +473,36 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, SRT_LIST
                 }
             }
 
-            PSRT_LINE pSrtLine = new SRT_LINE();
-            if (!pSrtLine)
+            PCAPTION_LINE pCapLine = new CAPTION_LINE();
+            if (!pCapLine)
                 goto ERR_EXIT;
-            pSrtLine->str = strUTF8;
-            if (pSrtLine->str == "") {
-                delete pSrtLine;
+            pCapLine->str = strUTF8;
+            if (pCapLine->str == "") {
+                delete pCapLine;
                 continue;
             }
-            pSrtLine->index                = 0;     //useless
-            pSrtLine->startTime            = (PTS > app->startPCR) ? (DWORD)(PTS - app->startPCR) : 0;
-            pSrtLine->endTime              = 0;
-            pSrtLine->outCharSizeMode      = workCharSizeMode;
-            pSrtLine->outCharColor.ucAlpha = 0x00;
-            pSrtLine->outCharColor.ucR     = workucR;
-            pSrtLine->outCharColor.ucG     = workucG;
-            pSrtLine->outCharColor.ucB     = workucB;
-            pSrtLine->outUnderLine         = workUnderLine;
-            pSrtLine->outShadow            = workShadow;
-            pSrtLine->outBold              = workBold;
-            pSrtLine->outItalic            = workItalic;
-            pSrtLine->outFlushMode         = workFlushMode;
-            pSrtLine->outHLC               = workHLC;
-            pSrtLine->outCharW             = (WORD)(workCharW * ratioX);
-            pSrtLine->outCharH             = (WORD)(workCharH * ratioY);
-            pSrtLine->outCharHInterval     = (WORD)(workCharHInterval * ratioX);
-            pSrtLine->outCharVInterval     = (WORD)(workCharVInterval * ratioY);
-            pSrtLine->outPosX              = workPosX;
-            pSrtLine->outPosY              = workPosY;
+            pCapLine->index                = 0;     //useless
+            pCapLine->startTime            = (PTS > app->startPCR) ? (DWORD)(PTS - app->startPCR) : 0;
+            pCapLine->endTime              = 0;
+            pCapLine->outCharSizeMode      = workCharSizeMode;
+            pCapLine->outCharColor.ucAlpha = 0x00;
+            pCapLine->outCharColor.ucR     = workucR;
+            pCapLine->outCharColor.ucG     = workucG;
+            pCapLine->outCharColor.ucB     = workucB;
+            pCapLine->outUnderLine         = workUnderLine;
+            pCapLine->outShadow            = workShadow;
+            pCapLine->outBold              = workBold;
+            pCapLine->outItalic            = workItalic;
+            pCapLine->outFlushMode         = workFlushMode;
+            pCapLine->outHLC               = workHLC;
+            pCapLine->outCharW             = (WORD)(workCharW * ratioX);
+            pCapLine->outCharH             = (WORD)(workCharH * ratioY);
+            pCapLine->outCharHInterval     = (WORD)(workCharHInterval * ratioX);
+            pCapLine->outCharVInterval     = (WORD)(workCharVInterval * ratioY);
+            pCapLine->outPosX              = workPosX;
+            pCapLine->outPosY              = workPosY;
 
-            srtList->push_back(pSrtLine);
+            capList->push_back(pCapLine);
         }
 
     }
@@ -545,7 +545,7 @@ int _tmain(int argc, _TCHAR *argv[])
 {
     int             result = C2A_SUCCESS;
     CCaptionDllUtil capUtil;
-    SRT_LIST        srtList;
+    CAPTION_LIST    capList;
     app_handler_t   app = { 0 };
 
 #ifdef _DEBUG
@@ -868,7 +868,7 @@ int _tmain(int argc, _TCHAR *argv[])
                 std::vector<LANG_TAG_INFO> tagInfoList;
                 ret = capUtil.GetTagInfo(&tagInfoList);
             } else if (ret == NO_ERR_CAPTION)
-                if (output_caption(&app, &capUtil, &srtList, PTS)) {
+                if (output_caption(&app, &capUtil, &capList, PTS)) {
                     result = C2A_ERR_MEMORY;
                     goto EXIT;
                 }
@@ -877,7 +877,7 @@ int _tmain(int argc, _TCHAR *argv[])
     }
 
 EXIT:
-    clear_caption_list(&srtList);
+    clear_caption_list(&capList);
 
     if (app.fpInputTs)
         fclose(app.fpInputTs);
