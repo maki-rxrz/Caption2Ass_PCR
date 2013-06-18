@@ -19,7 +19,9 @@
 #define C2A_ERR_PARAM       3
 #define C2A_ERR_MEMORY      4
 
-#define WRAP_AROUND_VALUE   (1LL << 33)
+#define WRAP_AROUND_VALUE           (1LL << 33)
+#define WRAP_AROUND_CHECK_VALUE     ((1LL << 32) - 1)
+#define PCR_MAXIMUM_INTERVAL        (100)
 
 typedef struct _ASS_COLOR {
     unsigned char   ucR;
@@ -66,6 +68,7 @@ typedef struct {
     long long   lastPTS;
     long long   basePCR;
     long long   basePTS;
+    long long   correctTS;
     // File handlers
     FILE       *fpInputTs;
     FILE       *fpTarget1;
@@ -136,11 +139,11 @@ do {                                    \
     h  = (int)((T) / (1000 * 60 * 60)); \
 } while(0)
 
-static void DumpAssLine(FILE *fp, CAPTION_LIST *list, long long PTS, app_handler_t *app)
+static void DumpAssLine(FILE *fp, CAPTION_LIST *list, DWORD endTime, app_handler_t *app)
 {
     CAPTION_LIST::iterator it = list->begin();
     for (int i = 0; it != list->end(); it++, i++) {
-        (*it)->endTime = (DWORD)PTS;
+        (*it)->endTime = endTime;
 
         unsigned short sH, sM, sS, sMs, eH, eM, eS, eMs;
         HMS((*it)->startTime, sH, sM, sS, sMs);
@@ -209,14 +212,14 @@ static void DumpAssLine(FILE *fp, CAPTION_LIST *list, long long PTS, app_handler
         ++(app->assIndex);
 }
 
-static void DumpSrtLine(FILE *fp, CAPTION_LIST *list, long long PTS, app_handler_t *app)
+static void DumpSrtLine(FILE *fp, CAPTION_LIST *list, DWORD endTime, app_handler_t *app)
 {
     BOOL bNoSRT = TRUE;
     CAPTION_LIST::iterator it = list->begin();
     for (int i = 0; it != list->end(); it++, i++) {
 
         if (i == 0) {
-            (*it)->endTime = (DWORD)PTS;
+            (*it)->endTime = endTime;
 
             unsigned short sH, sM, sS, sMs, eH, eM, eS, eMs;
             HMS((*it)->startTime, sH, sM, sS, sMs);
@@ -314,7 +317,7 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_
 
         if (it->bClear) {
             // 字幕のスキップをチェック
-            if ((app->basePTS + app->lastPTS + it->dwWaitTime) <= app->startPCR) {
+            if ((PTS + it->dwWaitTime) <= app->startPCR) {
                 _tMyPrintf(_T("%d Caption skip\r\n"), capList->size());
                 if (app->fpLogFile)
                     fprintf(app->fpLogFile, "%d Caption skip\r\n", capList->size());
@@ -322,15 +325,16 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_
                 continue;
             }
             app->bCreateOutput = TRUE;
+            DWORD endTime = (DWORD)((PTS + it->dwWaitTime) - app->startPCR);
             if (cp->format == FORMAT_ASS)
-                DumpAssLine(app->fpTarget1, capList, (PTS + it->dwWaitTime) - app->startPCR, app);
+                DumpAssLine(app->fpTarget1, capList, endTime, app);
             else if (cp->format == FORMAT_SRT)
-                DumpSrtLine(app->fpTarget1, capList, (PTS + it->dwWaitTime) - app->startPCR, app);
+                DumpSrtLine(app->fpTarget1, capList, endTime, app);
             else if (cp->format == FORMAT_TAW)
-                DumpSrtLine(app->fpTarget1, capList, (PTS + it->dwWaitTime) - app->startPCR, app);
+                DumpSrtLine(app->fpTarget1, capList, endTime, app);
             else if (cp->format == FORMAT_DUAL) {
-                DumpAssLine(app->fpTarget1, capList, (PTS + it->dwWaitTime) - app->startPCR, app);
-                DumpSrtLine(app->fpTarget2, capList, (PTS + it->dwWaitTime) - app->startPCR, app);
+                DumpAssLine(app->fpTarget1, capList, endTime, app);
+                DumpSrtLine(app->fpTarget2, capList, endTime, app);
             }
             clear_caption_list(capList);
 
@@ -794,22 +798,32 @@ int _tmain(int argc, _TCHAR *argv[])
                     fprintf(app.fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n",
                             PCR, app.startPCR, app.lastPCR, app.basePCR);
 
+            // Check startPCR.
             if (app.startPCR == 0) {
-                app.startPCR = PCR - cp->DelayTime;
-                app.lastPCR = PCR;
-            }
-            if ((PCR > app.lastPCR) && ((PCR - app.lastPCR) > 60000)) {
-                app.startPCR = PCR - cp->DelayTime;
-                app.lastPCR = PCR;
-            }
-            if (PCR < app.lastPCR) {
-                if (app.fpLogFile) {
-                    fprintf(app.fpLogFile, "====== PCR less than lastPCR ======\r\n");
-                    fprintf(app.fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n",
-                            PCR, app.startPCR, app.lastPCR, app.basePCR);
+                app.startPCR = PCR;
+                app.correctTS = cp->DelayTime;
+            } else {
+                long long checkTS = 0;
+                // Check wrap-around.
+                if (PCR < app.lastPCR) {
+                    if (app.fpLogFile) {
+                        fprintf(app.fpLogFile, "====== PCR less than lastPCR ======\r\n");
+                        fprintf(app.fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n",
+                                PCR, app.startPCR, app.lastPCR, app.basePCR);
+                    }
+                    app.basePCR += WRAP_AROUND_VALUE / 90;
+                    checkTS = WRAP_AROUND_VALUE / 90;
                 }
-                app.basePCR += WRAP_AROUND_VALUE / 90;
+                // Check drop packet. (This is even if the CM cut.)
+                checkTS += PCR;
+                if (checkTS > app.lastPCR) {
+                    checkTS -= app.lastPCR;
+                    if (!(cp->keepInterval) && (checkTS > PCR_MAXIMUM_INTERVAL))
+                        app.correctTS -= checkTS - (PCR_MAXIMUM_INTERVAL >> 2);
+                }
             }
+
+            // Update lastPCR.
             app.lastPCR = PCR;
 
             continue; // next packet
@@ -818,49 +832,65 @@ int _tmain(int argc, _TCHAR *argv[])
         // Caption
         if (pi->CaptionPid != 0 && packet.PID == pi->CaptionPid) {
 
-            // Get Caption PTS.
-            long long PTS = GetPTS(pbPacket);
-            if (app.fpLogFile)
-                fprintf(app.fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
-                        PTS, app.lastPTS, app.basePTS, app.startPCR);
+            long long PTS = 0;
 
             if (packet.PayloadStartFlag) {
+#if 0
+                // FIXME: Check PTS flag in PES Header.
+                // [example]
+                //if (!(packet.pts_flag))
+                //    continue;
+#endif
 
-                if ((PTS > 0) && (app.lastPTS == 0) && (PTS < app.lastPCR) && ((app.lastPCR - PTS) > (0x0FFFFFFFF / 90)))
-                    app.startPCR -= WRAP_AROUND_VALUE / 90;
+                // Get Caption PTS.
+                PTS = GetPTS(pbPacket);
+                if (app.fpLogFile)
+                    fprintf(app.fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
+                            PTS, app.lastPTS, app.basePTS, app.startPCR);
 
-                if (PTS == 0)
-                    PTS = app.lastPTS;
+                // Check skip.
+                if (PTS == 0 || app.startPCR == 0) {
+                    fprintf(app.fpLogFile, "Skip 1st caption\r\n");
+                    continue;
+                }
 
-                if (PTS < app.lastPTS)
+                // Check wrap-around.
+                // [case]
+                //   lastPCR:  Detection on the 1st packet.             [1st PCR  >>> w-around >>> 1st PTS]
+                //   lastPTS:  Detection on the packet of 2nd or later. [prev PTS >>> w-around >>> now PTS]
+                long long checkTS = (app.lastPTS == 0) ? app.lastPCR : app.lastPTS;
+                if ((PTS < checkTS) && ((checkTS - PTS) > (WRAP_AROUND_CHECK_VALUE / 90)))
                     app.basePTS += WRAP_AROUND_VALUE / 90;
+
+                // Update lastPTS.
                 app.lastPTS = PTS;
 
-                PTS = PTS + app.basePTS;
-                if ((PTS - app.startPCR) <= 0)
-                    PTS = app.startPCR;
-
-                unsigned short sH, sM, sS, sMs;
-                HMS(PTS - app.startPCR, sH, sM, sS, sMs);
-
-                _tMyPrintf(_T("Caption Time: %01d:%02d:%02d.%03d\r\n"), sH, sM, sS, sMs);
-
-                if (app.fpLogFile)
-                    fprintf(app.fpLogFile, "1st Caption Time: %01d:%02d:%02d.%03d\r\n", sH, sM, sS, sMs);
-
             } else {
-
-                if (PTS == 0)
-                    PTS = app.lastPTS;
-
-                PTS = PTS + app.basePTS;
-
-                unsigned short sH, sM, sS, sMs;
-                HMS(PTS - app.startPCR, sH, sM, sS, sMs);
-
                 if (app.fpLogFile)
-                    fprintf(app.fpLogFile, "2nd Caption Time: %01d:%02d:%02d.%03d\r\n", sH, sM, sS, sMs);
+                    fprintf(app.fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
+                            PTS, app.lastPTS, app.basePTS, app.startPCR);
+
+                // Check skip.
+                if (app.lastPTS == 0 || app.startPCR == 0) {
+                    fprintf(app.fpLogFile, "Skip 2nd caption\r\n");
+                    continue;
+                }
+
+                // Get Caption PTS from 1st caption.
+                PTS = app.lastPTS;
             }
+
+            // Correct PTS for output.
+            PTS += app.basePTS + app.correctTS;
+
+            unsigned short sH, sM, sS, sMs;
+            HMS((PTS > app.startPCR) ? (PTS - app.startPCR) : 0, sH, sM, sS, sMs);
+
+            if (packet.PayloadStartFlag)
+                _tMyPrintf(_T("Caption Time: %01d:%02d:%02d.%03d\r\n"), sH, sM, sS, sMs);
+            if (app.fpLogFile)
+                fprintf(app.fpLogFile, "%s Caption Time: %01d:%02d:%02d.%03d\r\n",
+                        ((packet.PayloadStartFlag) ? "1st" : "2nd"), sH, sM, sS, sMs);
 
             // Parse caption.
             int ret = capUtil.AddTSPacket(pbPacket);

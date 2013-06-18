@@ -20,6 +20,8 @@ static void usage(void)
     _tMyPrintf(_T("                                 for detecting caption data. [10k]\r\n"));
     _tMyPrintf(_T("                                    Default: 300\r\n"));
     _tMyPrintf(_T("    -log                        Make log-file.\r\n"));
+    _tMyPrintf(_T("    -keepinterval               Keep the interval of the output timestamp\r\n"));
+    _tMyPrintf(_T("                                 upon detection of packet loss.\r\n"));
     _tMyPrintf(_T("  [srt]\r\n"));
     _tMyPrintf(_T("    -srtornament                Set ornament to srt-file.\r\n"));
     _tMyPrintf(_T("  [ass]\r\n"));
@@ -96,6 +98,8 @@ ERROR_PARAM:
             _tcscpy_s(cp->ass_type, string_length, argv[i]);
         } else if (_tcsicmp(argv[i], _T("-log")) == 0)
             cp->LogMode = TRUE;
+        else if (_tcsicmp(argv[i], _T("-keepinterval")) == 0)
+            cp->keepInterval = TRUE;
         else if (_tcsicmp(argv[i], _T("-srtornament")) == 0)
             cp->srtornament = TRUE;
         else if (_tcsicmp(argv[i], _T("-hlc")) == 0) {

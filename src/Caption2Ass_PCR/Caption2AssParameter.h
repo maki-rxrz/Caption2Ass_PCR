@@ -15,6 +15,7 @@ typedef struct {
 typedef struct {
     DWORD       format;
     long        DelayTime;
+    BOOL        keepInterval;
     BYTE        HLCmode;
     BOOL        srtornament;
     BOOL        norubi;
