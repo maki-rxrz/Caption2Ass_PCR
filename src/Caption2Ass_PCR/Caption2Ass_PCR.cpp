@@ -265,6 +265,16 @@ static void DumpSrtLine(FILE *fp, SRT_LIST *list, long long PTS, app_handler_t *
     }
 }
 
+static void clear_caption_list(SRT_LIST *list)
+{
+    if (list->empty())
+        return;
+    for(std::list<PSRT_LINE>::iterator it = list->begin(); it != list->end(); ++it) {
+        delete *it;
+    }
+    list->clear();
+}
+
 static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, SRT_LIST *srtList, long long PTS)
 {
     int workCharSizeMode = 0;
@@ -308,7 +318,7 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, SRT_LIST
                 _tMyPrintf(_T("%d Caption skip\r\n"), srtList->size());
                 if (app->fpLogFile)
                     fprintf(app->fpLogFile, "%d Caption skip\r\n", srtList->size());
-                srtList->clear();
+                clear_caption_list(srtList);
                 continue;
             }
             app->bCreateOutput = TRUE;
@@ -322,7 +332,7 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, SRT_LIST
                 DumpAssLine(app->fpTarget1, srtList, (PTS + it->dwWaitTime) - app->startPCR, app);
                 DumpSrtLine(app->fpTarget2, srtList, (PTS + it->dwWaitTime) - app->startPCR, app);
             }
-            srtList->clear();
+            clear_caption_list(srtList);
 
             continue;
         } else {
@@ -464,6 +474,13 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, SRT_LIST
             }
 
             PSRT_LINE pSrtLine = new SRT_LINE();
+            if (!pSrtLine)
+                goto ERR_EXIT;
+            pSrtLine->str = strUTF8;
+            if (pSrtLine->str == "") {
+                delete pSrtLine;
+                continue;
+            }
             pSrtLine->index                = 0;     //useless
             pSrtLine->startTime            = (PTS > app->startPCR) ? (DWORD)(PTS - app->startPCR) : 0;
             pSrtLine->endTime              = 0;
@@ -484,16 +501,15 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, SRT_LIST
             pSrtLine->outCharVInterval     = (WORD)(workCharVInterval * ratioY);
             pSrtLine->outPosX              = workPosX;
             pSrtLine->outPosY              = workPosY;
-            pSrtLine->str                  = strUTF8;
-            if (pSrtLine->str == "") {
-                delete pSrtLine;
-                continue;
-            }
 
             srtList->push_back(pSrtLine);
         }
 
     }
+    return 0;
+
+ERR_EXIT:
+    return -1;
 }
 
 static int prepare_app_handler(int argc, _TCHAR **argv, app_handler_t *app)
@@ -527,6 +543,8 @@ static int prepare_app_handler(int argc, _TCHAR **argv, app_handler_t *app)
 
 int _tmain(int argc, _TCHAR *argv[])
 {
+    int             result = C2A_SUCCESS;
+    CCaptionDllUtil capUtil;
     SRT_LIST        srtList;
     app_handler_t   app = { 0 };
 
@@ -539,33 +557,35 @@ int _tmain(int argc, _TCHAR *argv[])
 #endif
 
     // Prepare the handlers.
-    if (prepare_app_handler(argc, argv, &app))
-        return C2A_ERR_MEMORY;
+    if (prepare_app_handler(argc, argv, &app)) {
+        result = C2A_ERR_MEMORY;
+        goto EXIT;
+    }
     pid_information_t *pi = app.param->get_pid_information();
     cli_parameter_t   *cp = app.param->get_cli_parameter();
     ass_setting_t     *as = app.param->get_ass_setting();
 
     // Parse arguments.
     if (ParseCmd(argc, argv, app.param)) {
-        SAFE_DELETE(app.param);
-        return C2A_ERR_PARAM;
+        result = C2A_ERR_PARAM;
+        goto EXIT;
     }
     app.norubi      = cp->norubi;
     app.srtornament = (cp->format == FORMAT_TAW) ? FALSE : cp->srtornament;
 
     // Initialize Caption Utility.
-    CCaptionDllUtil capUtil;
-
     if (!capUtil.CheckUNICODE() || (cp->format == FORMAT_TAW)) {
         if (capUtil.Initialize() != NO_ERR) {
             _tMyPrintf(_T("Load Caption.dll failed\r\n"));
-            return C2A_ERR_DLL;
+            result = C2A_ERR_DLL;
+            goto EXIT;
         }
         app.bUnicode = FALSE;
     } else {
         if (capUtil.InitializeUNICODE() != NO_ERR) {
             _tMyPrintf(_T("Load Caption.dll failed\r\n"));
-            return C2A_ERR_DLL;
+            result = C2A_ERR_DLL;
+            goto EXIT;
         }
         app.bUnicode = TRUE;
     }
@@ -607,18 +627,21 @@ int _tmain(int argc, _TCHAR *argv[])
     // Open TS File.
     if (_tfopen_s(&(app.fpInputTs), cp->FileName, _T("rb")) || !(app.fpInputTs)) {
         _tMyPrintf(_T("Open TS File: %s failed\r\n"), cp->FileName);
+        result = C2A_ERR_PARAM;
         goto EXIT;
     }
 
     // Open ASS/SRT File.
     if (_tfopen_s(&(app.fpTarget1), cp->TargetFileName1, _T("wb")) || !(app.fpTarget1)) {
         _tMyPrintf(_T("Open Target File: %s failed\r\n"), cp->TargetFileName1);
+        result = C2A_FAILURE;
         goto EXIT;
     }
     app.assIndex = app.srtIndex = 1;
     if (cp->format == FORMAT_DUAL) {
         if (_tfopen_s(&(app.fpTarget2), cp->TargetFileName2, _T("wb")) || !(app.fpTarget2)) {
             _tMyPrintf(_T("Open Target File: %s failed\r\n"), cp->TargetFileName2);
+            result = C2A_FAILURE;
             goto EXIT;
         }
     }
@@ -632,14 +655,17 @@ int _tmain(int argc, _TCHAR *argv[])
         }
         if (_tfopen_s(&(app.fpLogFile), cp->LogFileName, _T("wb")) || !(app.fpLogFile)) {
             _tMyPrintf(_T("Open Log File: %s failed\r\n"), cp->LogFileName);
+            result = C2A_FAILURE;
             goto EXIT;
         }
     }
 
     // Read ini settings for ASS.
     if ((cp->format == FORMAT_ASS) || (cp->format == FORMAT_DUAL)) {
-        if (IniFileRead(cp->ass_type, as))
+        if (IniFileRead(cp->ass_type, as)) {
+            result = C2A_FAILURE;
             goto EXIT;
+        }
         if ((as->PlayResX * 3) == (as->PlayResY * 4)) {
             app.sidebar_size = (((as->PlayResY * 16) / 9) - as->PlayResX) / 2;
             as->PlayResX = (as->PlayResY * 16) / 9;
@@ -664,6 +690,7 @@ int _tmain(int argc, _TCHAR *argv[])
     if (!FindStartOffset(app.fpInputTs)) {
         _tMyPrintf(_T("Invalid TS File.\r\n"));
         Sleep(2000);
+        result = C2A_FAILURE;
         goto EXIT;
     }
 
@@ -703,6 +730,7 @@ int _tmain(int argc, _TCHAR *argv[])
             if (!resync(pbPacket, app.fpInputTs)) {
                 _tMyPrintf(_T("Invalid TS File.\r\n"));
                 Sleep(2000);
+                result = C2A_FAILURE;
                 goto EXIT;
             }
             continue;
@@ -840,12 +868,17 @@ int _tmain(int argc, _TCHAR *argv[])
                 std::vector<LANG_TAG_INFO> tagInfoList;
                 ret = capUtil.GetTagInfo(&tagInfoList);
             } else if (ret == NO_ERR_CAPTION)
-                output_caption(param, &app, &capUtil, &srtList, PTS);
+                if (output_caption(&app, &capUtil, &srtList, PTS)) {
+                    result = C2A_ERR_MEMORY;
+                    goto EXIT;
+                }
         }
 
     }
 
 EXIT:
+    clear_caption_list(&srtList);
+
     if (app.fpInputTs)
         fclose(app.fpInputTs);
     if (app.fpTarget1)
@@ -864,5 +897,5 @@ EXIT:
 
     SAFE_DELETE(app.param);
 
-    return C2A_SUCCESS;
+    return result;
 }
