@@ -8,38 +8,52 @@
 #include "cmdline.h"
 #include "CaptionDef.h"
 
-static void usage(void)
+static void usage(int argc)
 {
-    _tMyPrintf(_T("Usage:  Caption2Ass_PCR.exe [Options] source.ts [target filename]\r\n"));
-    _tMyPrintf(_T("\r\nOptions:\r\n"));
-    _tMyPrintf(_T("    -format <string>            Specify output format. {srt|ass|taw|dual}\r\n"));
-    _tMyPrintf(_T("                                    Default: ass\r\n"));
-    _tMyPrintf(_T("    -delay <integer>            Sepcify delay time. [mili-sec]\r\n"));
-    _tMyPrintf(_T("    -PMT_PID <hex>              Specify PID value.\r\n"));
-    _tMyPrintf(_T("    -detect_length <integer>    Specify upper limit value of packet counting\r\n"));
-    _tMyPrintf(_T("                                 for detecting caption data. [10k]\r\n"));
-    _tMyPrintf(_T("                                    Default: 300\r\n"));
-    _tMyPrintf(_T("    -log                        Make log-file.\r\n"));
-    _tMyPrintf(_T("    -keepinterval               Keep the interval of the output timestamp\r\n"));
-    _tMyPrintf(_T("                                 upon detection of packet loss.\r\n"));
-    _tMyPrintf(_T("  [srt]\r\n"));
-    _tMyPrintf(_T("    -srtornament                Set ornament to srt-file.\r\n"));
-    _tMyPrintf(_T("  [ass]\r\n"));
-    _tMyPrintf(_T("    -asstype <string>           Sepcify type name of ass setting.\r\n"));
-    _tMyPrintf(_T("    -hlc <string>               Sepcify HLC control type. {kigou|box|draw}\r\n"));
-    _tMyPrintf(_T("                                    Default: kigou\r\n"));
-    _tMyPrintf(_T("    -norubi                     Does not output the Rubi to ass-file.\r\n"));
-    _tMyPrintf(_T("\r\nExample:\r\n"));
-    _tMyPrintf(_T("    Caption2Ass_PCR.exe -format dual \"source.ts\"\r\n"));
-    _tMyPrintf(_T("    Caption2Ass_PCR.exe -format ass -asstype Default43 -hlc kigou \"source.ts\"\r\n"));
-    _tMyPrintf(_T("    Caption2Ass_PCR.exe -delay 500 -PMT_PID 1f2 -detect_length 400 \"source.ts\"\r\n"));
+    static const TCHAR *help[] = {
+        _T("Usage:  Caption2Ass_PCR.exe [Options] source.ts [target filename]"),
+        _T(""),
+        _T("Options:"),
+        _T("    -format <string>            Specify output format. {srt|ass|taw|dual}"),
+        _T("                                    Default: ass"),
+        _T("    -delay <integer>            Sepcify delay time. [mili-sec]"),
+        _T("    -PMT_PID <hex>              Specify PID value."),
+        _T("    -detect_length <integer>    Specify upper limit value of packet counting"),
+        _T("                                 for detecting caption data. [10k]"),
+        _T("                                    Default: 300"),
+        _T("    -log                        Make log-file."),
+        _T("    -keepinterval               Keep the interval of the output timestamp"),
+        _T("                                 upon detection of packet loss."),
+        _T("  [srt]"),
+        _T("    -srtornament                Set ornament to srt-file."),
+        _T("  [ass]"),
+        _T("    -asstype <string>           Sepcify type name of ass setting."),
+        _T("    -hlc <string>               Sepcify HLC control type. {kigou|box|draw}"),
+        _T("                                    Default: kigou"),
+        _T("    -norubi                     Does not output the Rubi to ass-file."),
+        _T(""),
+        _T("Example:"),
+        _T("    Caption2Ass_PCR.exe -format dual \"source.ts\""),
+        _T("    Caption2Ass_PCR.exe -format ass -asstype Default43 -hlc kigou \"source.ts\""),
+        _T("    Caption2Ass_PCR.exe -delay 500 -PMT_PID 1f2 -detect_length 400 \"source.ts\""),
+        NULL
+    };
+
+    if (argc < 2) {
+        for (int i = 0; help[i]; i++)
+            _ftprintf_s(stdout, _T("%s\n"), help[i]);
+    }
+    else {
+        for (int i = 0; help[i]; i++)
+            _tMyPrintf(_T("%s\r\n"), help[i]);
+    }
 }
 
 extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param)
 {
     if (argc < 2) {
 ERROR_PARAM:
-        usage();
+        usage(argc);
         return -1;
     }
 
