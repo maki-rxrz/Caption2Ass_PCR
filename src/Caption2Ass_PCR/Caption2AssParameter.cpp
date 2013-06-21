@@ -7,10 +7,6 @@
 #include "CaptionDef.h"
 #include "Caption2Ass_PCR.h"
 
-#define CLI_PARAMETER_STRING_NUMS   (5)
-#define ASS_SETTING_STRING_NUMS     (9)
-#define PARAMETER_STRING_NUMS       (CLI_PARAMETER_STRING_NUMS + ASS_SETTING_STRING_NUMS)
-
 CCaption2AssParameter::CCaption2AssParameter(void)
  : string_length(MAX_PATH)
 {
@@ -55,7 +51,7 @@ int CCaption2AssParameter::Allocate(size_t _string_length)
         string_length = _string_length;
 
     // Allocate string buffers.
-    TCHAR **string_list[PARAMETER_STRING_NUMS + 1] = {
+    TCHAR **string_list[] = {
         // cli_parameter_t
         &(cp->ass_type),
         &(cp->FileName),
@@ -75,7 +71,7 @@ int CCaption2AssParameter::Allocate(size_t _string_length)
         // last(null)
         NULL
     };
-    for (int i = 0; i < PARAMETER_STRING_NUMS; i++) {
+    for (int i = 0; string_list[i]; i++) {
         *(string_list[i]) = new TCHAR[string_length];
         if (!*(string_list[i]))
             goto fail;
@@ -95,7 +91,7 @@ void CCaption2AssParameter::Free(void)
     ass_setting_t   *as = &ass_setting;
 
     // Free string buffers.
-    TCHAR **string_list[PARAMETER_STRING_NUMS + 1] = {
+    TCHAR **string_list[] = {
         // cli_parameter_t
         &(cp->ass_type),
         &(cp->FileName),
@@ -115,7 +111,6 @@ void CCaption2AssParameter::Free(void)
         // last(null)
         NULL
     };
-    for (int i = 0; i < PARAMETER_STRING_NUMS; i++)
-        if (*(string_list[i]))
-            SAFE_DELETE_ARRAY(*(string_list[i]));
+    for (int i = 0; string_list[i]; i++)
+        SAFE_DELETE_ARRAY(*(string_list[i]));
 }
