@@ -13,8 +13,8 @@ CCaption2AssParameter::CCaption2AssParameter(void)
     Initialize();
 }
 
-CCaption2AssParameter::CCaption2AssParameter(size_t _string_length)
- : string_length(_string_length)
+CCaption2AssParameter::CCaption2AssParameter(size_t string_length)
+ : string_length(string_length)
 {
     Initialize();
 }
@@ -38,17 +38,17 @@ void CCaption2AssParameter::Initialize(void)
     // Setup default settings.
     cp->format  = FORMAT_ASS;
     cp->HLCmode = HLC_kigou;
-    if (string_length < MAX_PATH)
-        string_length = MAX_PATH;
+    if (this->string_length < MAX_PATH)
+        this->string_length = MAX_PATH;
 }
 
-int CCaption2AssParameter::Allocate(size_t _string_length)
+int CCaption2AssParameter::Allocate(size_t string_length)
 {
     cli_parameter_t *cp = &cli_parameter;
     ass_setting_t   *as = &ass_setting;
 
-    if (string_length < _string_length)
-        string_length = _string_length;
+    if (this->string_length < string_length)
+        this->string_length = string_length;
 
     // Allocate string buffers.
     TCHAR **string_list[] = {
@@ -72,10 +72,10 @@ int CCaption2AssParameter::Allocate(size_t _string_length)
         NULL
     };
     for (int i = 0; string_list[i]; i++) {
-        *(string_list[i]) = new TCHAR[string_length];
+        *(string_list[i]) = new TCHAR[this->string_length];
         if (!*(string_list[i]))
             goto fail;
-        memset(*(string_list[i]), 0, sizeof(TCHAR) * string_length);
+        memset(*(string_list[i]), 0, sizeof(TCHAR) * this->string_length);
     }
 
     return 0;
