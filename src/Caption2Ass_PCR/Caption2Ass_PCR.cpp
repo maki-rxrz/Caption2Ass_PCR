@@ -854,7 +854,8 @@ int _tmain(int argc, _TCHAR *argv[])
 
                 // Check skip.
                 if (PTS == TIMESTAMP_INVALID_VALUE || app.startPCR == TIMESTAMP_INVALID_VALUE) {
-                    fprintf(app.fpLogFile, "Skip 1st caption\r\n");
+                    if (app.fpLogFile)
+                        fprintf(app.fpLogFile, "Skip 1st caption\r\n");
                     continue;
                 }
 
@@ -876,7 +877,8 @@ int _tmain(int argc, _TCHAR *argv[])
 
                 // Check skip.
                 if (app.lastPTS == TIMESTAMP_INVALID_VALUE || app.startPCR == TIMESTAMP_INVALID_VALUE) {
-                    fprintf(app.fpLogFile, "Skip 2nd caption\r\n");
+                    if (app.fpLogFile)
+                        fprintf(app.fpLogFile, "Skip 2nd caption\r\n");
                     continue;
                 }
 
