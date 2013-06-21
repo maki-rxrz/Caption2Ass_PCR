@@ -272,9 +272,8 @@ static void clear_caption_list(CAPTION_LIST *list)
 {
     if (list->empty())
         return;
-    for(std::list<PCAPTION_LINE>::iterator it = list->begin(); it != list->end(); ++it) {
+    for(std::list<PCAPTION_LINE>::iterator it = list->begin(); it != list->end(); ++it)
         delete *it;
-    }
     list->clear();
 }
 
@@ -378,18 +377,18 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_
             }
 
             for (; it2 != it->CharList.end(); it2++) {
-                workCharSizeMode = it2->emCharSizeMode;
-                workucR = it2->stCharColor.ucR;
-                workucG = it2->stCharColor.ucG;
-                workucB = it2->stCharColor.ucB;
-                workUnderLine = it2->bUnderLine;
-                workShadow = it2->bShadow;
-                workBold = it2->bBold;
-                workItalic = it2->bItalic;
-                workFlushMode = it2->bFlushMode;
-                workHLC = (it2->bHLC != 0) ? cp->HLCmode : it2->bHLC;
-                workCharW = it2->wCharW;
-                workCharH = it2->wCharH;
+                workCharSizeMode  = it2->emCharSizeMode;
+                workucR           = it2->stCharColor.ucR;
+                workucG           = it2->stCharColor.ucG;
+                workucB           = it2->stCharColor.ucB;
+                workUnderLine     = it2->bUnderLine;
+                workShadow        = it2->bShadow;
+                workBold          = it2->bBold;
+                workItalic        = it2->bItalic;
+                workFlushMode     = it2->bFlushMode;
+                workHLC           = (it2->bHLC != 0) ? cp->HLCmode : it2->bHLC;
+                workCharW         = it2->wCharW;
+                workCharH         = it2->wCharH;
                 workCharHInterval = it2->wCharHInterval;
                 workCharVInterval = it2->wCharVInterval;
                 // Calculate offsetPos[X/Y].
@@ -440,13 +439,13 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_
                 // Correction for workPosX.
                 workPosX = (workPosX > app->sidebar_size) ? workPosX - app->sidebar_size : 0;
 
-                // ‚Ó‚è‚ª‚È Skip
-                // ‚Ó‚è‚ª‚È Skip ‚Í o—ÍŽž‚É
-                if ((it2->emCharSizeMode == STR_SMALL) && (!(app->bUnicode)))
-                    workPosY += (int)(10 * ratioY);
-                if ((it2->emCharSizeMode == STR_MEDIUM) && (!(app->bUnicode)))
-                    // ‘SŠp -> ”¼Šp
-                    it2->strDecode = GetHalfChar(it2->strDecode);
+                if (!(app->bUnicode)) {
+                    if (it2->emCharSizeMode == STR_SMALL)
+                        workPosY += (int)(10 * ratioY);
+                    if (it2->emCharSizeMode == STR_MEDIUM)
+                        // ‘SŠp -> ”¼Šp
+                        it2->strDecode = GetHalfChar(it2->strDecode);
+                }
 
                 if (app->fpLogFile) {
                     if (it2->bUnderLine)
@@ -463,8 +462,8 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_
                     fprintf(app->fpLogFile, "%s\r\n", it2->strDecode.c_str());
                 }
 
-                WCHAR str[STRING_BUFFER_SIZE] = { 0 };
-                CHAR strUTF8_2[STRING_BUFFER_SIZE] = { 0 };
+                WCHAR str[STRING_BUFFER_SIZE]       = { 0 };
+                CHAR  strUTF8_2[STRING_BUFFER_SIZE] = { 0 };
 
                 if ((cp->format == FORMAT_TAW) || (app->bUnicode))
                     strcat_s(strUTF8, STRING_BUFFER_SIZE, it2->strDecode.c_str());
@@ -754,10 +753,14 @@ int _tmain(int argc, _TCHAR *argv[])
 
         // PMT
         if (pi->PMTPid != 0 && packet.PID == pi->PMTPid) {
-            if (0x2b == (pbPacket[5] << 4) + ((pbPacket[6] & 0xf0) >> 4)) {
-                ;
-            } else
-                continue; // next packet
+            if (pbPacket[5] != 0x02 || (pbPacket[6] & 0xf0) != 0xb0)
+                /*--------------------------------------------------
+                 * pbPacket[5]  (8)  table_id
+                 * pbPacket[6]  (1)  section_syntax_indicator
+                 *              (1)  '0'
+                 *              (2)  reserved '11'
+                 *------------------------------------------------*/
+                continue;   // next packet
 
             parse_PMT(&pbPacket[0], &(pi->PCRPid), &(pi->CaptionPid));
 
