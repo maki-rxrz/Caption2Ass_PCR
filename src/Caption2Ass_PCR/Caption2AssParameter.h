@@ -23,8 +23,7 @@ typedef struct {
     DWORD       detectLength;
     TCHAR      *ass_type;
     TCHAR      *FileName;
-    TCHAR      *TargetFileName1;
-    TCHAR      *TargetFileName2;
+    TCHAR      *TargetFileName;
     TCHAR      *LogFileName;
 } cli_parameter_t;
 

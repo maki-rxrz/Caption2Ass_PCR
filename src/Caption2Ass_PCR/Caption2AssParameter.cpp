@@ -55,8 +55,7 @@ int CCaption2AssParameter::Allocate(size_t string_length)
         // cli_parameter_t
         &(cp->ass_type),
         &(cp->FileName),
-        &(cp->TargetFileName1),
-        &(cp->TargetFileName2),
+        &(cp->TargetFileName),
         &(cp->LogFileName),
         // ass_setting_t
         &(as->Comment1),
@@ -95,8 +94,7 @@ void CCaption2AssParameter::Free(void)
         // cli_parameter_t
         &(cp->ass_type),
         &(cp->FileName),
-        &(cp->TargetFileName1),
-        &(cp->TargetFileName2),
+        &(cp->TargetFileName),
         &(cp->LogFileName),
         // ass_setting_t
         &(as->Comment1),

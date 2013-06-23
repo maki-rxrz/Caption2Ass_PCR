@@ -17,6 +17,7 @@ extern void unload_debug(int argc, TCHAR **argv);
 
 typedef enum {
     FORMAT_INVALID = 0,
+    FORMAT_LOG     = 0,
     FORMAT_SRT     = 1,
     FORMAT_ASS     = 2,
     FORMAT_TAW     = 3,

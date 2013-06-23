@@ -13,15 +13,19 @@
 #include "tslutil.h"
 #include "Caption2Ass_PCR.h"
 
-#define C2A_SUCCESS         0
-#define C2A_FAILURE         1
-#define C2A_ERR_DLL         2
-#define C2A_ERR_PARAM       3
-#define C2A_ERR_MEMORY      4
-
 #define WRAP_AROUND_VALUE           (1LL << 33)
 #define WRAP_AROUND_CHECK_VALUE     ((1LL << 32) - 1)
 #define PCR_MAXIMUM_INTERVAL        (100)
+
+static const unsigned char utf8_bom[3] = { 0xEF, 0xBB, 0xBF };
+
+enum {
+    C2A_SUCCESS    = 0,
+    C2A_FAILURE    = 1,
+    C2A_ERR_DLL    = 2,
+    C2A_ERR_PARAM  = 3,
+    C2A_ERR_MEMORY = 4
+};
 
 typedef struct _ASS_COLOR {
     unsigned char   ucR;
@@ -53,34 +57,345 @@ typedef struct _CAPTION_LINE {
 
 typedef std::list<PCAPTION_LINE> CAPTION_LIST;
 
-typedef struct {
-    // Output handlers
-    DWORD       assIndex;       // index for ASS
-    DWORD       srtIndex;       // index for SRT
-    BOOL        norubi;
-    BOOL        srtornament;
-    int         sidebar_size;
-    BOOL        bUnicode;
-    BOOL        bCreateOutput;
+#define HMS(T, h, m, s, ms)             \
+do {                                    \
+    ms = (int)(T) % 1000;               \
+    s  = (int)((T) / 1000) % 60;        \
+    m  = (int)((T) / (1000 * 60)) % 60; \
+    h  = (int)((T) / (1000 * 60 * 60)); \
+} while(0)
+
+typedef enum {
+    C2A_PARAM_ALL,
+    C2A_PARAM_PID,
+    C2A_PARAM_CLI,
+    C2A_PARAM_ASS,
+    C2A_PARAM_INVALID
+} c2a_parameter_type;
+
+class ITimestampHandler
+{
+public:
     // Timestamp handlers
-    long long   startPCR;
-    long long   lastPCR;
-    long long   lastPTS;
-    long long   basePCR;
-    long long   basePTS;
-    long long   correctTS;
-    // File handlers
-    FILE       *fpInputTs;
-    FILE       *fpTarget1;
-    FILE       *fpTarget2;
-    FILE       *fpLogFile;
+    long long       startPCR;
+    long long       lastPCR;
+    long long       lastPTS;
+    long long       basePCR;
+    long long       basePTS;
+    long long       correctTS;
+
+public:
+    void init_timestamp(void)
+    {
+        this->startPCR  = TIMESTAMP_INVALID_VALUE;
+        this->lastPCR   = TIMESTAMP_INVALID_VALUE;
+        this->lastPTS   = TIMESTAMP_INVALID_VALUE;
+        this->basePCR   = 0;
+        this->basePTS   = 0;
+        this->correctTS = 0;
+    }
+    virtual void initialize(void)
+    {
+        this->init_timestamp();
+    }
+
+};
+
+class IAppHandler : public ITimestampHandler
+{
+public:
+    // Control informations
+    BOOL            bCreateOutput;
+    BOOL            bUnicode;
+    int             sidebar_size;   // ASS only
+    size_t          string_length;
+
+protected:
     // Parameter handlers
     CCaption2AssParameter  *param;
-    // Control informations
-    size_t      string_length;
-} app_handler_t;
 
-static int count_UTF8(const unsigned char *string)
+protected:
+    void initialize(void)
+    {
+        this->init_timestamp();
+        this->bCreateOutput = FALSE;
+        this->bUnicode      = FALSE;
+        this->sidebar_size  = 0;
+        this->string_length = 0;
+        this->param         = NULL;
+    }
+
+public:
+    void *GetParam(c2a_parameter_type param_type)
+    {
+        void *param = NULL;
+        switch (param_type) {
+        case C2A_PARAM_ALL:
+            param = static_cast<void *>(this->param);
+            break;
+        case C2A_PARAM_PID:
+            param = static_cast<void *>(this->param->get_pid_information());
+            break;
+        case C2A_PARAM_CLI:
+            param = static_cast<void *>(this->param->get_cli_parameter());
+            break;
+        case C2A_PARAM_ASS:
+            param = static_cast<void *>(this->param->get_ass_setting());
+            break;
+        default:
+            break;
+        }
+        return param;
+    }
+};
+
+class IOutputHandler
+{
+public:
+    int             active;
+
+protected:
+    format_type     format;
+    TCHAR          *name;
+    FILE           *fp;
+    DWORD           index;
+    size_t          string_length;
+    IAppHandler    *app;
+
+protected:
+    void initialize(format_type format = FORMAT_INVALID, IAppHandler *app = NULL)
+    {
+        this->active        = 0;
+        this->format        = format;
+        this->name          = NULL;
+        this->fp            = NULL;
+        this->index         = 0;
+        this->string_length = MAX_PATH;
+        this->app           = app;
+    }
+    void release(void)
+    {
+        SAFE_DELETE_ARRAY(this->name);
+    }
+    void set_name(TCHAR *name, TCHAR *ext)
+    {
+        // Copy the specified strings to the output name.
+        _tcscpy_s(this->name, this->string_length, name);
+        _tcscat_s(this->name, this->string_length, ext);
+    }
+    int open(TCHAR *file_type)
+    {
+        if (_tcsicmp(this->name, _T("")) == 0)
+            return 1;
+        if (_tfopen_s(&(this->fp), this->name, _T("wb")) || !(this->fp)) {
+            _tMyPrintf(_T("Open Target File: %s failed\r\n"), this->name, file_type);
+            return -1;
+        }
+        this->index  = 1;
+        this->active = 1;
+        return 0;
+    }
+    void close(int removed)
+    {
+        if (this->fp) {
+            fclose(this->fp);
+            if (removed) {
+                Sleep(1000);
+                remove(this->name);
+            }
+        }
+        this->fp = NULL;
+    }
+
+public:
+    virtual void SetName(void) = 0;
+    virtual int  Open(void) = 0;
+    virtual void WriteHeader(void) = 0;
+    virtual void Close(void) = 0;
+
+    int Allocate(size_t string_length = 0)
+    {
+        if (this->string_length < string_length)
+            this->string_length = string_length;
+        this->name = new TCHAR[this->string_length];
+        return !(this->name);
+    }
+};
+
+class ICaptionHandler : public IOutputHandler
+{
+protected:
+    int count_UTF8(const unsigned char *string);
+
+public:
+    virtual int  Setup(void) = 0;
+    virtual void Dump(CAPTION_LIST& capList, DWORD endTime) = 0;
+};
+
+class ILogHandler : public IOutputHandler
+{
+public:
+    void print(LPCTSTR msg, ...)
+    {
+        va_list ptr;
+        va_start(ptr, msg);
+        vfprintf(this->fp, msg, ptr);
+        va_end(ptr);
+    }
+};
+
+class CLogHandler : public ILogHandler
+{
+public:
+    CLogHandler(IAppHandler *app)
+    {
+        this->initialize(FORMAT_LOG, app);
+    }
+    ~CLogHandler(void)
+    {
+        this->release();
+    }
+
+    void SetName(void);
+    int  Open(void);
+    void Close(void);
+    void WriteHeader(void);
+};
+
+class CAssHandler : public ICaptionHandler
+{
+public:
+    BOOL            norubi;
+
+private:
+    ass_setting_t  *as;
+
+public:
+    CAssHandler(IAppHandler *app)
+     : norubi(FALSE), as(NULL)
+    {
+        this->initialize(FORMAT_ASS, app);
+    }
+    ~CAssHandler(void)
+    {
+        this->release();
+    }
+
+    void SetName(void);
+    int  Open(void);
+    void WriteHeader(void);
+    void Close(void);
+    int  Setup(void);
+    void Dump(CAPTION_LIST& capList, DWORD endTime);
+};
+
+class CSrtHandler : public ICaptionHandler
+{
+public:
+    BOOL            ornament;
+
+public:
+    CSrtHandler(IAppHandler *app)
+     : ornament(FALSE)
+    {
+        this->initialize(FORMAT_SRT, app);
+    }
+    ~CSrtHandler(void)
+    {
+        this->release();
+    }
+
+    void SetName(void);
+    int  Open(void);
+    void WriteHeader(void);
+    void Close(void);
+    int  Setup(void);
+    void Dump(CAPTION_LIST& capList, DWORD endTime);
+};
+
+class CAppHandler : public IAppHandler
+{
+public:
+    // File handlers
+    FILE           *fpInputTs;
+    // Caption handlers
+    CLogHandler    *log;
+    CAssHandler    *ass;
+    CSrtHandler    *srt;
+
+public:
+    CAppHandler(void)
+     : fpInputTs(NULL), log(NULL), ass(NULL), srt(NULL)
+    {
+        this->initialize();
+    }
+    ~CAppHandler(void)
+    {
+        this->Free();
+    }
+
+    int Allocate(size_t string_length);
+    void Free(void);
+};
+
+
+int CAppHandler::Allocate(size_t string_length)
+{
+    CCaption2AssParameter *param = NULL;
+    CLogHandler           *log   = NULL;
+    CAssHandler           *ass   = NULL;
+    CSrtHandler           *srt   = NULL;
+
+    // Create parameter handler.
+    param = new CCaption2AssParameter();
+    if (!param) {
+        _tMyPrintf(_T("Failed to allocate the paramter handler.\r\n"));
+        goto ERR_EXIT;
+    }
+    if (param->Allocate(string_length)) {
+        _tMyPrintf(_T("Failed to allocate the buffers for output.\r\n"));
+        goto ERR_EXIT;
+    }
+
+    // Create caption handler.
+    cli_parameter_t *cp = param->get_cli_parameter();
+    log = new CLogHandler(this);
+    ass = new CAssHandler(this);
+    srt = new CSrtHandler(this);
+    if (!(log) || !(ass) || !(srt)) {
+        _tMyPrintf(_T("Failed to allocate the caption handler.\r\n"));
+        goto ERR_EXIT;
+    }
+    if (log->Allocate(string_length) || ass->Allocate(string_length) || srt->Allocate(string_length)) {
+        _tMyPrintf(_T("Failed to allocate the buffers for caption names.\r\n"));
+        goto ERR_EXIT;
+    }
+
+    // Setup.
+    this->string_length = string_length;
+    this->param         = param;
+    this->log           = log;
+    this->ass           = ass;
+    this->srt           = srt;
+    return 0;
+
+ERR_EXIT:
+    SAFE_DELETE(log);
+    SAFE_DELETE(ass);
+    SAFE_DELETE(srt);
+    SAFE_DELETE(param);
+    return -1;
+}
+
+void CAppHandler::Free(void)
+{
+    SAFE_DELETE(this->log);
+    SAFE_DELETE(this->ass);
+    SAFE_DELETE(this->srt);
+    SAFE_DELETE(this->param);
+}
+
+int ICaptionHandler::count_UTF8(const unsigned char *string)
 {
     int len = 0;
 
@@ -131,18 +446,158 @@ static int count_UTF8(const unsigned char *string)
     return len;
 }
 
-#define HMS(T, h, m, s, ms)             \
-do {                                    \
-    ms = (int)(T) % 1000;               \
-    s  = (int)((T) / 1000) % 60;        \
-    m  = (int)((T) / (1000 * 60)) % 60; \
-    h  = (int)((T) / (1000 * 60 * 60)); \
-} while(0)
-
-static void DumpAssLine(FILE *fp, CAPTION_LIST *list, DWORD endTime, app_handler_t *app)
+void CLogHandler::SetName(void)
 {
-    CAPTION_LIST::iterator it = list->begin();
-    for (int i = 0; it != list->end(); it++, i++) {
+    cli_parameter_t *cp = static_cast<cli_parameter_t *>(this->app->GetParam(C2A_PARAM_CLI));
+    if (!(cp->LogMode))
+        return;
+    // Set the log filename.
+    TCHAR *name = cp->LogFileName;
+    TCHAR *ext  = NULL;
+    if (_tcsicmp(name, _T("")) == 0) {
+        name = cp->TargetFileName;
+        ext  = _T("_Caption.log");
+    }
+    this->set_name(name, ext);
+}
+
+void CAssHandler::SetName(void)
+{
+    cli_parameter_t *cp = static_cast<cli_parameter_t *>(this->app->GetParam(C2A_PARAM_CLI));
+    if ((cp->format != FORMAT_ASS) && (cp->format != FORMAT_DUAL))
+        return;
+    // Set the ass filename.
+    this->set_name(cp->TargetFileName, _T(".ass"));
+}
+
+void CSrtHandler::SetName(void)
+{
+    cli_parameter_t *cp = static_cast<cli_parameter_t *>(this->app->GetParam(C2A_PARAM_CLI));
+    if ((cp->format != FORMAT_SRT) && (cp->format != FORMAT_TAW) && (cp->format != FORMAT_DUAL))
+        return;
+    // Set the srt filename.
+    this->set_name(cp->TargetFileName, _T(".srt"));
+}
+
+int CLogHandler::Open(void)
+{
+    if (this->open(_T("Log")) < 0)
+        return -1;
+    return 0;
+}
+
+int CAssHandler::Open(void)
+{
+    int ret = this->open(_T("Target"));
+    if (ret > 0)
+        return 0;
+    else if (ret < 0)
+        return -1;
+
+    cli_parameter_t *cp = static_cast<cli_parameter_t *>(this->app->GetParam(C2A_PARAM_CLI));
+
+    // Initialize.
+    this->norubi = cp->norubi;
+    return 0;
+}
+
+int CSrtHandler::Open(void)
+{
+    int ret = this->open(_T("Target"));
+    if (ret > 0)
+        return 0;
+    else if (ret < 0)
+        return -1;
+
+    cli_parameter_t *cp = static_cast<cli_parameter_t *>(this->app->GetParam(C2A_PARAM_CLI));
+
+    // Initialize.
+    this->ornament = (cp->format == FORMAT_TAW) ? FALSE : cp->srtornament;
+    return 0;
+}
+
+void CLogHandler::WriteHeader(void)
+{
+    if (!(this->fp))
+        return;
+    if (this->app->bUnicode)
+        fwrite(utf8_bom, 3, 1, this->fp);
+}
+
+void CAssHandler::WriteHeader(void)
+{
+    if (!(this->fp))
+        return;
+    fwrite(utf8_bom, 3, 1, this->fp);
+    assHeaderWrite(this->fp, this->as);
+}
+
+void CSrtHandler::WriteHeader(void)
+{
+    if (!(this->fp) || this->format == FORMAT_TAW)
+        return;
+    fwrite(utf8_bom, 3, 1, this->fp);
+}
+
+void CLogHandler::Close(void)
+{
+    int removed = this->index == 0;
+    this->close(removed);
+}
+
+void CAssHandler::Close(void)
+{
+    int removed = this->index == 1;
+    this->close(removed);
+}
+
+void CSrtHandler::Close(void)
+{
+    int removed = this->index == 1;
+    this->close(removed);
+}
+
+int CAssHandler::Setup(void)
+{
+    if (!(this->active))
+        return 1;
+
+    cli_parameter_t *cp = static_cast<cli_parameter_t *>(this->app->GetParam(C2A_PARAM_CLI));
+    ass_setting_t   *as = static_cast<ass_setting_t *>(this->app->GetParam(C2A_PARAM_ASS));
+
+    // Read ini settings.
+    if (IniFileRead(cp->ass_type, as))
+        return -1;
+
+    // Check the resolution conversion.
+    if ((as->PlayResX * 3) == (as->PlayResY * 4)) {
+        this->app->sidebar_size = (((as->PlayResY * 16) / 9) - as->PlayResX) / 2;
+        as->PlayResX = (as->PlayResY * 16) / 9;
+    }
+
+    // Setup ass settings.
+    this->as = as;
+    return 0;
+}
+
+int CSrtHandler::Setup(void)
+{
+    if (!(this->active))
+        return 1;
+
+    cli_parameter_t *cp = static_cast<cli_parameter_t *>(this->app->GetParam(C2A_PARAM_CLI));
+
+    // Setup format.
+    this->format = (cp->format != FORMAT_TAW) ? FORMAT_SRT : FORMAT_TAW;
+    return 0;
+}
+
+void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
+{
+    FILE *fp = this->fp;
+
+    CAPTION_LIST::iterator it = capList.begin();
+    for (int i = 0; it != capList.end(); it++, i++) {
         (*it)->endTime = endTime;
 
         unsigned short sH, sM, sS, sMs, eH, eM, eS, eMs;
@@ -155,7 +610,7 @@ static void DumpAssLine(FILE *fp, CAPTION_LIST *list, DWORD endTime, app_handler
             int iHankaku;
             unsigned char usTmpUTF8[STRING_BUFFER_SIZE] = { 0 };
             memcpy_s(usTmpUTF8, STRING_BUFFER_SIZE, (*it)->str.c_str(), (*it)->str.size());
-            iHankaku = count_UTF8(usTmpUTF8);
+            iHankaku = this->count_UTF8(usTmpUTF8);
             int iBoxPosX = (*it)->outPosX + (iHankaku * (((*it)->outCharW + (*it)->outCharHInterval) / 4)) - ((*it)->outCharHInterval / 4);
             int iBoxPosY = (*it)->outPosY + ((*it)->outCharVInterval / 2);
             int iBoxScaleX = (iHankaku + 1) * 50;
@@ -170,7 +625,7 @@ static void DumpAssLine(FILE *fp, CAPTION_LIST *list, DWORD endTime, app_handler
             int iHankaku;
             unsigned char usTmpUTF8[STRING_BUFFER_SIZE] = { 0 };
             memcpy_s(usTmpUTF8, STRING_BUFFER_SIZE, (*it)->str.c_str(), (*it)->str.size());
-            iHankaku = count_UTF8(usTmpUTF8);
+            iHankaku = this->count_UTF8(usTmpUTF8);
             int iBoxPosX = (*it)->outPosX + (iHankaku * (((*it)->outCharW + (*it)->outCharHInterval) / 4));
             int iBoxPosY = (*it)->outPosY + ((*it)->outCharVInterval / 4);
             int iBoxScaleX = iHankaku * 55;
@@ -195,7 +650,7 @@ static void DumpAssLine(FILE *fp, CAPTION_LIST *list, DWORD endTime, app_handler
             fprintf(fp, "\\i1");
         fprintf(fp, "}");
 
-        if (((*it)->outCharSizeMode == STR_SMALL) && (app->norubi)) {
+        if (((*it)->outCharSizeMode == STR_SMALL) && (this->norubi)) {
             fprintf(fp, "\\N");
         } else {
             if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_kigou))
@@ -208,15 +663,17 @@ static void DumpAssLine(FILE *fp, CAPTION_LIST *list, DWORD endTime, app_handler
         fprintf(fp, "\r\n");
     }
 
-    if (list->size() > 0)
-        ++(app->assIndex);
+    if (capList.size() > 0)
+        ++(this->index);
 }
 
-static void DumpSrtLine(FILE *fp, CAPTION_LIST *list, DWORD endTime, app_handler_t *app)
+void CSrtHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
 {
+    FILE *fp = this->fp;
+
     BOOL bNoSRT = TRUE;
-    CAPTION_LIST::iterator it = list->begin();
-    for (int i = 0; it != list->end(); it++, i++) {
+    CAPTION_LIST::iterator it = capList.begin();
+    for (int i = 0; it != capList.end(); it++, i++) {
 
         if (i == 0) {
             (*it)->endTime = endTime;
@@ -225,14 +682,14 @@ static void DumpSrtLine(FILE *fp, CAPTION_LIST *list, DWORD endTime, app_handler
             HMS((*it)->startTime, sH, sM, sS, sMs);
             HMS((*it)->endTime, eH, eM, eS, eMs);
 
-            fprintf(fp, "%d\r\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\r\n", app->srtIndex, sH, sM, sS, sMs, eH, eM, eS, eMs);
+            fprintf(fp, "%d\r\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\r\n", this->index, sH, sM, sS, sMs, eH, eM, eS, eMs);
         }
 
         // ふりがな Skip
         if ((*it)->outCharSizeMode == STR_SMALL)
             continue;
         bNoSRT = FALSE;
-        if (app->srtornament) {
+        if (this->ornament) {
             if ((*it)->outItalic)
                 fprintf(fp, "<i>");
             if ((*it)->outBold)
@@ -247,7 +704,7 @@ static void DumpSrtLine(FILE *fp, CAPTION_LIST *list, DWORD endTime, app_handler
         fwrite((*it)->str.c_str(), (*it)->str.size(), 1, fp);
         if ((*it)->outHLC != 0)
             fprintf(fp, "]");
-        if (app->srtornament) {
+        if (this->ornament) {
             if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff)
                 fprintf(fp, "</font>");
             if ((*it)->outUnderLine)
@@ -260,24 +717,140 @@ static void DumpSrtLine(FILE *fp, CAPTION_LIST *list, DWORD endTime, app_handler
         fprintf(fp, "\r\n");
     }
 
-    if (list->size() > 0) {
+    if (capList.size() > 0) {
         if (bNoSRT)
             fprintf(fp, "\r\n");
         fprintf(fp, "\r\n");
-        ++(app->srtIndex);
+        ++(this->index);
     }
 }
 
-static void clear_caption_list(CAPTION_LIST *list)
+static void output_header(CAppHandler& app)
 {
-    if (list->empty())
-        return;
-    for(std::list<PCAPTION_LINE>::iterator it = list->begin(); it != list->end(); ++it)
-        delete *it;
-    list->clear();
+    IOutputHandler *handle[] = { app.ass, app.srt, app.log, NULL };
+
+    // Output the header to the output files.
+    for (int i = 0; handle[i]; i++)
+        handle[i]->WriteHeader();
 }
 
-static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_LIST *capList, long long PTS)
+static int open_output_files(CAppHandler& app)
+{
+    IOutputHandler *handle[] = { app.ass, app.srt, app.log, NULL };
+
+    // Open the output files.
+    for (int i = 0; handle[i]; i++)
+        if (handle[i]->Open())
+            goto ERR_EXIT;
+
+    return 0;
+
+ERR_EXIT:
+    return -1;
+}
+
+static int setup_output_settings(CAppHandler& app)
+{
+    cli_parameter_t *cp = static_cast<cli_parameter_t *>(app.GetParam(C2A_PARAM_CLI));
+    ass_setting_t   *as = static_cast<ass_setting_t *>(app.GetParam(C2A_PARAM_ASS));
+
+    ICaptionHandler *handle[] = { app.ass, app.srt, NULL };
+
+    for (int i = 0; handle[i]; i++)
+        if (handle[i]->Setup() < 0)
+            goto ERR_EXIT;
+
+    return 0;
+
+ERR_EXIT:
+    return -1;
+}
+
+static void setup_output_filename(CAppHandler& app)
+{
+    cli_parameter_t *cp  = static_cast<cli_parameter_t *>(app.GetParam(C2A_PARAM_CLI));
+    size_t string_length = app.string_length;
+
+    IOutputHandler *handle[] = { app.ass, app.srt, app.log, NULL };
+
+    // Check the target name.
+    if (_tcsicmp(cp->TargetFileName, _T("")) == 0)
+        _tcscpy_s(cp->TargetFileName, string_length, cp->FileName);
+    TCHAR *pExt = PathFindExtension(cp->TargetFileName);
+    if (pExt && _tcsicmp(pExt, _T(".ts")) == 0)
+        _tcscpy_s(pExt, 4, _T("\0"));
+
+    // Set the output filenames.
+    for (int i = 0; handle[i]; i++)
+        handle[i]->SetName();
+
+    return;
+}
+
+static void close_files(CAppHandler& app)
+{
+    IOutputHandler *handle[] = { app.ass, app.srt, app.log, NULL };
+
+    // Close input file.
+    if (app.fpInputTs)
+        fclose(app.fpInputTs);
+
+    // Close output file.
+    for (int i = 0; handle[i]; i++)
+        handle[i]->Close();
+}
+
+static int initialize_caption_dll(CAppHandler& app, CCaptionDllUtil& capUtil)
+{
+    cli_parameter_t *cp = static_cast<cli_parameter_t *>(app.GetParam(C2A_PARAM_CLI));
+
+    if (!capUtil.CheckUNICODE() || (cp->format == FORMAT_TAW)) {
+        if (capUtil.Initialize() != NO_ERR)
+            return -1;
+        app.bUnicode = FALSE;
+    } else {
+        if (capUtil.InitializeUNICODE() != NO_ERR)
+            return -1;
+        app.bUnicode = TRUE;
+    }
+    return 0;
+}
+
+static int prepare_app_handler(CAppHandler& app, int argc, _TCHAR **argv)
+{
+    size_t string_length = MAX_PATH;
+
+    CCaption2AssParameter *param = NULL;
+    CLogHandler           *log   = NULL;
+    CAssHandler           *ass   = NULL;
+    CSrtHandler           *srt   = NULL;
+
+    // Check max of string length.
+    for (int i = 0; i < argc; i++) {
+        size_t length = _tcslen(argv[i]) + 1 + 20;  // +20: It's a margin for append the suffix.
+        if (length > string_length)
+            string_length = length;
+    }
+
+    // Prepare the caption handlers.
+    return app.Allocate(string_length);
+}
+
+static void free_app_handler(CAppHandler& app)
+{
+    app.Free();
+}
+
+static void clear_caption_list(CAPTION_LIST& capList)
+{
+    if (capList.empty())
+        return;
+    for(std::list<PCAPTION_LINE>::iterator it = capList.begin(); it != capList.end(); ++it)
+        delete *it;
+    capList.clear();
+}
+
+static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& capList, long long PTS)
 {
     int workCharSizeMode = 0;
     unsigned char workucB = 0;
@@ -302,13 +875,15 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_
     float ratioY = 2;
 
     // Prepare the handlers.
-//  pid_information_t *pi = app->param->get_pid_information();
-    cli_parameter_t   *cp = app->param->get_cli_parameter();
-    ass_setting_t     *as = app->param->get_ass_setting();
+    cli_parameter_t *cp  = static_cast<cli_parameter_t *>(app.GetParam(C2A_PARAM_CLI));
+    ass_setting_t   *as  = static_cast<ass_setting_t *>(app.GetParam(C2A_PARAM_ASS));
+    CLogHandler     *log = app.log;
+
+    ICaptionHandler *handle[] = { app.ass, app.srt, NULL };
 
     // Output
     std::vector<CAPTION_DATA> Captions;
-    int ret = capUtil->GetCaptionData(0, &Captions);
+    int ret = capUtil.GetCaptionData(0, &Captions);
 
     std::vector<CAPTION_DATA>::iterator it = Captions.begin();
     for (; it != Captions.end(); it++) {
@@ -316,25 +891,18 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_
 
         if (it->bClear) {
             // 字幕のスキップをチェック
-            if ((PTS + it->dwWaitTime) <= app->startPCR) {
-                _tMyPrintf(_T("%d Caption skip\r\n"), capList->size());
-                if (app->fpLogFile)
-                    fprintf(app->fpLogFile, "%d Caption skip\r\n", capList->size());
+            if ((PTS + it->dwWaitTime) <= app.startPCR) {
+                _tMyPrintf(_T("%d Caption skip\r\n"), capList.size());
+                if (log->active)
+                    log->print("%d Caption skip\r\n", capList.size());
                 clear_caption_list(capList);
                 continue;
             }
-            app->bCreateOutput = TRUE;
-            DWORD endTime = (DWORD)((PTS + it->dwWaitTime) - app->startPCR);
-            if (cp->format == FORMAT_ASS)
-                DumpAssLine(app->fpTarget1, capList, endTime, app);
-            else if (cp->format == FORMAT_SRT)
-                DumpSrtLine(app->fpTarget1, capList, endTime, app);
-            else if (cp->format == FORMAT_TAW)
-                DumpSrtLine(app->fpTarget1, capList, endTime, app);
-            else if (cp->format == FORMAT_DUAL) {
-                DumpAssLine(app->fpTarget1, capList, endTime, app);
-                DumpSrtLine(app->fpTarget2, capList, endTime, app);
-            }
+            app.bCreateOutput = TRUE;
+            DWORD endTime = (DWORD)((PTS + it->dwWaitTime) - app.startPCR);
+            for (int i = 0; handle[i]; i++)
+                if (handle[i]->active)
+                    handle[i]->Dump(capList, endTime);
             clear_caption_list(capList);
 
             continue;
@@ -342,11 +910,11 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_
 
             std::vector<CAPTION_CHAR_DATA>::iterator it2 = it->CharList.begin();
 
-            if (app->fpLogFile) {
-                fprintf(app->fpLogFile, "SWFMode    : %4d\r\n", it->wSWFMode);
-                fprintf(app->fpLogFile, "Client X:Y : %4d\t%4d\r\n", it->wClientX, it->wClientY);
-                fprintf(app->fpLogFile, "Client W:H : %4d\t%4d\r\n", it->wClientW, it->wClientH);
-                fprintf(app->fpLogFile, "Pos    X:Y : %4d\t%4d\r\n", it->wPosX, it->wPosY);
+            if (log->active) {
+                log->print("SWFMode    : %4d\r\n", it->wSWFMode);
+                log->print("Client X:Y : %4d\t%4d\r\n", it->wClientX, it->wClientY);
+                log->print("Client W:H : %4d\t%4d\r\n", it->wClientW, it->wClientH);
+                log->print("Pos    X:Y : %4d\t%4d\r\n", it->wPosX, it->wPosY);
             }
 
             if (it->wSWFMode != wLastSWFMode) {
@@ -364,7 +932,7 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_
                 ratioX = (float)(as->PlayResX) / (float)(resolution[index].x);
                 ratioY = (float)(as->PlayResY) / (float)(resolution[index].y);
             }
-            if (app->bUnicode) {
+            if (app.bUnicode) {
                 if ((it->wPosX < 2000) || (it->wPosY < 2000)) {
                     offsetPosX = it->wClientX;
                     offsetPosY = it->wClientY;
@@ -392,7 +960,7 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_
                 workCharHInterval = it2->wCharHInterval;
                 workCharVInterval = it2->wCharVInterval;
                 // Calculate offsetPos[X/Y].
-                if (!(app->bUnicode)) {
+                if (!(app.bUnicode)) {
                     int amariPosX = 0;
                     int amariPosY = 0;
                     if (wLastSWFMode == 9) {
@@ -425,7 +993,7 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_
                     y_swf_offset = as->SWF7offset /* + 0 */;
                     break;
                 case 9:
-                    y_swf_offset = as->SWF9offset + ((app->bUnicode) ? 0 : -50);
+                    y_swf_offset = as->SWF9offset + ((app.bUnicode) ? 0 : -50);
                     break;
                 case 11:
                     y_swf_offset = as->SWF11offset /* - 0 */;
@@ -437,9 +1005,9 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_
                 workPosX = (int)((float)(it->wPosX + offsetPosX               ) * x_ratio);
                 workPosY = (int)((float)(it->wPosY + offsetPosY + y_swf_offset) * y_ratio);
                 // Correction for workPosX.
-                workPosX = (workPosX > app->sidebar_size) ? workPosX - app->sidebar_size : 0;
+                workPosX = (workPosX > app.sidebar_size) ? workPosX - app.sidebar_size : 0;
 
-                if (!(app->bUnicode)) {
+                if (!(app.bUnicode)) {
                     if (it2->emCharSizeMode == STR_SMALL)
                         workPosY += (int)(10 * ratioY);
                     if (it2->emCharSizeMode == STR_MEDIUM)
@@ -447,25 +1015,25 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_
                         it2->strDecode = GetHalfChar(it2->strDecode);
                 }
 
-                if (app->fpLogFile) {
+                if (log->active) {
                     if (it2->bUnderLine)
-                        fprintf(app->fpLogFile, "UnderLine : on\r\n");
+                        log->print("UnderLine : on\r\n");
                     if (it2->bBold)
-                        fprintf(app->fpLogFile, "Bold : on\r\n");
+                        log->print("Bold : on\r\n");
                     if (it2->bItalic)
-                        fprintf(app->fpLogFile, "Italic : on\r\n");
+                        log->print("Italic : on\r\n");
                     if (it2->bHLC != 0)
-                        fprintf(app->fpLogFile, "HLC : on\r\n");
-                    fprintf(app->fpLogFile, "Color : %#.X   ", it2->stCharColor);
-                    fprintf(app->fpLogFile, "Char M,W,H,HI,VI : %4d, %4d, %4d, %4d, %4d   ",
+                        log->print("HLC : on\r\n");
+                    log->print("Color : %#.X   ", it2->stCharColor);
+                    log->print("Char M,W,H,HI,VI : %4d, %4d, %4d, %4d, %4d   ",
                             it2->emCharSizeMode, it2->wCharW, it2->wCharH, it2->wCharHInterval, it2->wCharVInterval);
-                    fprintf(app->fpLogFile, "%s\r\n", it2->strDecode.c_str());
+                    log->print("%s\r\n", it2->strDecode.c_str());
                 }
 
                 WCHAR str[STRING_BUFFER_SIZE]       = { 0 };
                 CHAR  strUTF8_2[STRING_BUFFER_SIZE] = { 0 };
 
-                if ((cp->format == FORMAT_TAW) || (app->bUnicode))
+                if ((cp->format == FORMAT_TAW) || (app.bUnicode))
                     strcat_s(strUTF8, STRING_BUFFER_SIZE, it2->strDecode.c_str());
                 else {
                     // CP 932 to UTF-8
@@ -485,7 +1053,7 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_
                 continue;
             }
             pCapLine->index                = 0;     //useless
-            pCapLine->startTime            = (PTS > app->startPCR) ? (DWORD)(PTS - app->startPCR) : 0;
+            pCapLine->startTime            = (PTS > app.startPCR) ? (DWORD)(PTS - app.startPCR) : 0;
             pCapLine->endTime              = 0;
             pCapLine->outCharSizeMode      = workCharSizeMode;
             pCapLine->outCharColor.ucAlpha = 0x00;
@@ -505,7 +1073,7 @@ static int output_caption(app_handler_t *app, CCaptionDllUtil *capUtil, CAPTION_
             pCapLine->outPosX              = workPosX;
             pCapLine->outPosY              = workPosY;
 
-            capList->push_back(pCapLine);
+            capList.push_back(pCapLine);
         }
 
     }
@@ -515,188 +1083,12 @@ ERR_EXIT:
     return -1;
 }
 
-static int prepare_app_handler(int argc, _TCHAR **argv, app_handler_t *app)
-{
-    size_t string_length = MAX_PATH;
-
-    // Check max of string length.
-    for (int i = 0; i < argc; i++) {
-        size_t length = _tcslen(argv[i]) + 1 + 20;  // +20: It's a margin for append the suffix.
-        if (length > string_length)
-            string_length = length;
-    }
-
-    // Create parameter handler.
-    CCaption2AssParameter *param = new CCaption2AssParameter(string_length);
-    if (!param) {
-        _tMyPrintf(_T("Failed to allocate the paramter handler.\r\n"));
-        return -1;
-    }
-    if (param->Allocate()) {
-        _tMyPrintf(_T("Failed to allocate the buffers for output.\r\n"));
-        SAFE_DELETE(param);
-        return -1;
-    }
-
-    // Setup.
-    app->startPCR      = TIMESTAMP_INVALID_VALUE;
-    app->lastPCR       = TIMESTAMP_INVALID_VALUE;
-    app->lastPTS       = TIMESTAMP_INVALID_VALUE;
-    app->string_length = string_length;
-    app->param         = param;
-    return 0;
-}
-
-int _tmain(int argc, _TCHAR *argv[])
+static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& capList)
 {
     int             result = C2A_SUCCESS;
-    CCaptionDllUtil capUtil;
-    CAPTION_LIST    capList;
-    app_handler_t   app = { 0 };
-
-#ifdef _DEBUG
-    int debug = 0;
-    if (argc < 2)
-        debug = load_debug(&argc, &argv);
-#endif
-
-    // Prepare the handlers.
-    if (prepare_app_handler(argc, argv, &app)) {
-        result = C2A_ERR_MEMORY;
-        goto EXIT;
-    }
-    pid_information_t *pi = app.param->get_pid_information();
-    cli_parameter_t   *cp = app.param->get_cli_parameter();
-    ass_setting_t     *as = app.param->get_ass_setting();
-
-    // Parse arguments.
-    if (ParseCmd(argc, argv, app.param)) {
-        result = C2A_ERR_PARAM;
-        goto EXIT;
-    }
-    app.norubi      = cp->norubi;
-    app.srtornament = (cp->format == FORMAT_TAW) ? FALSE : cp->srtornament;
-
-    // Initialize Caption Utility.
-    if (!capUtil.CheckUNICODE() || (cp->format == FORMAT_TAW)) {
-        if (capUtil.Initialize() != NO_ERR) {
-            _tMyPrintf(_T("Load Caption.dll failed\r\n"));
-            result = C2A_ERR_DLL;
-            goto EXIT;
-        }
-        app.bUnicode = FALSE;
-    } else {
-        if (capUtil.InitializeUNICODE() != NO_ERR) {
-            _tMyPrintf(_T("Load Caption.dll failed\r\n"));
-            result = C2A_ERR_DLL;
-            goto EXIT;
-        }
-        app.bUnicode = TRUE;
-    }
-
-    // Initialize ASS/SRT filename.
-    int not_specified = _tcsicmp(cp->TargetFileName1, _T("")) == 0;
-    if (!not_specified) {
-        TCHAR *pExt = PathFindExtension(cp->TargetFileName1);
-        if (_tcsicmp(pExt, _T(".ts")) == 0)
-            not_specified = 1;
-    }
-    if (not_specified)
-        _tcscpy_s(cp->TargetFileName1, app.string_length, cp->FileName);
-
-    if ((cp->format == FORMAT_ASS) || (cp->format == FORMAT_DUAL)) {
-        TCHAR *pExt = PathFindExtension(cp->TargetFileName1);
-        _tcscpy_s(pExt, 5, _T(".ass"));
-    } else {
-        TCHAR *pExt = PathFindExtension(cp->TargetFileName1);
-        _tcscpy_s(pExt, 5, _T(".srt"));
-    }
-    if (cp->format == FORMAT_DUAL) {
-        _tcscpy_s(cp->TargetFileName2, app.string_length, cp->TargetFileName1);
-        TCHAR *pExt = PathFindExtension(cp->TargetFileName2);
-        _tcscpy_s(pExt, 5, _T(".srt"));
-    }
-
-    static const TCHAR *format_name[FORMAT_MAX] = {
-        _T(""),
-        _T("srt"),
-        _T("ass"),
-        _T("srt for TAW"),
-        _T("ass & srt")
-    };
-    _tMyPrintf(_T("[Source] %s\r\n"), cp->FileName);
-    _tMyPrintf(_T("[Target] %s\r\n"), cp->TargetFileName1);
-    _tMyPrintf(_T("[Format] %s\r\n"), format_name[cp->format]);
-
-    // Open TS File.
-    if (_tfopen_s(&(app.fpInputTs), cp->FileName, _T("rb")) || !(app.fpInputTs)) {
-        _tMyPrintf(_T("Open TS File: %s failed\r\n"), cp->FileName);
-        result = C2A_ERR_PARAM;
-        goto EXIT;
-    }
-
-    // Open ASS/SRT File.
-    if (_tfopen_s(&(app.fpTarget1), cp->TargetFileName1, _T("wb")) || !(app.fpTarget1)) {
-        _tMyPrintf(_T("Open Target File: %s failed\r\n"), cp->TargetFileName1);
-        result = C2A_FAILURE;
-        goto EXIT;
-    }
-    app.assIndex = app.srtIndex = 1;
-    if (cp->format == FORMAT_DUAL) {
-        if (_tfopen_s(&(app.fpTarget2), cp->TargetFileName2, _T("wb")) || !(app.fpTarget2)) {
-            _tMyPrintf(_T("Open Target File: %s failed\r\n"), cp->TargetFileName2);
-            result = C2A_FAILURE;
-            goto EXIT;
-        }
-    }
-
-    if (cp->LogMode) {
-        // Open Log File.
-        if (_tcsicmp(cp->LogFileName, _T("")) == 0) {
-            _tcscpy_s(cp->LogFileName, app.string_length, cp->TargetFileName1);
-            TCHAR *pExt = PathFindExtension(cp->LogFileName);
-            _tcscpy_s(pExt, 13, _T("_Caption.log"));
-        }
-        if (_tfopen_s(&(app.fpLogFile), cp->LogFileName, _T("wb")) || !(app.fpLogFile)) {
-            _tMyPrintf(_T("Open Log File: %s failed\r\n"), cp->LogFileName);
-            result = C2A_FAILURE;
-            goto EXIT;
-        }
-    }
-
-    // Read ini settings for ASS.
-    if ((cp->format == FORMAT_ASS) || (cp->format == FORMAT_DUAL)) {
-        if (IniFileRead(cp->ass_type, as)) {
-            result = C2A_FAILURE;
-            goto EXIT;
-        }
-        if ((as->PlayResX * 3) == (as->PlayResY * 4)) {
-            app.sidebar_size = (((as->PlayResY * 16) / 9) - as->PlayResX) / 2;
-            as->PlayResX = (as->PlayResY * 16) / 9;
-        }
-    }
-
-    // Output header.
-    static const unsigned char utf8_bom[3] = { 0xEF, 0xBB, 0xBF };
-    if (cp->format == FORMAT_SRT)
-        fwrite(utf8_bom, 3, 1, app.fpTarget1);
-    else if (cp->format == FORMAT_ASS) {
-        fwrite(utf8_bom, 3, 1, app.fpTarget1);
-        assHeaderWrite(app.fpTarget1, as);
-    } else if (cp->format == FORMAT_DUAL) {
-        fwrite(utf8_bom, 3, 1, app.fpTarget1);
-        assHeaderWrite(app.fpTarget1, as);
-        fwrite(utf8_bom, 3, 1, app.fpTarget2);
-    }
-    if ((app.fpLogFile) && (app.bUnicode))
-        fwrite(utf8_bom, 3, 1, app.fpLogFile);
-
-    if (!FindStartOffset(app.fpInputTs)) {
-        _tMyPrintf(_T("Invalid TS File.\r\n"));
-        Sleep(2000);
-        result = C2A_FAILURE;
-        goto EXIT;
-    }
+    ILogHandler       *log = static_cast<ILogHandler *>(app.log);
+    pid_information_t  *pi = static_cast<pid_information_t *>(app.GetParam(C2A_PARAM_PID));
+    cli_parameter_t    *cp = static_cast<cli_parameter_t *>(app.GetParam(C2A_PARAM_CLI));
 
     BOOL bPrintPMT = TRUE;
     BYTE pbPacket[188 * 2 + 4] = { 0 };
@@ -711,19 +1103,19 @@ int _tmain(int argc, _TCHAR *argv[])
                 break;
             }
         }
-        if (app.fpLogFile) {
+        if (log->active) {
             if (packetCount < 100000) {
                 if ((packetCount % 10000) == 0)
-                    fprintf(app.fpLogFile, "Process  %dw packets.\r\n", packetCount / 10000);
+                    log->print("Process  %dw packets.\r\n", packetCount / 10000);
             } else if (packetCount < 1000000) {
                 if ((packetCount % 100000) == 0)
-                    fprintf(app.fpLogFile, "Process  %dw packets.\r\n", packetCount / 10000);
+                    log->print("Process  %dw packets.\r\n", packetCount / 10000);
             } else if (packetCount < 10000000) {
                 if ((packetCount % 1000000) == 0)
-                    fprintf(app.fpLogFile, "Process  %dw packets.\r\n", packetCount / 10000);
+                    log->print("Process  %dw packets.\r\n", packetCount / 10000);
             } else {
                 if ((packetCount % 10000000) == 0)
-                    fprintf(app.fpLogFile, "Process  %dw packets.\r\n", packetCount / 10000);
+                    log->print("Process  %dw packets.\r\n", packetCount / 10000);
             }
         }
 
@@ -764,9 +1156,9 @@ int _tmain(int argc, _TCHAR *argv[])
 
             parse_PMT(&pbPacket[0], &(pi->PCRPid), &(pi->CaptionPid));
 
-            if (app.fpLogFile)
+            if (log->active)
                 if (app.lastPTS == TIMESTAMP_INVALID_VALUE)
-                    fprintf(app.fpLogFile, "PMT, PCR, Caption : %04x, %04x, %04x\r\n", pi->PMTPid, pi->PCRPid, pi->CaptionPid);
+                    log->print("PMT, PCR, Caption : %04x, %04x, %04x\r\n", pi->PMTPid, pi->PCRPid, pi->CaptionPid);
 
             continue; // next packet
         }
@@ -797,9 +1189,9 @@ int _tmain(int argc, _TCHAR *argv[])
                     |  (long long) pbPacket[11];
             PCR = (PCR_base * 300 + PCR_ext) / 27000;
 
-            if (app.fpLogFile)
+            if (log->active)
                 if (app.lastPTS == TIMESTAMP_INVALID_VALUE)
-                    fprintf(app.fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n",
+                    log->print("PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n",
                             PCR, app.startPCR, app.lastPCR, app.basePCR);
 
             // Check startPCR.
@@ -810,9 +1202,9 @@ int _tmain(int argc, _TCHAR *argv[])
                 long long checkTS = 0;
                 // Check wrap-around.
                 if (PCR < app.lastPCR) {
-                    if (app.fpLogFile) {
-                        fprintf(app.fpLogFile, "====== PCR less than lastPCR ======\r\n");
-                        fprintf(app.fpLogFile, "PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n",
+                    if (log->active) {
+                        log->print("====== PCR less than lastPCR ======\r\n");
+                        log->print("PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n",
                                 PCR, app.startPCR, app.lastPCR, app.basePCR);
                     }
                     app.basePCR += WRAP_AROUND_VALUE / 90;
@@ -848,14 +1240,14 @@ int _tmain(int argc, _TCHAR *argv[])
 
                 // Get Caption PTS.
                 PTS = GetPTS(pbPacket);
-                if (app.fpLogFile)
-                    fprintf(app.fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
+                if (log->active)
+                    log->print("PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
                             PTS, app.lastPTS, app.basePTS, app.startPCR);
 
                 // Check skip.
                 if (PTS == TIMESTAMP_INVALID_VALUE || app.startPCR == TIMESTAMP_INVALID_VALUE) {
-                    if (app.fpLogFile)
-                        fprintf(app.fpLogFile, "Skip 1st caption\r\n");
+                    if (log->active)
+                        log->print("Skip 1st caption\r\n");
                     continue;
                 }
 
@@ -871,14 +1263,14 @@ int _tmain(int argc, _TCHAR *argv[])
                 app.lastPTS = PTS;
 
             } else {
-                if (app.fpLogFile)
-                    fprintf(app.fpLogFile, "PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
+                if (log->active)
+                    log->print("PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
                             PTS, app.lastPTS, app.basePTS, app.startPCR);
 
                 // Check skip.
                 if (app.lastPTS == TIMESTAMP_INVALID_VALUE || app.startPCR == TIMESTAMP_INVALID_VALUE) {
-                    if (app.fpLogFile)
-                        fprintf(app.fpLogFile, "Skip 2nd caption\r\n");
+                    if (log->active)
+                        log->print("Skip 2nd caption\r\n");
                     continue;
                 }
 
@@ -894,8 +1286,8 @@ int _tmain(int argc, _TCHAR *argv[])
 
             if (packet.PayloadStartFlag)
                 _tMyPrintf(_T("Caption Time: %01d:%02d:%02d.%03d\r\n"), sH, sM, sS, sMs);
-            if (app.fpLogFile)
-                fprintf(app.fpLogFile, "%s Caption Time: %01d:%02d:%02d.%03d\r\n",
+            if (log->active)
+                log->print("%s Caption Time: %01d:%02d:%02d.%03d\r\n",
                         ((packet.PayloadStartFlag) ? "1st" : "2nd"), sH, sM, sS, sMs);
 
             // Parse caption.
@@ -904,7 +1296,7 @@ int _tmain(int argc, _TCHAR *argv[])
                 std::vector<LANG_TAG_INFO> tagInfoList;
                 ret = capUtil.GetTagInfo(&tagInfoList);
             } else if (ret == NO_ERR_CAPTION)
-                if (output_caption(&app, &capUtil, &capList, PTS)) {
+                if (output_caption(app, capUtil, capList, PTS)) {
                     result = C2A_ERR_MEMORY;
                     goto EXIT;
                 }
@@ -913,25 +1305,99 @@ int _tmain(int argc, _TCHAR *argv[])
     }
 
 EXIT:
-    clear_caption_list(&capList);
+    return result;
+}
 
-    if (app.fpInputTs)
-        fclose(app.fpInputTs);
-    if (app.fpTarget1)
-        fclose(app.fpTarget1);
-    if (app.fpTarget2)
-        fclose(app.fpTarget2);
-    if (app.fpLogFile)
-        fclose(app.fpLogFile);
+int _tmain(int argc, _TCHAR *argv[])
+{
+    int             result = C2A_SUCCESS;
+    CCaptionDllUtil capUtil;
+    CAPTION_LIST    capList;
+    CAppHandler     app;
 
-    if ((app.assIndex == 1) && (app.srtIndex == 1)) {
-        Sleep(2000);
-        remove(cp->TargetFileName1);
-        if (cp->format == FORMAT_DUAL)
-            remove(cp->TargetFileName2);
+#ifdef _DEBUG
+    int debug = 0;
+    if (argc < 2)
+        debug = load_debug(&argc, &argv);
+#endif
+
+    // Prepare the handlers.
+    if (prepare_app_handler(app, argc, argv)) {
+        result = C2A_ERR_MEMORY;
+        goto EXIT;
+    }
+    CLogHandler           *log   = app.log;
+    CAssHandler           *ass   = app.ass;
+    CSrtHandler           *srt   = app.srt;
+    CCaption2AssParameter *param = static_cast<CCaption2AssParameter *>(app.GetParam(C2A_PARAM_ALL));
+
+    // Parse arguments.
+    if (ParseCmd(argc, argv, param)) {
+        result = C2A_ERR_PARAM;
+        goto EXIT;
+    }
+    pid_information_t *pi = static_cast<pid_information_t *>(app.GetParam(C2A_PARAM_PID));
+    cli_parameter_t   *cp = static_cast<cli_parameter_t *>(app.GetParam(C2A_PARAM_CLI));
+    ass_setting_t     *as = static_cast<ass_setting_t *>(app.GetParam(C2A_PARAM_ASS));
+
+    // Initialize Caption Utility.
+    if (initialize_caption_dll(app, capUtil)) {
+        _tMyPrintf(_T("Load Caption.dll failed\r\n"));
+        result = C2A_ERR_DLL;
+        goto EXIT;
     }
 
-    SAFE_DELETE(app.param);
+    // Initialize the output filename.
+    setup_output_filename(app);
+    static const TCHAR *format_name[FORMAT_MAX] = {
+        _T(""),
+        _T("srt"),
+        _T("ass"),
+        _T("srt for TAW"),
+        _T("ass & srt")
+    };
+    _tMyPrintf(_T("[Source] %s\r\n"), cp->FileName);
+    _tMyPrintf(_T("[Target] %s\r\n"), cp->TargetFileName);
+    _tMyPrintf(_T("[Format] %s\r\n"), format_name[cp->format]);
+
+    // Open TS File.
+    if (_tfopen_s(&(app.fpInputTs), cp->FileName, _T("rb")) || !(app.fpInputTs)) {
+        _tMyPrintf(_T("Open TS File: %s failed\r\n"), cp->FileName);
+        result = C2A_ERR_PARAM;
+        goto EXIT;
+    }
+    // Check TS File.
+    if (!FindStartOffset(app.fpInputTs)) {
+        _tMyPrintf(_T("Invalid TS File.\r\n"));
+        Sleep(2000);
+        result = C2A_FAILURE;
+        goto EXIT;
+    }
+
+    // Open ASS/SRT/Log File.
+    if (open_output_files(app)) {
+        result = C2A_FAILURE;
+        goto EXIT;
+    }
+
+    // Setup the output setting.
+    if (setup_output_settings(app)) {
+        result = C2A_FAILURE;
+        goto EXIT;
+    }
+
+    // Output the header.
+    output_header(app);
+
+    // Main loop
+    result = main_loop(app, capUtil, capList);
+
+EXIT:
+    clear_caption_list(capList);
+
+    close_files(app);
+
+    free_app_handler(app);
 
 #ifdef _DEBUG
     if (debug)

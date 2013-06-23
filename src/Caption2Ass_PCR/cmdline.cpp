@@ -98,7 +98,7 @@ ERROR_PARAM:
             i++;
             if (i > argc)
                 goto ERROR_PARAM;
-            _tcscpy_s(cp->TargetFileName1, string_length, argv[i]);
+            _tcscpy_s(cp->TargetFileName, string_length, argv[i]);
         } else if (_tcsicmp(argv[i], _T("-delay")) == 0) {
             i++;
             if (i > argc)
@@ -139,10 +139,10 @@ ERROR_PARAM:
             cp->detectLength *= 10000;
         } else if (_tcsicmp(cp->FileName, _T("")) == 0)
             _tcscpy_s(cp->FileName, string_length, argv[i]);
-        else if (_tcsicmp(cp->TargetFileName1, _T("")) == 0)
-            _tcscpy_s(cp->TargetFileName1, string_length, argv[i]);
-        else if (_tcsicmp(cp->TargetFileName2, _T("")) == 0)
-            _tcscpy_s(cp->TargetFileName2, string_length, argv[i]);
+        else if (_tcsicmp(cp->TargetFileName, _T("")) == 0)
+            _tcscpy_s(cp->TargetFileName, string_length, argv[i]);
+        else
+            goto ERROR_PARAM;
     }
     return 0;
 }
