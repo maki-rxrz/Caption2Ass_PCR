@@ -1026,7 +1026,7 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
                         log->print("HLC : on\r\n");
                     log->print("Color : %#.X   ", it2->stCharColor);
                     log->print("Char M,W,H,HI,VI : %4d, %4d, %4d, %4d, %4d   ",
-                            it2->emCharSizeMode, it2->wCharW, it2->wCharH, it2->wCharHInterval, it2->wCharVInterval);
+                               it2->emCharSizeMode, it2->wCharW, it2->wCharH, it2->wCharHInterval, it2->wCharVInterval);
                     log->print("%s\r\n", it2->strDecode.c_str());
                 }
 
@@ -1192,11 +1192,11 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
             if (log->active)
                 if (app.lastPTS == TIMESTAMP_INVALID_VALUE)
                     log->print("PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n",
-                            PCR, app.startPCR, app.lastPCR, app.basePCR);
+                               PCR, app.startPCR, app.lastPCR, app.basePCR);
 
             // Check startPCR.
             if (app.startPCR == TIMESTAMP_INVALID_VALUE) {
-                app.startPCR = PCR;
+                app.startPCR  = PCR;
                 app.correctTS = cp->DelayTime;
             } else {
                 long long checkTS = 0;
@@ -1205,7 +1205,7 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
                     if (log->active) {
                         log->print("====== PCR less than lastPCR ======\r\n");
                         log->print("PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n",
-                                PCR, app.startPCR, app.lastPCR, app.basePCR);
+                                   PCR, app.startPCR, app.lastPCR, app.basePCR);
                     }
                     app.basePCR += WRAP_AROUND_VALUE / 90;
                     checkTS = WRAP_AROUND_VALUE / 90;
@@ -1242,7 +1242,7 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
                 PTS = GetPTS(pbPacket);
                 if (log->active)
                     log->print("PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
-                            PTS, app.lastPTS, app.basePTS, app.startPCR);
+                               PTS, app.lastPTS, app.basePTS, app.startPCR);
 
                 // Check skip.
                 if (PTS == TIMESTAMP_INVALID_VALUE || app.startPCR == TIMESTAMP_INVALID_VALUE) {
@@ -1265,7 +1265,7 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
             } else {
                 if (log->active)
                     log->print("PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
-                            PTS, app.lastPTS, app.basePTS, app.startPCR);
+                               PTS, app.lastPTS, app.basePTS, app.startPCR);
 
                 // Check skip.
                 if (app.lastPTS == TIMESTAMP_INVALID_VALUE || app.startPCR == TIMESTAMP_INVALID_VALUE) {
