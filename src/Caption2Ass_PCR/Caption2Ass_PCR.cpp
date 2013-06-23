@@ -218,7 +218,10 @@ public:
         if (this->string_length < string_length)
             this->string_length = string_length;
         this->name = new TCHAR[this->string_length];
-        return !(this->name);
+        if (!(this->name))
+            return -1;
+        memset(this->name, 0, sizeof(TCHAR) * this->string_length);
+        return 0;
     }
 };
 
