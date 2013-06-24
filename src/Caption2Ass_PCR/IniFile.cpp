@@ -80,11 +80,11 @@ do {                                                                \
     GetPrivateProfileString(sec, key, def, tmp, len, ini);          \
     MultiByteToWideChar(932, 0, tmp, -1, str, len);                 \
     WideCharToMultiByte(CP_UTF8, 0, str, -1, get, len, NULL, NULL); \
-} while(0)
+} while (0)
 #define GET_INI_VALUE(sec, key, def, ini, get)          \
 do {                                                    \
     get = GetPrivateProfileInt(sec, key, def, ini);     \
-} while(0)
+} while (0)
 
     GET_INI_STRING(ass_type, _T("Comment1"), NULL, tmp_buff, utf8_str, INI_STRING_MAX, ini_file, as->Comment1);
     GET_INI_STRING(ass_type, _T("Comment2"), NULL, tmp_buff, utf8_str, INI_STRING_MAX, ini_file, as->Comment2);

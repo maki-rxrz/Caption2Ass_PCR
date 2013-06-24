@@ -63,7 +63,7 @@ do {                                    \
     s  = (int)((T) / 1000) % 60;        \
     m  = (int)((T) / (1000 * 60)) % 60; \
     h  = (int)((T) / (1000 * 60 * 60)); \
-} while(0)
+} while (0)
 
 typedef enum {
     C2A_PARAM_ALL,
@@ -98,7 +98,6 @@ public:
     {
         this->init_timestamp();
     }
-
 };
 
 class IAppHandler : public ITimestampHandler
