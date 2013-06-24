@@ -317,19 +317,25 @@ public:
 
 class CAppHandler : public IAppHandler
 {
+private:
+    static const int    output_type_max  = 3 + 1;
+    static const int    caption_type_max = 2 + 1;
+
 public:
     // File handlers
-    FILE           *fpInputTs;
+    FILE               *fpInputTs;
     // Caption handlers
-    CLogHandler    *log;
-    CAssHandler    *ass;
-    CSrtHandler    *srt;
+    ILogHandler        *log_handle;
+    IOutputHandler     *output_handle[output_type_max];
+    ICaptionHandler    *caption_handle[caption_type_max];
 
 public:
     CAppHandler(void)
-     : fpInputTs(NULL), log(NULL), ass(NULL), srt(NULL)
+     : fpInputTs(NULL), log_handle(NULL)
     {
         this->initialize();
+        memset(this->output_handle , 0, sizeof(IOutputHandler  *) * (this->output_type_max));
+        memset(this->caption_handle, 0, sizeof(ICaptionHandler *) * (this->caption_type_max));
     }
     ~CAppHandler(void)
     {
@@ -359,13 +365,13 @@ int CAppHandler::Allocate(size_t string_length)
         goto ERR_EXIT;
     }
 
-    // Create caption handler.
+    // Create caption handlers.
     cli_parameter_t *cp = param->get_cli_parameter();
     log = new CLogHandler(this);
     ass = new CAssHandler(this);
     srt = new CSrtHandler(this);
     if (!(log) || !(ass) || !(srt)) {
-        _tMyPrintf(_T("Failed to allocate the caption handler.\r\n"));
+        _tMyPrintf(_T("Failed to allocate the caption handlers.\r\n"));
         goto ERR_EXIT;
     }
     if (log->Allocate(string_length) || ass->Allocate(string_length) || srt->Allocate(string_length)) {
@@ -373,12 +379,15 @@ int CAppHandler::Allocate(size_t string_length)
         goto ERR_EXIT;
     }
 
+    IOutputHandler   *output_handle[this->output_type_max]  = { ass, srt, log, NULL };
+    ICaptionHandler *caption_handle[this->caption_type_max] = { ass, srt, NULL };
+
     // Setup.
     this->string_length = string_length;
     this->param         = param;
-    this->log           = log;
-    this->ass           = ass;
-    this->srt           = srt;
+    this->log_handle    = log;
+    memcpy(this->output_handle , output_handle , sizeof(IOutputHandler  *) * (this->output_type_max));
+    memcpy(this->caption_handle, caption_handle, sizeof(ICaptionHandler *) * (this->caption_type_max));
     return 0;
 
 ERR_EXIT:
@@ -391,10 +400,12 @@ ERR_EXIT:
 
 void CAppHandler::Free(void)
 {
-    SAFE_DELETE(this->log);
-    SAFE_DELETE(this->ass);
-    SAFE_DELETE(this->srt);
     SAFE_DELETE(this->param);
+    for (int i = 0; this->output_handle[i]; i++)
+        SAFE_DELETE(this->output_handle[i]);
+    for (int i = 0; this->caption_handle[i]; i++)
+        caption_handle[i] = NULL;
+    this->log_handle = NULL;
 }
 
 int ICaptionHandler::count_UTF8(const unsigned char *string)
@@ -729,7 +740,7 @@ void CSrtHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
 
 static void output_header(CAppHandler& app)
 {
-    IOutputHandler *handle[] = { app.ass, app.srt, app.log, NULL };
+    IOutputHandler **handle = app.output_handle;
 
     // Output the header to the output files.
     for (int i = 0; handle[i]; i++)
@@ -738,7 +749,7 @@ static void output_header(CAppHandler& app)
 
 static int open_output_files(CAppHandler& app)
 {
-    IOutputHandler *handle[] = { app.ass, app.srt, app.log, NULL };
+    IOutputHandler **handle = app.output_handle;
 
     // Open the output files.
     for (int i = 0; handle[i]; i++)
@@ -753,7 +764,7 @@ ERR_EXIT:
 
 static int setup_output_settings(CAppHandler& app)
 {
-    ICaptionHandler *handle[] = { app.ass, app.srt, NULL };
+    ICaptionHandler **handle = app.caption_handle;
 
     for (int i = 0; handle[i]; i++)
         if (handle[i]->Setup() < 0)
@@ -770,7 +781,7 @@ static void setup_output_filename(CAppHandler& app)
     cli_parameter_t *cp  = static_cast<cli_parameter_t *>(app.GetParam(C2A_PARAM_CLI));
     size_t string_length = app.string_length;
 
-    IOutputHandler *handle[] = { app.ass, app.srt, app.log, NULL };
+    IOutputHandler **handle = app.output_handle;
 
     // Check the target name.
     if (_tcsicmp(cp->TargetFileName, _T("")) == 0)
@@ -788,11 +799,13 @@ static void setup_output_filename(CAppHandler& app)
 
 static void close_files(CAppHandler& app)
 {
-    IOutputHandler *handle[] = { app.ass, app.srt, app.log, NULL };
+    IOutputHandler **handle = app.output_handle;
 
     // Close input file.
-    if (app.fpInputTs)
+    if (app.fpInputTs) {
         fclose(app.fpInputTs);
+        app.fpInputTs = NULL;
+    }
 
     // Close output file.
     for (int i = 0; handle[i]; i++)
@@ -871,9 +884,9 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
     // Prepare the handlers.
     cli_parameter_t *cp  = static_cast<cli_parameter_t *>(app.GetParam(C2A_PARAM_CLI));
     ass_setting_t   *as  = static_cast<ass_setting_t *>(app.GetParam(C2A_PARAM_ASS));
-    CLogHandler     *log = app.log;
+    ILogHandler     *log = app.log_handle;
 
-    ICaptionHandler *handle[] = { app.ass, app.srt, NULL };
+    ICaptionHandler **handle = app.caption_handle;
 
     // Output
     std::vector<CAPTION_DATA> Captions;
@@ -1080,7 +1093,7 @@ ERR_EXIT:
 static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& capList)
 {
     int             result = C2A_SUCCESS;
-    ILogHandler       *log = static_cast<ILogHandler *>(app.log);
+    ILogHandler       *log = app.log_handle;
     pid_information_t  *pi = static_cast<pid_information_t *>(app.GetParam(C2A_PARAM_PID));
     cli_parameter_t    *cp = static_cast<cli_parameter_t *>(app.GetParam(C2A_PARAM_CLI));
 
