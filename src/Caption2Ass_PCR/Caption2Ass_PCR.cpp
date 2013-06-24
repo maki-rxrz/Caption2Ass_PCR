@@ -753,9 +753,6 @@ ERR_EXIT:
 
 static int setup_output_settings(CAppHandler& app)
 {
-    cli_parameter_t *cp = static_cast<cli_parameter_t *>(app.GetParam(C2A_PARAM_CLI));
-    ass_setting_t   *as = static_cast<ass_setting_t *>(app.GetParam(C2A_PARAM_ASS));
-
     ICaptionHandler *handle[] = { app.ass, app.srt, NULL };
 
     for (int i = 0; handle[i]; i++)
@@ -821,11 +818,6 @@ static int initialize_caption_dll(CAppHandler& app, CCaptionDllUtil& capUtil)
 static int prepare_app_handler(CAppHandler& app, int argc, _TCHAR **argv)
 {
     size_t string_length = MAX_PATH;
-
-    CCaption2AssParameter *param = NULL;
-    CLogHandler           *log   = NULL;
-    CAssHandler           *ass   = NULL;
-    CSrtHandler           *srt   = NULL;
 
     // Check max of string length.
     for (int i = 0; i < argc; i++) {
@@ -1328,9 +1320,6 @@ int _tmain(int argc, _TCHAR *argv[])
         result = C2A_ERR_MEMORY;
         goto EXIT;
     }
-    CLogHandler           *log   = app.log;
-    CAssHandler           *ass   = app.ass;
-    CSrtHandler           *srt   = app.srt;
     CCaption2AssParameter *param = static_cast<CCaption2AssParameter *>(app.GetParam(C2A_PARAM_ALL));
 
     // Parse arguments.
