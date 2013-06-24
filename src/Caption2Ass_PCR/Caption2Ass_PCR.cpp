@@ -205,6 +205,10 @@ protected:
         }
         this->fp = NULL;
     }
+    void write_bom(void)
+    {
+        fwrite(utf8_bom, 3, 1, this->fp);
+    }
 
 public:
     virtual void SetName(void) = 0;
@@ -534,14 +538,14 @@ void CLogHandler::WriteHeader(void)
     if (!(this->fp))
         return;
     if (this->app->bUnicode)
-        fwrite(utf8_bom, 3, 1, this->fp);
+        this->write_bom();
 }
 
 void CAssHandler::WriteHeader(void)
 {
     if (!(this->fp))
         return;
-    fwrite(utf8_bom, 3, 1, this->fp);
+    this->write_bom();
     assHeaderWrite(this->fp, this->as);
 }
 
@@ -549,7 +553,7 @@ void CSrtHandler::WriteHeader(void)
 {
     if (!(this->fp) || this->format == FORMAT_TAW)
         return;
-    fwrite(utf8_bom, 3, 1, this->fp);
+    this->write_bom();
 }
 
 void CLogHandler::Close(void)
