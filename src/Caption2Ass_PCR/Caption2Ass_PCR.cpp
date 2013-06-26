@@ -187,7 +187,7 @@ protected:
         if (_tcsicmp(this->name, _T("")) == 0)
             return 1;
         if (_tfopen_s(&(this->fp), this->name, _T("wb")) || !(this->fp)) {
-            _tMyPrintf(_T("Open Target File: %s failed\r\n"), this->name, file_type);
+            _tMyPrintf(_T("Open %s File: %s failed\r\n"), file_type, this->name);
             return -1;
         }
         this->index  = 1;
