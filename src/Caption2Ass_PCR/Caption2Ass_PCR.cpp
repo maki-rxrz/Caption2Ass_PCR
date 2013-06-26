@@ -204,8 +204,8 @@ protected:
                 Sleep(1000);
                 remove(this->name);
             }
+            this->fp = NULL;
         }
-        this->fp = NULL;
     }
     void write_bom(void)
     {
