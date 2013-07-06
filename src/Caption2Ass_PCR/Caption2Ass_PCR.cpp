@@ -34,25 +34,29 @@ typedef struct _ASS_COLOR {
     unsigned char   ucAlpha;
 } ASS_COLOR;
 
-typedef struct _CAPTION_LINE {
-    UINT            index;
-    DWORD           startTime;
-    DWORD           endTime;
-    BYTE            outCharSizeMode;
+typedef struct _LINE_STR {
     ASS_COLOR       outCharColor;
     BOOL            outUnderLine;
     BOOL            outShadow;
     BOOL            outBold;
     BOOL            outItalic;
     BYTE            outFlushMode;
-    BYTE            outHLC;     //must ignore low 4bits
-    WORD            outCharW;
-    WORD            outCharH;
-    WORD            outCharHInterval;
-    WORD            outCharVInterval;
-    WORD            outPosX;
-    WORD            outPosY;
     std::string     str;
+} LINE_STR, *PLINE_STR;
+
+typedef struct _CAPTION_LINE {
+    UINT                 index;
+    DWORD                startTime;
+    DWORD                endTime;
+    BYTE                 outCharSizeMode;
+    WORD                 outCharW;
+    WORD                 outCharH;
+    WORD                 outCharHInterval;
+    WORD                 outCharVInterval;
+    WORD                 outPosX;
+    WORD                 outPosY;
+    BYTE                 outHLC;     //must ignore low 4bits
+    std::list<PLINE_STR> outStrings;
 } CAPTION_LINE, *PCAPTION_LINE;
 
 typedef std::list<PCAPTION_LINE> CAPTION_LIST;
@@ -625,17 +629,19 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
         sMs /= 10;
         eMs /= 10;
 
+        std::list<PLINE_STR>::iterator it2 = (*it)->outStrings.begin();
+
         if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_box)) {
             int iHankaku;
             unsigned char usTmpUTF8[STRING_BUFFER_SIZE] = { 0 };
-            memcpy_s(usTmpUTF8, STRING_BUFFER_SIZE, (*it)->str.c_str(), (*it)->str.size());
+            memcpy_s(usTmpUTF8, STRING_BUFFER_SIZE, (*it2)->str.c_str(), (*it2)->str.size());
             iHankaku = this->count_UTF8(usTmpUTF8);
             int iBoxPosX = (*it)->outPosX + (iHankaku * (((*it)->outCharW + (*it)->outCharHInterval) / 4)) - ((*it)->outCharHInterval / 4);
             int iBoxPosY = (*it)->outPosY + ((*it)->outCharVInterval / 2);
             int iBoxScaleX = (iHankaku + 1) * 50;
             int iBoxScaleY = 100 * ((*it)->outCharH + (*it)->outCharVInterval) / (*it)->outCharH;
             fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\fscx%d\\fscy%d\\3c&H%06x&}",
-                    sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, iBoxScaleX, iBoxScaleY, (*it)->outCharColor);
+                    sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, iBoxScaleX, iBoxScaleY, (*it2)->outCharColor);
             static const unsigned char utf8box[] = { 0xE2, 0x96, 0xA0 };
             fwrite(utf8box, 3, 1, fp);
             fprintf(fp, "\r\n");
@@ -643,14 +649,14 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
         if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_draw)) {
             int iHankaku;
             unsigned char usTmpUTF8[STRING_BUFFER_SIZE] = { 0 };
-            memcpy_s(usTmpUTF8, STRING_BUFFER_SIZE, (*it)->str.c_str(), (*it)->str.size());
+            memcpy_s(usTmpUTF8, STRING_BUFFER_SIZE, (*it2)->str.c_str(), (*it2)->str.size());
             iHankaku = this->count_UTF8(usTmpUTF8);
             int iBoxPosX = (*it)->outPosX + (iHankaku * (((*it)->outCharW + (*it)->outCharHInterval) / 4));
             int iBoxPosY = (*it)->outPosY + ((*it)->outCharVInterval / 4);
             int iBoxScaleX = iHankaku * 55;
             int iBoxScaleY = 100;   //*((*it)->outCharH + (*it)->outCharVInterval) / (*it)->outCharH;
             fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\3c&H%06x&\\p1}m 0 0 l %d 0 %d %d 0 %d{\\p0}\r\n",
-                    sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, (*it)->outCharColor, iBoxScaleX, iBoxScaleX, iBoxScaleY, iBoxScaleY);
+                    sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, (*it2)->outCharColor, iBoxScaleX, iBoxScaleX, iBoxScaleY, iBoxScaleY);
         }
         if ((*it)->outCharSizeMode == STR_SMALL)
             fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Rubi,,0000,0000,0000,,{\\pos(%d,%d)",
@@ -659,13 +665,13 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
             fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Default,,0000,0000,0000,,{\\pos(%d,%d)",
                     sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX, (*it)->outPosY);
 
-        if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff)
-            fprintf(fp, "\\c&H%06x&", (*it)->outCharColor);
-        if ((*it)->outUnderLine)
+        if ((*it2)->outCharColor.ucR != 0xff || (*it2)->outCharColor.ucG != 0xff || (*it2)->outCharColor.ucB != 0xff)
+            fprintf(fp, "\\c&H%06x&", (*it2)->outCharColor);
+        if ((*it2)->outUnderLine)
             fprintf(fp, "\\u1");
-        if ((*it)->outBold)
+        if ((*it2)->outBold)
             fprintf(fp, "\\b1");
-        if ((*it)->outItalic)
+        if ((*it2)->outItalic)
             fprintf(fp, "\\i1");
         fprintf(fp, "}");
 
@@ -674,7 +680,39 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
         } else {
             if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_kigou))
                 fprintf(fp, "[");
-            fwrite((*it)->str.c_str(), (*it)->str.size(), 1, fp);
+
+            // Output strings.
+            while (1) {
+                fwrite((*it2)->str.c_str(), (*it2)->str.size(), 1, fp);
+
+                PLINE_STR prev = *it2;
+                ++it2;
+                if (it2 == (*it)->outStrings.end())
+                    break;
+
+                if (prev->outCharColor.ucR != (*it2)->outCharColor.ucR
+                 || prev->outCharColor.ucG != (*it2)->outCharColor.ucG
+                 || prev->outCharColor.ucB != (*it2)->outCharColor.ucB
+              /* || prev->outCharColor.ucAlpha != (*it2)->outCharColor.ucAlpha */
+                 || prev->outUnderLine != (*it2)->outUnderLine
+                 || prev->outBold      != (*it2)->outBold
+                 || prev->outItalic    != (*it2)->outItalic) {
+                    fprintf(fp, "{");
+                    if (prev->outCharColor.ucR != (*it2)->outCharColor.ucR
+                     || prev->outCharColor.ucG != (*it2)->outCharColor.ucG
+                     || prev->outCharColor.ucB != (*it2)->outCharColor.ucB
+                  /* || prev->outCharColor.ucAlpha != (*it2)->outCharColor.ucAlpha */)
+                        fprintf(fp, "\\c&H%06x&", (*it2)->outCharColor);
+                    if (prev->outUnderLine != (*it2)->outUnderLine)
+                        fprintf(fp, "\\u%d", (*it2)->outUnderLine ? 1 : 0);
+                    if (prev->outBold != (*it2)->outBold)
+                        fprintf(fp, "\\b%d", (*it2)->outBold ? 1 : 0);
+                    if (prev->outItalic != (*it2)->outItalic)
+                        fprintf(fp, "\\i%d", (*it2)->outItalic ? 1 : 0);
+                    fprintf(fp, "}");
+                }
+            }
+
             if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_kigou))
                 fprintf(fp, "]");
             fprintf(fp, "\\N");
@@ -708,29 +746,73 @@ void CSrtHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
         if ((*it)->outCharSizeMode == STR_SMALL)
             continue;
         bNoSRT = FALSE;
+
+        std::list<PLINE_STR>::iterator it2 = (*it)->outStrings.begin();
+
+        BOOL bItalic = FALSE, bBold = FALSE, bUnderLine = FALSE, bCharColor = FALSE;
+
         if (this->ornament) {
-            if ((*it)->outItalic)
+            bItalic    = (*it2)->outItalic;
+            bBold      = (*it2)->outBold;
+            bUnderLine = (*it2)->outUnderLine;
+            bCharColor = ((*it2)->outCharColor.ucR != 0xff || (*it2)->outCharColor.ucG != 0xff || (*it2)->outCharColor.ucB != 0xff)
+                       ? TRUE : FALSE;
+            if (bItalic)
                 fprintf(fp, "<i>");
-            if ((*it)->outBold)
+            if (bBold)
                 fprintf(fp, "<b>");
-            if ((*it)->outUnderLine)
+            if (bUnderLine)
                 fprintf(fp, "<u>");
-            if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff)
-                fprintf(fp, "<font color=\"#%02x%02x%02x\">", (*it)->outCharColor.ucR, (*it)->outCharColor.ucG, (*it)->outCharColor.ucB);
+            if (bCharColor)
+                fprintf(fp, "<font color=\"#%02x%02x%02x\">", (*it2)->outCharColor.ucR, (*it2)->outCharColor.ucG, (*it2)->outCharColor.ucB);
         }
         if ((*it)->outHLC != 0)
             fprintf(fp, "[");
-        fwrite((*it)->str.c_str(), (*it)->str.size(), 1, fp);
+
+        // Output strings.
+        while (1) {
+            fwrite((*it2)->str.c_str(), (*it2)->str.size(), 1, fp);
+
+            ++it2;
+            if (it2 == (*it)->outStrings.end())
+                break;
+
+            if (this->ornament) {
+                if (bCharColor)
+                    fprintf(fp, "</font>");
+                if (bUnderLine)
+                    fprintf(fp, "</u>");
+                if (bBold)
+                    fprintf(fp, "</b>");
+                if (bItalic)
+                    fprintf(fp, "</i>");
+                // Next ornament.
+                bItalic    = (*it2)->outItalic;
+                bBold      = (*it2)->outBold;
+                bUnderLine = (*it2)->outUnderLine;
+                bCharColor = ((*it2)->outCharColor.ucR != 0xff || (*it2)->outCharColor.ucG != 0xff || (*it2)->outCharColor.ucB != 0xff)
+                           ? TRUE : FALSE;
+                if (bItalic)
+                    fprintf(fp, "<i>");
+                if (bBold)
+                    fprintf(fp, "<b>");
+                if (bUnderLine)
+                    fprintf(fp, "<u>");
+                if (bCharColor)
+                    fprintf(fp, "<font color=\"#%02x%02x%02x\">", (*it2)->outCharColor.ucR, (*it2)->outCharColor.ucG, (*it2)->outCharColor.ucB);
+            }
+        }
+
         if ((*it)->outHLC != 0)
             fprintf(fp, "]");
         if (this->ornament) {
-            if ((*it)->outCharColor.ucR != 0xff || (*it)->outCharColor.ucG != 0xff || (*it)->outCharColor.ucB != 0xff)
+            if (bCharColor)
                 fprintf(fp, "</font>");
-            if ((*it)->outUnderLine)
+            if (bUnderLine)
                 fprintf(fp, "</u>");
-            if ((*it)->outBold)
+            if (bBold)
                 fprintf(fp, "</b>");
-            if ((*it)->outItalic)
+            if (bItalic)
                 fprintf(fp, "</i>");
         }
         fprintf(fp, "\r\n");
@@ -858,8 +940,12 @@ static void clear_caption_list(CAPTION_LIST& capList)
 {
     if (capList.empty())
         return;
-    for(std::list<PCAPTION_LINE>::iterator it = capList.begin(); it != capList.end(); ++it)
+    for (std::list<PCAPTION_LINE>::iterator it = capList.begin(); it != capList.end(); ++it) {
+        if (!((*it)->outStrings.empty()))
+            for (std::list<PLINE_STR>::iterator it2 = (*it)->outStrings.begin(); it2 != (*it)->outStrings.end(); ++it2)
+                delete *it2;
         delete *it;
+    }
     capList.clear();
 }
 
@@ -957,17 +1043,8 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
                 }
             }
 
-            for (; it2 != it->CharList.end(); it2++) {
+            if (it->CharList.size() > 0) {
                 workCharSizeMode  = it2->emCharSizeMode;
-                workucR           = it2->stCharColor.ucR;
-                workucG           = it2->stCharColor.ucG;
-                workucB           = it2->stCharColor.ucB;
-                workUnderLine     = it2->bUnderLine;
-                workShadow        = it2->bShadow;
-                workBold          = it2->bBold;
-                workItalic        = it2->bItalic;
-                workFlushMode     = it2->bFlushMode;
-                workHLC           = (it2->bHLC != 0) ? cp->HLCmode : it2->bHLC;
                 workCharW         = it2->wCharW;
                 workCharH         = it2->wCharH;
                 workCharHInterval = it2->wCharHInterval;
@@ -1020,13 +1097,34 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
                 // Correction for workPosX.
                 workPosX = (workPosX > app.sidebar_size) ? workPosX - app.sidebar_size : 0;
 
-                if (!(app.bUnicode)) {
-                    if (it2->emCharSizeMode == STR_SMALL)
-                        workPosY += (int)(10 * ratioY);
-                    if (it2->emCharSizeMode == STR_MEDIUM)
-                        // ‘SŠp -> ”¼Šp
-                        it2->strDecode = GetHalfChar(it2->strDecode);
+                if (!(app.bUnicode) && (it2->emCharSizeMode == STR_SMALL))
+                    workPosY += (int)(10 * ratioY);
+            }
+
+            PCAPTION_LINE pCapLine = new CAPTION_LINE();
+            if (!pCapLine)
+                goto ERR_EXIT;
+
+            for (; it2 != it->CharList.end(); it2++) {
+                PLINE_STR pLineStr = new LINE_STR();
+                if (!pLineStr) {
+                    delete pCapLine;
+                    goto ERR_EXIT;
                 }
+
+                workucR       = it2->stCharColor.ucR;
+                workucG       = it2->stCharColor.ucG;
+                workucB       = it2->stCharColor.ucB;
+                workUnderLine = it2->bUnderLine;
+                workShadow    = it2->bShadow;
+                workBold      = it2->bBold;
+                workItalic    = it2->bItalic;
+                workFlushMode = it2->bFlushMode;
+                workHLC       = (it2->bHLC != 0) ? cp->HLCmode : it2->bHLC;
+
+                if (!(app.bUnicode) && (it2->emCharSizeMode == STR_MEDIUM))
+                    // ‘SŠp -> ”¼Šp
+                    it2->strDecode = GetHalfChar(it2->strDecode);
 
                 if (log->active) {
                     if (it2->bUnderLine)
@@ -1047,44 +1145,47 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
                 CHAR  strUTF8_2[STRING_BUFFER_SIZE] = { 0 };
 
                 if ((cp->format == FORMAT_TAW) || (app.bUnicode))
-                    strcat_s(strUTF8, STRING_BUFFER_SIZE, it2->strDecode.c_str());
+                    strcpy_s(strUTF8, STRING_BUFFER_SIZE, it2->strDecode.c_str());
                 else {
                     // CP 932 to UTF-8
                     MultiByteToWideChar(932, 0, it2->strDecode.c_str(), -1, str, STRING_BUFFER_SIZE);
                     WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8_2, STRING_BUFFER_SIZE, NULL, NULL);
 
-                    strcat_s(strUTF8, STRING_BUFFER_SIZE, strUTF8_2);
+                    strcpy_s(strUTF8, STRING_BUFFER_SIZE, strUTF8_2);
                 }
+
+                // Push back the caption strings.
+                pLineStr->outCharColor.ucAlpha = 0x00;
+                pLineStr->outCharColor.ucR     = workucR;
+                pLineStr->outCharColor.ucG     = workucG;
+                pLineStr->outCharColor.ucB     = workucB;
+                pLineStr->outUnderLine         = workUnderLine;
+                pLineStr->outShadow            = workShadow;
+                pLineStr->outBold              = workBold;
+                pLineStr->outItalic            = workItalic;
+                pLineStr->outFlushMode         = workFlushMode;
+                pLineStr->str                  = strUTF8;
+
+                pCapLine->outStrings.push_back(pLineStr);
             }
 
-            PCAPTION_LINE pCapLine = new CAPTION_LINE();
-            if (!pCapLine)
-                goto ERR_EXIT;
-            pCapLine->str = strUTF8;
-            if (pCapLine->str == "") {
+            if (pCapLine->outStrings.empty()) {
                 delete pCapLine;
                 continue;
             }
-            pCapLine->index                = 0;     //useless
-            pCapLine->startTime            = (PTS > app.startPCR) ? (DWORD)(PTS - app.startPCR) : 0;
-            pCapLine->endTime              = 0;
-            pCapLine->outCharSizeMode      = workCharSizeMode;
-            pCapLine->outCharColor.ucAlpha = 0x00;
-            pCapLine->outCharColor.ucR     = workucR;
-            pCapLine->outCharColor.ucG     = workucG;
-            pCapLine->outCharColor.ucB     = workucB;
-            pCapLine->outUnderLine         = workUnderLine;
-            pCapLine->outShadow            = workShadow;
-            pCapLine->outBold              = workBold;
-            pCapLine->outItalic            = workItalic;
-            pCapLine->outFlushMode         = workFlushMode;
-            pCapLine->outHLC               = workHLC;
-            pCapLine->outCharW             = (WORD)(workCharW * ratioX);
-            pCapLine->outCharH             = (WORD)(workCharH * ratioY);
-            pCapLine->outCharHInterval     = (WORD)(workCharHInterval * ratioX);
-            pCapLine->outCharVInterval     = (WORD)(workCharVInterval * ratioY);
-            pCapLine->outPosX              = workPosX;
-            pCapLine->outPosY              = workPosY;
+
+            // Push back the caption lines.
+            pCapLine->index            = 0;     //useless
+            pCapLine->startTime        = (PTS > app.startPCR) ? (DWORD)(PTS - app.startPCR) : 0;
+            pCapLine->endTime          = 0;
+            pCapLine->outCharSizeMode  = workCharSizeMode;
+            pCapLine->outCharW         = (WORD)(workCharW * ratioX);
+            pCapLine->outCharH         = (WORD)(workCharH * ratioY);
+            pCapLine->outCharHInterval = (WORD)(workCharHInterval * ratioX);
+            pCapLine->outCharVInterval = (WORD)(workCharVInterval * ratioY);
+            pCapLine->outHLC           = workHLC;
+            pCapLine->outPosX          = workPosX;
+            pCapLine->outPosY          = workPosY;
 
             capList.push_back(pCapLine);
         }
