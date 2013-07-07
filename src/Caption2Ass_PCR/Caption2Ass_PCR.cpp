@@ -726,6 +726,39 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
 
 void CSrtHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
 {
+#define ORNAMENT_START(s)                               \
+do {                                                    \
+    bItalic    =  (s)->outItalic;                       \
+    bBold      =  (s)->outBold;                         \
+    bUnderLine =  (s)->outUnderLine;                    \
+    bCharColor = ((s)->outCharColor.ucR != 0xff         \
+               || (s)->outCharColor.ucG != 0xff         \
+               || (s)->outCharColor.ucB != 0xff)        \
+               ? TRUE : FALSE;                          \
+    if (bItalic)                                        \
+        fprintf(fp, "<i>");                             \
+    if (bBold)                                          \
+        fprintf(fp, "<b>");                             \
+    if (bUnderLine)                                     \
+        fprintf(fp, "<u>");                             \
+    if (bCharColor)                                     \
+        fprintf(fp, "<font color=\"#%02x%02x%02x\">",   \
+                    (s)->outCharColor.ucR,              \
+                    (s)->outCharColor.ucG,              \
+                    (s)->outCharColor.ucB);             \
+} while (0)
+#define ORNAMENT_END()          \
+do {                            \
+    if (bItalic)                \
+        fprintf(fp, "</i>");    \
+    if (bBold)                  \
+        fprintf(fp, "</b>");    \
+    if (bUnderLine)             \
+        fprintf(fp, "</u>");    \
+    if (bCharColor)             \
+        fprintf(fp, "</font>"); \
+} while (0)
+
     FILE *fp = this->fp;
 
     BOOL bNoSRT = TRUE;
@@ -748,23 +781,10 @@ void CSrtHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
         bNoSRT = FALSE;
 
         std::list<PLINE_STR>::iterator it2 = (*it)->outStrings.begin();
-
         BOOL bItalic = FALSE, bBold = FALSE, bUnderLine = FALSE, bCharColor = FALSE;
 
         if (this->ornament) {
-            bItalic    = (*it2)->outItalic;
-            bBold      = (*it2)->outBold;
-            bUnderLine = (*it2)->outUnderLine;
-            bCharColor = ((*it2)->outCharColor.ucR != 0xff || (*it2)->outCharColor.ucG != 0xff || (*it2)->outCharColor.ucB != 0xff)
-                       ? TRUE : FALSE;
-            if (bItalic)
-                fprintf(fp, "<i>");
-            if (bBold)
-                fprintf(fp, "<b>");
-            if (bUnderLine)
-                fprintf(fp, "<u>");
-            if (bCharColor)
-                fprintf(fp, "<font color=\"#%02x%02x%02x\">", (*it2)->outCharColor.ucR, (*it2)->outCharColor.ucG, (*it2)->outCharColor.ucB);
+            ORNAMENT_START(*it2);
         }
         if ((*it)->outHLC != 0)
             fprintf(fp, "[");
@@ -778,42 +798,16 @@ void CSrtHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
                 break;
 
             if (this->ornament) {
-                if (bCharColor)
-                    fprintf(fp, "</font>");
-                if (bUnderLine)
-                    fprintf(fp, "</u>");
-                if (bBold)
-                    fprintf(fp, "</b>");
-                if (bItalic)
-                    fprintf(fp, "</i>");
+                ORNAMENT_END();
                 // Next ornament.
-                bItalic    = (*it2)->outItalic;
-                bBold      = (*it2)->outBold;
-                bUnderLine = (*it2)->outUnderLine;
-                bCharColor = ((*it2)->outCharColor.ucR != 0xff || (*it2)->outCharColor.ucG != 0xff || (*it2)->outCharColor.ucB != 0xff)
-                           ? TRUE : FALSE;
-                if (bItalic)
-                    fprintf(fp, "<i>");
-                if (bBold)
-                    fprintf(fp, "<b>");
-                if (bUnderLine)
-                    fprintf(fp, "<u>");
-                if (bCharColor)
-                    fprintf(fp, "<font color=\"#%02x%02x%02x\">", (*it2)->outCharColor.ucR, (*it2)->outCharColor.ucG, (*it2)->outCharColor.ucB);
+                ORNAMENT_START(*it2);
             }
         }
 
         if ((*it)->outHLC != 0)
             fprintf(fp, "]");
         if (this->ornament) {
-            if (bCharColor)
-                fprintf(fp, "</font>");
-            if (bUnderLine)
-                fprintf(fp, "</u>");
-            if (bBold)
-                fprintf(fp, "</b>");
-            if (bItalic)
-                fprintf(fp, "</i>");
+            ORNAMENT_END();
         }
         fprintf(fp, "\r\n");
     }
@@ -824,6 +818,8 @@ void CSrtHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
         fprintf(fp, "\r\n");
         ++(this->index);
     }
+#undef ORNAMENT_START
+#undef ORNAMENT_END
 }
 
 static void output_header(CAppHandler& app)
