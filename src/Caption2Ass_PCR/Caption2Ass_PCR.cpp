@@ -947,27 +947,19 @@ static void clear_caption_list(CAPTION_LIST& capList)
 
 static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& capList, long long PTS)
 {
-    int workCharSizeMode = 0;
-    unsigned char workucB = 0;
-    unsigned char workucG = 0;
-    unsigned char workucR = 0;
-    BOOL workUnderLine;
-    BOOL workShadow;
-    BOOL workBold;
-    BOOL workItalic;
-    BYTE workFlushMode;
-    BYTE workHLC; //must ignore low 4bits
-    int workCharW = 0;
-    int workCharH = 0;
-    int workCharHInterval = 0;
-    int workCharVInterval = 0;
-    int workPosX = 0;
-    int workPosY = 0;
-    WORD wLastSWFMode = 999;
-    int offsetPosX = 0;
-    int offsetPosY = 0;
-    float ratioX = 2;
-    float ratioY = 2;
+    int   workCharSizeMode  = 0;
+    int   workCharW         = 0;
+    int   workCharH         = 0;
+    int   workCharHInterval = 0;
+    int   workCharVInterval = 0;
+    int   workPosX          = 0;
+    int   workPosY          = 0;
+    BYTE  workHLC           = HLC_kigou;    //must ignore low 4bits
+    WORD  wLastSWFMode      = 999;
+    int   offsetPosX        = 0;
+    int   offsetPosY        = 0;
+    float ratioX            = 2;
+    float ratioY            = 2;
 
     // Prepare the handlers.
     cli_parameter_t *cp  = static_cast<cli_parameter_t *>(app.GetParam(C2A_PARAM_CLI));
@@ -1108,15 +1100,15 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
                     goto ERR_EXIT;
                 }
 
-                workucR       = it2->stCharColor.ucR;
-                workucG       = it2->stCharColor.ucG;
-                workucB       = it2->stCharColor.ucB;
-                workUnderLine = it2->bUnderLine;
-                workShadow    = it2->bShadow;
-                workBold      = it2->bBold;
-                workItalic    = it2->bItalic;
-                workFlushMode = it2->bFlushMode;
-                workHLC       = (it2->bHLC != 0) ? cp->HLCmode : it2->bHLC;
+                unsigned char workucR = it2->stCharColor.ucR;
+                unsigned char workucG = it2->stCharColor.ucG;
+                unsigned char workucB = it2->stCharColor.ucB;
+                BOOL workUnderLine    = it2->bUnderLine;
+                BOOL workShadow       = it2->bShadow;
+                BOOL workBold         = it2->bBold;
+                BOOL workItalic       = it2->bItalic;
+                BYTE workFlushMode    = it2->bFlushMode;
+                workHLC               = (it2->bHLC != 0) ? cp->HLCmode : it2->bHLC;
 
                 if (!(app.bUnicode) && (it2->emCharSizeMode == STR_MEDIUM))
                     // ‘SŠp -> ”¼Šp
