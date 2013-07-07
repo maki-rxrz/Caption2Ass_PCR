@@ -974,8 +974,6 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
 
     std::vector<CAPTION_DATA>::iterator it = Captions.begin();
     for (; it != Captions.end(); it++) {
-        CHAR strUTF8[STRING_BUFFER_SIZE] = { 0 };
-
         if (it->bClear) {
             // 字幕のスキップをチェック
             if ((PTS + it->dwWaitTime) <= app.startPCR) {
@@ -1129,17 +1127,15 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
                     log->print("%s\r\n", it2->strDecode.c_str());
                 }
 
-                WCHAR str[STRING_BUFFER_SIZE]       = { 0 };
-                CHAR  strUTF8_2[STRING_BUFFER_SIZE] = { 0 };
+                CHAR  str_utf8[STRING_BUFFER_SIZE]  = { 0 };
+                WCHAR str_wchar[STRING_BUFFER_SIZE] = { 0 };
 
                 if ((cp->format == FORMAT_TAW) || (app.bUnicode))
-                    strcpy_s(strUTF8, STRING_BUFFER_SIZE, it2->strDecode.c_str());
+                    strcpy_s(str_utf8, STRING_BUFFER_SIZE, it2->strDecode.c_str());
                 else {
                     // CP 932 to UTF-8
-                    MultiByteToWideChar(932, 0, it2->strDecode.c_str(), -1, str, STRING_BUFFER_SIZE);
-                    WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8_2, STRING_BUFFER_SIZE, NULL, NULL);
-
-                    strcpy_s(strUTF8, STRING_BUFFER_SIZE, strUTF8_2);
+                    MultiByteToWideChar(932, 0, it2->strDecode.c_str(), -1, str_wchar, STRING_BUFFER_SIZE);
+                    WideCharToMultiByte(CP_UTF8, 0, str_wchar, -1, str_utf8, STRING_BUFFER_SIZE, NULL, NULL);
                 }
 
                 // Push back the caption strings.
@@ -1152,7 +1148,7 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
                 pLineStr->outBold              = workBold;
                 pLineStr->outItalic            = workItalic;
                 pLineStr->outFlushMode         = workFlushMode;
-                pLineStr->str                  = strUTF8;
+                pLineStr->str                  = str_utf8;
 
                 pCapLine->outStrings.push_back(pLineStr);
             }
