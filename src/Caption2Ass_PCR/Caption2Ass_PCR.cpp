@@ -5,7 +5,6 @@
 #include "stdafx.h"
 #include <shlwapi.h>
 #include <vector>
-#include <list>
 
 #include "CommRoutine.h"
 #include "CaptionDllUtil.h"
@@ -44,22 +43,24 @@ typedef struct _LINE_STR {
     std::string     str;
 } LINE_STR, *PLINE_STR;
 
+typedef std::vector<PLINE_STR> STRINGS_LIST;
+
 typedef struct _CAPTION_LINE {
-    UINT                 index;
-    DWORD                startTime;
-    DWORD                endTime;
-    BYTE                 outCharSizeMode;
-    WORD                 outCharW;
-    WORD                 outCharH;
-    WORD                 outCharHInterval;
-    WORD                 outCharVInterval;
-    WORD                 outPosX;
-    WORD                 outPosY;
-    BYTE                 outHLC;     //must ignore low 4bits
-    std::list<PLINE_STR> outStrings;
+    UINT            index;
+    DWORD           startTime;
+    DWORD           endTime;
+    BYTE            outCharSizeMode;
+    WORD            outCharW;
+    WORD            outCharH;
+    WORD            outCharHInterval;
+    WORD            outCharVInterval;
+    WORD            outPosX;
+    WORD            outPosY;
+    BYTE            outHLC;     //must ignore low 4bits
+    STRINGS_LIST    outStrings;
 } CAPTION_LINE, *PCAPTION_LINE;
 
-typedef std::list<PCAPTION_LINE> CAPTION_LIST;
+typedef std::vector<PCAPTION_LINE> CAPTION_LIST;
 
 #define HMS(T, h, m, s, ms)             \
 do {                                    \
@@ -629,7 +630,7 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
         sMs /= 10;
         eMs /= 10;
 
-        std::list<PLINE_STR>::iterator it2 = (*it)->outStrings.begin();
+        STRINGS_LIST::iterator it2 = (*it)->outStrings.begin();
 
         if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_box)) {
             int iHankaku;
@@ -780,7 +781,7 @@ do {                            \
             continue;
         bNoSRT = FALSE;
 
-        std::list<PLINE_STR>::iterator it2 = (*it)->outStrings.begin();
+        STRINGS_LIST::iterator it2 = (*it)->outStrings.begin();
         BOOL bItalic = FALSE, bBold = FALSE, bUnderLine = FALSE, bCharColor = FALSE;
 
         if (this->ornament) {
@@ -936,9 +937,9 @@ static void clear_caption_list(CAPTION_LIST& capList)
 {
     if (capList.empty())
         return;
-    for (std::list<PCAPTION_LINE>::iterator it = capList.begin(); it != capList.end(); ++it) {
+    for (CAPTION_LIST::iterator it = capList.begin(); it != capList.end(); ++it) {
         if (!((*it)->outStrings.empty()))
-            for (std::list<PLINE_STR>::iterator it2 = (*it)->outStrings.begin(); it2 != (*it)->outStrings.end(); ++it2)
+            for (STRINGS_LIST::iterator it2 = (*it)->outStrings.begin(); it2 != (*it)->outStrings.end(); ++it2)
                 delete *it2;
         delete *it;
     }
