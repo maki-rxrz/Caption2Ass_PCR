@@ -4,7 +4,6 @@
 #pragma warning(disable: 4100)
 
 #include "stdafx.h"
-#include <map>
 
 #include "CalcMD5.h"
 #include "CommRoutine.h"

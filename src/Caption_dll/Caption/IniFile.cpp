@@ -3,7 +3,6 @@
 //------------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include <map>
 
 #include "CaptionDef.h"
 #include "ColorDef.h"
