@@ -26,6 +26,7 @@ typedef struct {
     TCHAR      *FileName;
     TCHAR      *TargetFileName;
     TCHAR      *LogFileName;
+    int         readBufferSize;
 } cli_parameter_t;
 
 typedef struct {

@@ -6,6 +6,7 @@
 #include <shlwapi.h>
 #include <vector>
 
+#include "file_reader.h"
 #include "CommRoutine.h"
 #include "CaptionDllUtil.h"
 #include "cmdline.h"
@@ -334,7 +335,7 @@ private:
 
 public:
     // File handlers
-    FILE               *fpInputTs;
+    IFileReader        *input_ts;
     // Caption handlers
     ILogHandler        *log_handle;
     IOutputHandler     *output_handle[output_type_max];
@@ -342,7 +343,7 @@ public:
 
 public:
     CAppHandler(void)
-     : fpInputTs(NULL), log_handle(NULL)
+     : input_ts(NULL), log_handle(NULL)
     {
         this->initialize();
         memset(this->output_handle , 0, sizeof(IOutputHandler  *) * (this->output_type_max));
@@ -417,6 +418,7 @@ void CAppHandler::Free(void)
     for (int i = 0; this->caption_handle[i]; i++)
         caption_handle[i] = NULL;
     this->log_handle = NULL;
+    SAFE_DELETE(this->input_ts);
 }
 
 int ICaptionHandler::count_UTF8(const unsigned char *string)
@@ -891,10 +893,8 @@ static void close_files(CAppHandler& app)
     IOutputHandler **handle = app.output_handle;
 
     // Close input file.
-    if (app.fpInputTs) {
-        fclose(app.fpInputTs);
-        app.fpInputTs = NULL;
-    }
+    if (app.input_ts)
+        app.input_ts->close();
 
     // Close output file.
     for (int i = 0; handle[i]; i++)
@@ -1201,7 +1201,7 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
     DWORD packetCount = 0;
 
     // Main loop
-    while (fread(pbPacket, 188, 1, app.fpInputTs) == 1) {
+    while (app.input_ts->fread(pbPacket, 188, NULL) != FR_EOF) {
         packetCount++;
         if (cp->detectLength > 0) {
             if (packetCount > cp->detectLength && !(app.bCreateOutput)) {
@@ -1229,7 +1229,7 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
         parse_Packet_Header(&packet, &pbPacket[0]);
 
         if (packet.Sync != 'G') {
-            if (!resync(pbPacket, app.fpInputTs)) {
+            if (!resync(pbPacket, app.input_ts)) {
                 _tMyPrintf(_T("Invalid TS File.\r\n"));
                 Sleep(2000);
                 result = C2A_FAILURE;
@@ -1464,13 +1464,19 @@ int _tmain(int argc, _TCHAR *argv[])
     _tMyPrintf(_T("[Format] %s\r\n"), format_name[cp->format]);
 
     // Open TS File.
-    if (_tfopen_s(&(app.fpInputTs), cp->FileName, _T("rb")) || !(app.fpInputTs)) {
+    app.input_ts = CreateFileReader();
+    if (!(app.input_ts) || app.input_ts->init()) {
+        result = C2A_ERR_MEMORY;
+        goto EXIT;
+    }
+
+    if (app.input_ts->open(cp->FileName, cp->readBufferSize)) {
         _tMyPrintf(_T("Open TS File: %s failed\r\n"), cp->FileName);
         result = C2A_ERR_PARAM;
         goto EXIT;
     }
     // Check TS File.
-    if (!FindStartOffset(app.fpInputTs)) {
+    if (!FindStartOffset(app.input_ts)) {
         _tMyPrintf(_T("Invalid TS File.\r\n"));
         Sleep(2000);
         result = C2A_FAILURE;

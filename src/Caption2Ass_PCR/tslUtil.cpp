@@ -4,18 +4,19 @@
 
 #include "stdafx.h"
 
+#include "file_reader.h"
 #include "cmdline.h"
 #include "tslUtil.h"
 #include "Caption2Ass_PCR.h"
 
-extern BOOL FindStartOffset(FILE *fp)
+extern BOOL FindStartOffset(IFileReader *fr)
 {
     BYTE buf[188 * 2] = { 0 };
 
-    while (fread(buf, 188 * 2, 1, fp) == 1) {
+    while (fr->fread(buf, 188 * 2, NULL) != FR_EOF) {
         for (int i = 0; i < 188; i++) {
             if (buf[i] == 'G' && buf[i + 188] == 'G') {
-                fseek(fp, i, SEEK_SET);
+                fr->fseek(i, SEEK_SET);
                 return TRUE;
             }
         }
@@ -24,7 +25,7 @@ extern BOOL FindStartOffset(FILE *fp)
     return FALSE;
 }
 
-extern BOOL resync(BYTE *pbPacket, FILE *fp)
+extern BOOL resync(BYTE *pbPacket, IFileReader *fr)
 {
     __int64 pos;
     char *p;
@@ -32,7 +33,7 @@ extern BOOL resync(BYTE *pbPacket, FILE *fp)
     p = (char *)memchr(pbPacket, 'G', 188);
     if (!p) {
         for (int i = 0; i < 20; i++) {
-            if (fread(pbPacket, 188, 1, fp) != 1) {
+            if (fr->fread(pbPacket, 188, NULL) == FR_EOF) {
                 fprintf(stderr, "Unexpected EOF\n");
                 Sleep(2000);
                 return FALSE;
@@ -50,7 +51,7 @@ extern BOOL resync(BYTE *pbPacket, FILE *fp)
         return FALSE;
     }
     pos = p - (char *)pbPacket;
-    _fseeki64(fp, -(188 - pos), SEEK_CUR);
+    fr->fseek(-(188 - pos), SEEK_CUR);
     return true;
 }
 

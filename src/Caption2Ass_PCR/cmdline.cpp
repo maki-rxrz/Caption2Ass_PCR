@@ -26,6 +26,7 @@ static void usage(int argc)
         _T("    -log                        Make log-file."),
         _T("    -keepinterval               Keep the interval of the output timestamp"),
         _T("                                 upon detection of packet loss."),
+        _T("    -rb_size <integer>          Specify internal buffer size for data reading."),
         _T("  [srt]"),
         _T("    -srtornament                Set ornament to srt-file."),
         _T("  [ass]"),
@@ -147,6 +148,12 @@ ERROR_PARAM:
             if (_stscanf_s(argv[i], _T("%d"), &cp->detectLength) < 0)
                 goto ERROR_PARAM;
             cp->detectLength *= 10000;
+        } else if (_tcsicmp(argv[i], _T("-rb_size")) == 0) {
+            i++;
+            if (i > argc)
+                goto ERROR_PARAM;
+            if (_stscanf_s(argv[i], _T("%d"), &cp->readBufferSize) < 0)
+                goto ERROR_PARAM;
         } else if (_tcsicmp(cp->FileName, _T("")) == 0)
             _tcscpy_s(cp->FileName, string_length, argv[i]);
         else if (_tcsicmp(cp->TargetFileName, _T("")) == 0)
