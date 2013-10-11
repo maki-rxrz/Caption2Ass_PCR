@@ -380,6 +380,8 @@ DWORD CCaptionMain::ParseCaptionManagementData(BYTE *pbBuff, DWORD dwSize, vecto
         while (dwReadSize < uiUnitSize) {
             DWORD dwSize = 0;
             dwRet = ParseUnitData(pbBuff + dwPos + dwReadSize, uiUnitSize - dwReadSize, &dwSize, pCaptionList);
+            if (dwRet != NO_ERR)
+                break;
             dwReadSize += dwSize;
         }
     }
@@ -420,6 +422,8 @@ DWORD CCaptionMain::ParseCaptionData(BYTE *pbBuff, DWORD dwSize, vector<CAPTION_
         while (dwReadSize < uiUnitSize) {
             DWORD dwSize = 0;
             dwRet = ParseUnitData(pbBuff + dwPos + dwReadSize, uiUnitSize - dwReadSize, &dwSize, pCaptionList);
+            if (dwRet != NO_ERR)
+                break;
             dwReadSize += dwSize;
         }
     }
