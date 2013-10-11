@@ -429,14 +429,14 @@ DWORD CCaptionMain::ParseCaptionData(BYTE *pbBuff, DWORD dwSize, vector<CAPTION_
 DWORD CCaptionMain::ParseUnitData(BYTE *pbBuff, DWORD dwSize, DWORD *pdwReadSize, vector<CAPTION_DATA> *pCaptionList)
 {
     if (!pbBuff || dwSize < 5 || !pdwReadSize)
-        return FALSE;
+        return ERR_FALSE;
 
     if (pbBuff[0] != 0x1F)
-        return FALSE;
+        return ERR_FALSE;
 
     UINT uiUnitSize = ((UINT)(pbBuff[2])) << 16 | ((UINT)(pbBuff[3])) << 8 | pbBuff[4];
     if (dwSize < 5 + uiUnitSize)
-        return FALSE;
+        return ERR_FALSE;
 
     if (pbBuff[1] != 0x20) {
         //Žš–‹•¶(–{•¶)ˆÈŠO
@@ -447,7 +447,7 @@ DWORD CCaptionMain::ParseUnitData(BYTE *pbBuff, DWORD dwSize, DWORD *pdwReadSize
                 cDec.DRCSHeaderparse(pbBuff + 5, uiUnitSize, (pbBuff[1] == 0x31) ? TRUE : FALSE);
             }
         *pdwReadSize = uiUnitSize + 5;
-        return TRUE;
+        return NO_ERR;
     }
 
     if (uiUnitSize > 0) {
@@ -456,7 +456,7 @@ DWORD CCaptionMain::ParseUnitData(BYTE *pbBuff, DWORD dwSize, DWORD *pdwReadSize
     }
     *pdwReadSize = 5 + uiUnitSize;
 
-    return TRUE;
+    return NO_ERR;
 }
 
 BOOL CCaptionMain::InsertCaptionList(WORD wGroupID, vector<CAPTION_DATA> *pCaptionList)
