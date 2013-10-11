@@ -366,8 +366,8 @@ void CARIB8CharDecode::InitCaption(void)
     default:
         m_wClientW = 0;
         m_wClientH = 0;
-        m_wCharW=36;
-        m_wCharH=36;
+        m_wCharW = 36;
+        m_wCharH = 36;
         m_wCharHInterval = 0;
         m_wCharVInterval = 0;
         break;
@@ -400,7 +400,7 @@ BOOL CARIB8CharDecode::Caption(const BYTE *pbSrc, DWORD dwSrcSize, vector<CAPTIO
 
     BOOL bRet = TRUE;
     DWORD dwReadCount = 0;
-    while (dwReadCount<dwSrcSize) {
+    while (dwReadCount < dwSrcSize) {
         DWORD dwReadSize = 0;
         BOOL bRet = Analyze(pbSrc + dwReadCount, dwSrcSize - dwReadCount, &dwReadSize);
         if (bRet == TRUE) {
@@ -411,7 +411,7 @@ BOOL CARIB8CharDecode::Caption(const BYTE *pbSrc, DWORD dwSrcSize, vector<CAPTIO
             break;
         }
         m_strDecode = "";
-        dwReadCount+=dwReadSize;
+        dwReadCount += dwReadSize;
     }
     return bRet;
 }
@@ -601,7 +601,7 @@ BOOL CARIB8CharDecode::C0(const BYTE *pbSrc, DWORD *pdwReadSize)
             m_wPosY = 60 * (pbSrc[1] - 0x40) + 30;
             m_wPosX = m_wCharW * (pbSrc[2] - 0x40);
             if (m_emStrSize == STR_SMALL || m_emStrSize == STR_MEDIUM)
-                m_wPosX=m_wPosX / 2;
+                m_wPosX = m_wPosX / 2;
 
             if (m_emStrSize == STR_SMALL)
                 m_wPosY = 30 * (pbSrc[1] - 0x40);
@@ -1983,7 +1983,7 @@ BOOL CARIB8CharDecode::DRCSHeaderparse(const BYTE *pbSrc, DWORD dwSrcSize, BOOL 
             BYTE bPixPerByte = (bDepth == 0) ? 8 : 4;
             BYTE bWidth = pbSrc[dwRead + 2];
             BYTE bHeight = pbSrc[dwRead + 3];
-            if (!(bMode == 0 && bDepth == 0 || bMode == 1 && bDepth == 2) || bWidth>DRCS_SIZE_MAX || bHeight>DRCS_SIZE_MAX)
+            if (!(bMode == 0 && bDepth == 0 || bMode == 1 && bDepth == 2) || bWidth > DRCS_SIZE_MAX || bHeight > DRCS_SIZE_MAX)
                 //未サポート(運用規定外)
                 return FALSE;
 

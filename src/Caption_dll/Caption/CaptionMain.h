@@ -22,7 +22,7 @@ public:
         unsigned char ucRollupMode;
         //=オペレーターの処理
         _LANG_TAG_INFO & operator= (const _LANG_TAG_INFO & o) {
-            ucLangTag=o.ucLangTag;
+            ucLangTag = o.ucLangTag;
             ucDMF = o.ucDMF;
             ucDC = o.ucDC;
             memcpy(szISOLangCode, o.szISOLangCode, 4);

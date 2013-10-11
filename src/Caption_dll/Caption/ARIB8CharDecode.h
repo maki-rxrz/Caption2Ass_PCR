@@ -87,7 +87,7 @@ typedef struct _CAPTION_CHAR_DATA {
     WORD wCharVInterval;
     //=オペレーターの処理
     _CAPTION_CHAR_DATA & operator= (const _CAPTION_CHAR_DATA & o) {
-        strDecode=o.strDecode;
+        strDecode = o.strDecode;
         emCharSizeMode = o.emCharSizeMode;
         stCharColor = o.stCharColor;
         stBackColor = o.stBackColor;
@@ -118,7 +118,7 @@ typedef struct _CAPTION_DATA {
     DWORD dwWaitTime;
     //=オペレーターの処理
     _CAPTION_DATA & operator= (const _CAPTION_DATA & o) {
-        bClear=o.bClear;
+        bClear = o.bClear;
         wSWFMode = o.wSWFMode;
         wClientX = o.wClientX;
         wClientY = o.wClientY;

@@ -417,12 +417,11 @@ DWORD CCaptionMain::ParseCaptionData(BYTE *pbBuff, DWORD dwSize, vector<CAPTION_
     if (uiUnitSize > 0) {
         //éöñãÉfÅ[É^
         DWORD dwReadSize = 0;
-        while (dwReadSize<uiUnitSize) {
+        while (dwReadSize < uiUnitSize) {
             DWORD dwSize = 0;
             dwRet = ParseUnitData(pbBuff + dwPos + dwReadSize, uiUnitSize - dwReadSize, &dwSize, pCaptionList);
             dwReadSize += dwSize;
         }
-
     }
     return dwRet;
 }
@@ -577,7 +576,7 @@ DWORD CCaptionMain::GetCaptionData(unsigned char ucLangTag, CAPTION_DATA_DLL **p
                 m_pCapList[i].pstCharList[j].wCharVInterval = List[i].CharList[j].wCharVInterval;
             }
 
-            m_pCapList[i].bClear=List[i].bClear;
+            m_pCapList[i].bClear = List[i].bClear;
             m_pCapList[i].wSWFMode = List[i].wSWFMode;
             m_pCapList[i].wClientX = List[i].wClientX;
             m_pCapList[i].wClientY = List[i].wClientY;
