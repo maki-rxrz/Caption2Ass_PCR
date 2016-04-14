@@ -378,11 +378,11 @@ DWORD CCaptionMain::ParseCaptionManagementData(BYTE *pbBuff, DWORD dwSize, vecto
         //字幕データ
         DWORD dwReadSize = 0;
         while (dwReadSize < uiUnitSize) {
-            DWORD dwSize = 0;
-            dwRet = ParseUnitData(pbBuff + dwPos + dwReadSize, uiUnitSize - dwReadSize, &dwSize, pCaptionList);
+            DWORD dwUnitSize = 0;
+            dwRet = ParseUnitData(pbBuff + dwPos + dwReadSize, uiUnitSize - dwReadSize, &dwUnitSize, pCaptionList);
             if (dwRet != NO_ERR)
                 break;
-            dwReadSize += dwSize;
+            dwReadSize += dwUnitSize;
         }
     }
     return dwRet;
@@ -420,11 +420,11 @@ DWORD CCaptionMain::ParseCaptionData(BYTE *pbBuff, DWORD dwSize, vector<CAPTION_
         //字幕データ
         DWORD dwReadSize = 0;
         while (dwReadSize < uiUnitSize) {
-            DWORD dwSize = 0;
-            dwRet = ParseUnitData(pbBuff + dwPos + dwReadSize, uiUnitSize - dwReadSize, &dwSize, pCaptionList);
+            DWORD dwUnitSize = 0;
+            dwRet = ParseUnitData(pbBuff + dwPos + dwReadSize, uiUnitSize - dwReadSize, &dwUnitSize, pCaptionList);
             if (dwRet != NO_ERR)
                 break;
-            dwReadSize += dwSize;
+            dwReadSize += dwUnitSize;
         }
     }
     return dwRet;

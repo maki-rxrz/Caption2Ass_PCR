@@ -402,7 +402,7 @@ BOOL CARIB8CharDecode::Caption(const BYTE *pbSrc, DWORD dwSrcSize, vector<CAPTIO
     DWORD dwReadCount = 0;
     while (dwReadCount < dwSrcSize) {
         DWORD dwReadSize = 0;
-        BOOL bRet = Analyze(pbSrc + dwReadCount, dwSrcSize - dwReadCount, &dwReadSize);
+        bRet = Analyze(pbSrc + dwReadCount, dwSrcSize - dwReadCount, &dwReadSize);
         if (bRet == TRUE) {
             if (m_strDecode.size() > 0)
                 CheckModify();
@@ -571,26 +571,28 @@ BOOL CARIB8CharDecode::C0(const BYTE *pbSrc, DWORD *pdwReadSize)
         break;
     case 0x16:
         //PAPF
-        CheckModify();
-        WORD m_wTmpCharW;
-        if (m_emStrSize == STR_SMALL || m_emStrSize == STR_MEDIUM)
-            m_wTmpCharW = (m_wCharW + m_wCharHInterval) / 2;
-        else
-            m_wTmpCharW = (m_wCharW + m_wCharHInterval);
-        m_wPosX = m_wTmpPosX - m_wClientX;
-        WORD CTLtmp;
-        CTLtmp = (pbSrc[1] & 0x7F) - 0x40;
-        for (WORD i = 1; i <= CTLtmp; i++) {
-            if (m_wTmpPosX > (m_wMaxPosX - m_wTmpCharW)) {
-                CheckModify();
-                m_wPosX = 0;
-                m_wPosY += (m_wCharH + m_wCharVInterval);
-                m_wTmpPosX = m_wClientX;
+        {
+            CheckModify();
+            WORD m_wTmpCharW;
+            if (m_emStrSize == STR_SMALL || m_emStrSize == STR_MEDIUM)
+                m_wTmpCharW = (m_wCharW + m_wCharHInterval) / 2;
+            else
+                m_wTmpCharW = (m_wCharW + m_wCharHInterval);
+            m_wPosX = m_wTmpPosX - m_wClientX;
+            WORD CTLtmp;
+            CTLtmp = (pbSrc[1] & 0x7F) - 0x40;
+            for (WORD i = 1; i <= CTLtmp; i++) {
+                if (m_wTmpPosX > (m_wMaxPosX - m_wTmpCharW)) {
+                    CheckModify();
+                    m_wPosX = 0;
+                    m_wPosY += (m_wCharH + m_wCharVInterval);
+                    m_wTmpPosX = m_wClientX;
+                }
+                m_wPosX += m_wTmpCharW;
+                m_wTmpPosX += m_wTmpCharW;
             }
-            m_wPosX += m_wTmpCharW;
-            m_wTmpPosX += m_wTmpCharW;
+            dwReadSize = 2;
         }
-        dwReadSize = 2;
         break;
     case 0x1C:
         //APS
@@ -1312,7 +1314,7 @@ BOOL CARIB8CharDecode::ToCustomFont(const BYTE bFirst, const BYTE bSecond)
     return TRUE;
 }
 
-BOOL CARIB8CharDecode::AddToString(const char *cDec, BOOL m_bGaiji)
+BOOL CARIB8CharDecode::AddToString(const char *cDec, BOOL bGaiji)
 {
     if ((m_wPosX == 0) && (m_wPosY == 0))
         m_wPosY = (m_wCharH + m_wCharVInterval);
@@ -1328,7 +1330,7 @@ BOOL CARIB8CharDecode::AddToString(const char *cDec, BOOL m_bGaiji)
     else
         tmpcDec = cDec;
 
-    if ((m_bUnicode) && (!m_bGaiji)) {
+    if ((m_bUnicode) && (!bGaiji)) {
         // CP 932 to UTF-8
         MultiByteToWideChar(932, 0, tmpcDec.c_str(), -1, str, wkLen);
         WideCharToMultiByte(CP_UTF8, 0, str, -1, strUTF8, wkLen, NULL, NULL);
