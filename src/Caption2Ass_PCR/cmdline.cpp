@@ -69,11 +69,13 @@ ERROR_PARAM:
     // Parse args.
     for (int i = 1; i< argc; i++) {
         if (_tcsicmp(argv[i], _T("-PMT_PID")) == 0) {
+            unsigned int pmt_pid;
             i++;
             if (i > argc)
                 goto ERROR_PARAM;
-            if (_stscanf_s(argv[i], _T("%x"), &(pi->PMTPid)) <= 0)
+            if (_stscanf_s(argv[i], _T("%x"), &pmt_pid) <= 0)
                 goto ERROR_PARAM;
+            pi->PMTPid = (USHORT)pmt_pid;
         } else if (_tcsicmp(argv[i], _T("-format")) == 0) {
             i++;
             if (i > argc)

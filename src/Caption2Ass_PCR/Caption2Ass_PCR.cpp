@@ -631,6 +631,9 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
         eMs /= 10;
 
         STRINGS_LIST::iterator it2 = (*it)->outStrings.begin();
+        UINT outCharColor = (*it2)->outCharColor.ucB << 16
+                          | (*it2)->outCharColor.ucG << 8
+                          | (*it2)->outCharColor.ucR;
 
         if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_box)) {
             int iHankaku;
@@ -642,7 +645,7 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
             int iBoxScaleX = (iHankaku + 1) * 50;
             int iBoxScaleY = 100 * ((*it)->outCharH + (*it)->outCharVInterval) / (*it)->outCharH;
             fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\fscx%d\\fscy%d\\3c&H%06x&}",
-                    sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, iBoxScaleX, iBoxScaleY, (*it2)->outCharColor);
+                    sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, iBoxScaleX, iBoxScaleY, outCharColor);
             static const unsigned char utf8box[] = { 0xE2, 0x96, 0xA0 };
             fwrite(utf8box, 3, 1, fp);
             fprintf(fp, "\r\n");
@@ -657,7 +660,7 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
             int iBoxScaleX = iHankaku * 55;
             int iBoxScaleY = 100;   //*((*it)->outCharH + (*it)->outCharVInterval) / (*it)->outCharH;
             fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\3c&H%06x&\\p1}m 0 0 l %d 0 %d %d 0 %d{\\p0}\r\n",
-                    sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, (*it2)->outCharColor, iBoxScaleX, iBoxScaleX, iBoxScaleY, iBoxScaleY);
+                    sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, outCharColor, iBoxScaleX, iBoxScaleX, iBoxScaleY, iBoxScaleY);
         }
         if ((*it)->outCharSizeMode == STR_SMALL)
             fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Rubi,,0000,0000,0000,,{\\pos(%d,%d)",
@@ -666,8 +669,8 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
             fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Default,,0000,0000,0000,,{\\pos(%d,%d)",
                     sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX, (*it)->outPosY);
 
-        if ((*it2)->outCharColor.ucR != 0xff || (*it2)->outCharColor.ucG != 0xff || (*it2)->outCharColor.ucB != 0xff)
-            fprintf(fp, "\\c&H%06x&", (*it2)->outCharColor);
+        if (outCharColor != 0x00ffffff)
+            fprintf(fp, "\\c&H%06x&", outCharColor);
         if ((*it2)->outUnderLine)
             fprintf(fp, "\\u1");
         if ((*it2)->outBold)
@@ -691,19 +694,20 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
                 if (it2 == (*it)->outStrings.end())
                     break;
 
-                if (prev->outCharColor.ucR != (*it2)->outCharColor.ucR
-                 || prev->outCharColor.ucG != (*it2)->outCharColor.ucG
-                 || prev->outCharColor.ucB != (*it2)->outCharColor.ucB
+                UINT prevCharColor = outCharColor;
+                outCharColor = (*it2)->outCharColor.ucB << 16
+                             | (*it2)->outCharColor.ucG << 8
+                             | (*it2)->outCharColor.ucR;
+
+                if (prevCharColor != outCharColor
               /* || prev->outCharColor.ucAlpha != (*it2)->outCharColor.ucAlpha */
                  || prev->outUnderLine != (*it2)->outUnderLine
                  || prev->outBold      != (*it2)->outBold
                  || prev->outItalic    != (*it2)->outItalic) {
                     fprintf(fp, "{");
-                    if (prev->outCharColor.ucR != (*it2)->outCharColor.ucR
-                     || prev->outCharColor.ucG != (*it2)->outCharColor.ucG
-                     || prev->outCharColor.ucB != (*it2)->outCharColor.ucB
+                    if (prevCharColor != outCharColor
                   /* || prev->outCharColor.ucAlpha != (*it2)->outCharColor.ucAlpha */)
-                        fprintf(fp, "\\c&H%06x&", (*it2)->outCharColor);
+                        fprintf(fp, "\\c&H%06x&", outCharColor);
                     if (prev->outUnderLine != (*it2)->outUnderLine)
                         fprintf(fp, "\\u%d", (*it2)->outUnderLine ? 1 : 0);
                     if (prev->outBold != (*it2)->outBold)
