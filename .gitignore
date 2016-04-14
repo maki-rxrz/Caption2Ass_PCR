@@ -13,6 +13,8 @@
 *.ncb
 *.opensdf
 *.sdf
+*.VC.db
+*.VC.opendb
 *.suo
 *.user
 *.obj
