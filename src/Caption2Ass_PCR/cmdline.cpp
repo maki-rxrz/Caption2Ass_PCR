@@ -18,6 +18,8 @@ static void usage(int argc)
         _T("                                    Default: ass"),
         _T("    -delay <integer>            Sepcify delay time. [mili-sec]"),
         _T("    -PMT_PID <hex>              Specify PID value."),
+        _T("    -lang                       Sepcify language type. [1-8]"),
+        _T("                                    Default: 1 [1st-lang]"),
         _T("    -detect_length <integer>    Specify upper limit value of packet counting"),
         _T("                                 for detecting caption data. [10k]"),
         _T("                                    Default: 300"),
@@ -106,6 +108,12 @@ ERROR_PARAM:
             if (i > argc)
                 goto ERROR_PARAM;
             if (_stscanf_s(argv[i], _T("%d"), &(cp->DelayTime)) <= 0)
+                goto ERROR_PARAM;
+        } else if (_tcsicmp(argv[i], _T("-lang")) == 0) {
+            i++;
+            if (i > argc)
+                goto ERROR_PARAM;
+            if (_stscanf_s(argv[i], _T("%d"), &(cp->LangType)) <= 0)
                 goto ERROR_PARAM;
         } else if (_tcsicmp(argv[i], _T("-asstype")) == 0) {
             i++;

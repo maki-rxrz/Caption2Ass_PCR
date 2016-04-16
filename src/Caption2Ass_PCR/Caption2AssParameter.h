@@ -20,6 +20,7 @@ typedef struct {
     BOOL        srtornament;
     BOOL        norubi;
     BOOL        LogMode;
+    DWORD       LangType;
     DWORD       detectLength;
     TCHAR      *ass_type;
     TCHAR      *FileName;

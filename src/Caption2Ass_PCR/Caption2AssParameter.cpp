@@ -40,6 +40,7 @@ void CCaption2AssParameter::Initialize(void)
     cp->HLCmode = HLC_kigou;
     if (this->string_length < MAX_PATH)
         this->string_length = MAX_PATH;
+    cp->LangType = 1;       // 1st-lang
 }
 
 int CCaption2AssParameter::Allocate(size_t string_length)

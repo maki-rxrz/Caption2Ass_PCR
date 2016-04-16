@@ -132,6 +132,8 @@ public:
     DWORD GetCaptionData(unsigned char ucLangTag, CAPTION_DATA_DLL **ppList, DWORD *pdwListCount);
     DWORD GetCaptionData(unsigned char ucLangTag, vector<CAPTION_DATA> *pList);
 
+    unsigned char GetLangTag(DWORD dwLangType);
+
 protected:
     HMODULE m_hModule;
 
@@ -142,6 +144,8 @@ protected:
     ClearCP pfnClearCP;
     GetTagInfoCP pfnGetTagInfoCP;
     GetCaptionDataCP pfnGetCaptionDataCP;
+
+    DWORD m_dwListCount;
 
 protected:
     BOOL LoadDll(void);

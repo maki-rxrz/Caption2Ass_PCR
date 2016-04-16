@@ -10,6 +10,7 @@
 CCaptionDllUtil::CCaptionDllUtil(void)
 {
     m_hModule = NULL;
+    m_dwListCount = 0;
 }
 
 CCaptionDllUtil::~CCaptionDllUtil(void)
@@ -138,7 +139,7 @@ DWORD CCaptionDllUtil::GetTagInfo(vector<LANG_TAG_INFO> *pList)
     DWORD dwListCount;
 
     DWORD dwRet = pfnGetTagInfoCP(&pListDll,&dwListCount);
-    if (dwRet == TRUE)
+    if (dwRet == TRUE) {
         for (DWORD i = 0; i < dwListCount; i++) {
             LANG_TAG_INFO Item;
             Item.ucLangTag=pListDll[i].ucLangTag;
@@ -150,6 +151,8 @@ DWORD CCaptionDllUtil::GetTagInfo(vector<LANG_TAG_INFO> *pList)
             Item.ucRollupMode = pListDll[i].ucRollupMode;
             pList->push_back(Item);
         }
+        m_dwListCount = dwListCount;
+    }
 
     return dwRet;
 }
@@ -207,4 +210,10 @@ DWORD CCaptionDllUtil::GetCaptionData(unsigned char ucLangTag, vector<CAPTION_DA
         }
 
     return dwRet;
+}
+
+unsigned char CCaptionDllUtil::GetLangTag(DWORD dwLangType)
+{
+    dwLangType--;
+    return (dwLangType < m_dwListCount) ? static_cast<unsigned char>(dwLangType) : 0;
 }

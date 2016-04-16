@@ -973,9 +973,12 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
 
     ICaptionHandler **handle = app.caption_handle;
 
+    // Get language tag.
+    unsigned char ucLangTag = capUtil.GetLangTag(cp->LangType);
+
     // Output
     std::vector<CAPTION_DATA> Captions;
-    int ret = capUtil.GetCaptionData(0, &Captions);
+    int ret = capUtil.GetCaptionData(ucLangTag, &Captions);
 
     std::vector<CAPTION_DATA>::iterator it = Captions.begin();
     for (; it != Captions.end(); it++) {
