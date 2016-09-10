@@ -104,9 +104,7 @@ extern void parse_PAT(BYTE *pbPacket, USHORT *PMTPid)
     }
 
     _tMyPrintf(_T("Set PMT_PID to %x\r\n"), *PMTPid);
-    _tMyPrintf(_T("Press any key to start\r\n"));
 
-    Sleep(2000);
 }
 
 extern void parse_PMT(BYTE *pbPacket, USHORT *PCRPid, USHORT *CaptionPid)
