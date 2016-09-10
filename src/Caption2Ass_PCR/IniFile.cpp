@@ -192,7 +192,8 @@ EXIT:
         SAFE_DELETE_ARRAY(argv);
     }
 
-    fclose(fp);
+    if(fp)
+        fclose(fp);
     SAFE_DELETE_ARRAY(ini_file);
     SAFE_DELETE_ARRAY(tmp_buff);
 
