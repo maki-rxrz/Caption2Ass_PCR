@@ -25,7 +25,7 @@
     <ProjectName>Caption</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <Import Project="$(ProjectDir)..\..\msvcX.props" />
+  <Import Project="$(ProjectDir)..\msvcX.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
@@ -66,23 +66,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>..\..\..\bin\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>..\..\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>..\..\bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>..\..\..\bin\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>..\..\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>..\..\bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>..\..\..\bin\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>..\..\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>..\..\bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>..\..\..\bin\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>..\..\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>..\..\bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -91,7 +91,7 @@
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;CAPTION_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\common</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\common</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -100,7 +100,7 @@
       <ModuleDefinitionFile>Caption.def</ModuleDefinitionFile>
     </Link>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>..\..\common</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\common</AdditionalIncludeDirectories>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -110,7 +110,7 @@
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;CAPTION_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\common</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\common</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -120,7 +120,7 @@
       </ModuleDefinitionFile>
     </Link>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>..\..\common</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\common</AdditionalIncludeDirectories>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -132,7 +132,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;CAPTION_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\common</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\common</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -143,7 +143,7 @@
       <ModuleDefinitionFile>Caption.def</ModuleDefinitionFile>
     </Link>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>..\..\common</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\common</AdditionalIncludeDirectories>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -155,7 +155,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;CAPTION_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\common</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\common</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -167,11 +167,11 @@
       </ModuleDefinitionFile>
     </Link>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>..\..\common</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\common</AdditionalIncludeDirectories>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\common\CommRoutine.cpp" />
+    <ClCompile Include="..\common\CommRoutine.cpp" />
     <ClCompile Include="ARIB8CharDecode.cpp" />
     <ClCompile Include="CalcMD5.cpp" />
     <ClCompile Include="Caption.cpp" />
@@ -182,11 +182,11 @@
     <None Include="Caption.def" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\common\Caption.h" />
-    <ClInclude Include="..\..\common\CaptionDef.h" />
-    <ClInclude Include="..\..\common\CommRoutine.h" />
-    <ClInclude Include="..\..\common\packet_types.h" />
-    <ClInclude Include="..\..\common\targetver.h" />
+    <ClInclude Include="..\common\Caption.h" />
+    <ClInclude Include="..\common\CaptionDef.h" />
+    <ClInclude Include="..\common\CommRoutine.h" />
+    <ClInclude Include="..\common\packet_types.h" />
+    <ClInclude Include="..\common\targetver.h" />
     <ClInclude Include="ARIB8CharDecode.h" />
     <ClInclude Include="CalcMD5.h" />
     <ClInclude Include="CaptionMain.h" />

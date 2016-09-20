@@ -6,7 +6,7 @@
 #include <commctrl.h>
 #include <richedit.h>
 #include "resource.h"
-#include "../../config.h"
+#include "../config.h"
 
 
 
