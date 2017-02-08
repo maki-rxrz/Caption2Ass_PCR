@@ -79,6 +79,13 @@ typedef enum {
     C2A_PARAM_INVALID
 } c2a_parameter_type;
 
+typedef struct _HALFCHAR_INFO {
+    int     char_nums;
+    int     point_nums;
+} HALFCHAR_INFO, *PHALFCHAR_INFO;
+
+static int count_utf8_length(const unsigned char *string, PHALFCHAR_INFO hc);
+
 class ITimestampHandler
 {
 public:
@@ -423,53 +430,7 @@ void CAppHandler::Free(void)
 
 int ICaptionHandler::count_UTF8(const unsigned char *string)
 {
-    int len = 0;
-
-    while (*string) {
-        if (string[0] == 0x00)
-            break;
-
-        if (string[0] < 0x1f || string[0] == 0x7f) {
-            // 制御コード
-        } else {
-            if (string[0] <= 0x7f)
-                ++len; // 1バイト文字
-            else if (string[0] <= 0xbf)
-                ; // 文字の続き
-            else if (string[0] <= 0xdf) {
-                ++len; // 2バイト文字
-                ++len; // 2バイト文字
-                if ((string[0] == 0xc2) && (string[1] == 0xa5))
-                    --len; // 2バイト文字
-            } else if (string[0] <= 0xef) {
-                ++len; // 3バイト文字
-                ++len; // 3バイト文字
-                if ((string[0] == 0xe2) && (string[1] == 0x80) && (string[2] == 0xbe))
-                    --len; // 2バイト文字
-                if (string[0] == 0xef) {
-                    if (string[1] == 0xbd)
-                        if ((string[2] >= 0xa1) && (string[2] <= 0xbf))
-                            --len; // 2バイト文字
-                    if (string[1] == 0xbe)
-                        if ((string[2] >= 0x80) && (string[2] <= 0x9f))
-                            --len; // 2バイト文字
-                }
-            } else if (string[0] <= 0xf7) {
-                ++len; // 4バイト文字
-                ++len; // 4バイト文字
-            } else if (string[0] <= 0xfb) {
-                ++len; // 5バイト文字
-                ++len; // 5バイト文字
-            } else if (string[0] <= 0xfd) {
-                ++len; // 6バイト文字
-                ++len; // 6バイト文字
-            } else
-                ; // 使われていない範囲
-        }
-        ++string;
-    }
-
-    return len;
+    return count_utf8_length(string, NULL);
 }
 
 void CLogHandler::SetName(void)
@@ -937,6 +898,68 @@ static void free_app_handler(CAppHandler& app)
     app.Free();
 }
 
+static int count_utf8_length(const unsigned char *string, PHALFCHAR_INFO hc)
+{
+    int len         = 0;
+    int point_count = 0;
+
+    while (*string) {
+        if (string[0] == 0x00)
+            break;
+
+        if (string[0] < 0x1f || string[0] == 0x7f)
+            // 制御コード
+            ;
+        else if (string[0] <= 0x7f)
+            // 1バイト文字
+            ++len;              // 半角
+        else if (string[0] <= 0xbf)
+            // 文字の続き
+            ;
+        else if (string[0] <= 0xdf) {
+            // 2バイト文字
+            len += 2;
+            if (string[0] == 0xc2 && string[1] == 0xa5)
+                --len;          // 半角の￥
+        } else if (string[0] <= 0xef) {
+            // 3バイト文字
+            len += 2;
+            if (string[0] == 0xe2 && string[1] == 0x80 && string[2] == 0xbe)
+                --len;          // 半角の￣
+            else if (string[0] == 0xef) {
+                if (string[1] == 0xbd) {
+                    if (string[2] >= 0xa1 && string[2] <= 0xbf)
+                        --len;  // 半角カナ 「。」～「ソ」
+                } else if (string[1] == 0xbe) {
+                    if (string[2] >= 0x80 && string[2] <= 0x9f)
+                        --len;  // 半角カナ 「タ」～「゜」
+                    if (string[2] == 0x9e || string[2] == 0x9f)
+                        ++point_count;  // 濁点・半濁点をカウント
+                }
+            }
+        } else if (string[0] <= 0xf7)
+            // 4バイト文字
+            len += 2;
+        else if (string[0] <= 0xfb)
+            // 5バイト文字
+            len += 2;
+        else if (string[0] <= 0xfd)
+            // 6バイト文字
+            len += 2;
+        else
+            // 使われていない範囲
+            ;
+
+        ++string;
+    }
+
+    if (hc) {
+        hc->char_nums  = len;
+        hc->point_nums = point_count;
+    }
+    return len;
+}
+
 static void clear_caption_list(CAPTION_LIST& capList)
 {
     if (capList.empty())
@@ -980,193 +1003,220 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
     std::vector<CAPTION_DATA> Captions;
     int ret = capUtil.GetCaptionData(ucLangTag, &Captions);
 
+    PCAPTION_LINE pCapLine = NULL;
     std::vector<CAPTION_DATA>::iterator it = Captions.begin();
     for (; it != Captions.end(); it++) {
-        if (it->bClear) {
+        if (it->bClear && !pCapLine) {
             // 字幕のスキップをチェック
             if ((PTS + it->dwWaitTime) <= app.startPCR) {
                 _tMyPrintf(_T("%d Caption skip\r\n"), capList.size());
                 if (log->active)
                     log->print("%d Caption skip\r\n", capList.size());
-                clear_caption_list(capList);
-                continue;
+            } else {
+                app.bCreateOutput = TRUE;
+                DWORD endTime = (DWORD)((PTS + it->dwWaitTime) - app.startPCR);
+                for (int i = 0; handle[i]; i++)
+                    if (handle[i]->active)
+                        handle[i]->Dump(capList, endTime);
             }
-            app.bCreateOutput = TRUE;
-            DWORD endTime = (DWORD)((PTS + it->dwWaitTime) - app.startPCR);
-            for (int i = 0; handle[i]; i++)
-                if (handle[i]->active)
-                    handle[i]->Dump(capList, endTime);
             clear_caption_list(capList);
-
             continue;
-        } else {
+        }
 
-            std::vector<CAPTION_CHAR_DATA>::iterator it2 = it->CharList.begin();
+        if (log->active) {
+            log->print("SWFMode    : %4d\r\n", it->wSWFMode);
+            log->print("Client X:Y : %4d\t%4d\r\n", it->wClientX, it->wClientY);
+            log->print("Client W:H : %4d\t%4d\r\n", it->wClientW, it->wClientH);
+            log->print("Pos    X:Y : %4d\t%4d\r\n", it->wPosX, it->wPosY);
+        }
 
-            if (log->active) {
-                log->print("SWFMode    : %4d\r\n", it->wSWFMode);
-                log->print("Client X:Y : %4d\t%4d\r\n", it->wClientX, it->wClientY);
-                log->print("Client W:H : %4d\t%4d\r\n", it->wClientW, it->wClientH);
-                log->print("Pos    X:Y : %4d\t%4d\r\n", it->wPosX, it->wPosY);
+        int wPosX = it->wPosX;
+        int wPosY = it->wPosY;
+
+        if (it->wSWFMode != wLastSWFMode) {
+            wLastSWFMode = it->wSWFMode;
+            static const struct {
+                int x;
+                int y;
+            } resolution[4] = {
+                {1920, 1080}, { 720,  480}, {1280,  720}, { 960,  540}
+            };
+            int index = (wLastSWFMode ==  5) ? 0
+                      : (wLastSWFMode ==  9) ? 1
+                      : (wLastSWFMode == 11) ? 2
+                      :                        3;
+            ratioX = (float)(as->PlayResX) / (float)(resolution[index].x);
+            ratioY = (float)(as->PlayResY) / (float)(resolution[index].y);
+        }
+        if (app.bUnicode) {
+            if ((wPosX < 2000) || (wPosY < 2000)) {
+                offsetPosX = it->wClientX;
+                offsetPosY = it->wClientY;
+            } else {
+                offsetPosX = 0;
+                offsetPosY = 0;
+                wPosX -= 2000;
+                wPosY -= 2000;
             }
+        }
 
-            if (it->wSWFMode != wLastSWFMode) {
-                wLastSWFMode = it->wSWFMode;
-                static const struct {
-                    int x;
-                    int y;
-                } resolution[4] = {
-                    {1920, 1080}, { 720,  480}, {1280,  720}, { 960,  540}
-                };
-                int index = (wLastSWFMode ==  5) ? 0
-                          : (wLastSWFMode ==  9) ? 1
-                          : (wLastSWFMode == 11) ? 2
-                          :                        3;
-                ratioX = (float)(as->PlayResX) / (float)(resolution[index].x);
-                ratioY = (float)(as->PlayResY) / (float)(resolution[index].y);
-            }
-            if (app.bUnicode) {
-                if ((it->wPosX < 2000) || (it->wPosY < 2000)) {
+        std::vector<CAPTION_CHAR_DATA>::iterator it2 = it->CharList.begin();
+
+        if (it->CharList.size() > 0 && !pCapLine) {
+            workCharSizeMode  = it2->emCharSizeMode;
+            workCharW         = it2->wCharW;
+            workCharH         = it2->wCharH;
+            workCharHInterval = it2->wCharHInterval;
+            workCharVInterval = it2->wCharVInterval;
+            // Calculate offsetPos[X/Y].
+            if (!(app.bUnicode)) {
+                int amariPosX = 0;
+                int amariPosY = 0;
+                if (wLastSWFMode == 9) {
+                    amariPosX = wPosX % 18;
+                    amariPosY = wPosY % 15;
+                } else {
+                    amariPosX = wPosX % ((workCharW + workCharHInterval) / 2);
+                    amariPosY = wPosY % ((workCharH + workCharVInterval) / 2);
+                }
+                if ((amariPosX == 0) || (amariPosY == 0)) {
                     offsetPosX = it->wClientX;
-                    offsetPosY = it->wClientY;
+                    offsetPosY = it->wClientY +10;
                 } else {
                     offsetPosX = 0;
                     offsetPosY = 0;
-                    it->wPosX -= 2000;
-                    it->wPosY -= 2000;
                 }
             }
-
-            if (it->CharList.size() > 0) {
-                workCharSizeMode  = it2->emCharSizeMode;
-                workCharW         = it2->wCharW;
-                workCharH         = it2->wCharH;
-                workCharHInterval = it2->wCharHInterval;
-                workCharVInterval = it2->wCharVInterval;
-                // Calculate offsetPos[X/Y].
-                if (!(app.bUnicode)) {
-                    int amariPosX = 0;
-                    int amariPosY = 0;
-                    if (wLastSWFMode == 9) {
-                        amariPosX = it->wPosX % 18;
-                        amariPosY = it->wPosY % 15;
-                    } else {
-                        amariPosX = it->wPosX % ((workCharW + workCharHInterval) / 2);
-                        amariPosY = it->wPosY % ((workCharH + workCharVInterval) / 2);
-                    }
-                    if ((amariPosX == 0) || (amariPosY == 0)) {
-                        offsetPosX = it->wClientX;
-                        offsetPosY = it->wClientY +10;
-                    } else {
-                        offsetPosX = 0;
-                        offsetPosY = 0;
-                    }
-                }
-                // Calculate workPos[X/Y].
-                int   y_swf_offset = 0;
-                float x_ratio      = ratioX;
-                float y_ratio      = ratioY;
-                switch (wLastSWFMode) {
-                case 0:
-                    y_swf_offset = as->SWF0offset;
-                    break;
-                case 5:
-                    y_swf_offset = as->SWF5offset /* - 0 */;
-                    break;
-                case 7:
-                    y_swf_offset = as->SWF7offset /* + 0 */;
-                    break;
-                case 9:
-                    y_swf_offset = as->SWF9offset + ((app.bUnicode) ? 0 : -50);
-                    break;
-                case 11:
-                    y_swf_offset = as->SWF11offset /* - 0 */;
-                    break;
-                default:
-                    x_ratio = y_ratio = 1.0;
-                    break;
-                }
-                workPosX = (int)((float)(it->wPosX + offsetPosX               ) * x_ratio);
-                workPosY = (int)((float)(it->wPosY + offsetPosY + y_swf_offset) * y_ratio);
-                // Correction for workPosX.
-                workPosX = (workPosX > app.sidebar_size) ? workPosX - app.sidebar_size : 0;
-
-                if (!(app.bUnicode) && (it2->emCharSizeMode == STR_SMALL))
-                    workPosY += (int)(10 * ratioY);
+            // Calculate workPos[X/Y].
+            int   y_swf_offset = 0;
+            float x_ratio      = ratioX;
+            float y_ratio      = ratioY;
+            switch (wLastSWFMode) {
+            case 0:
+                y_swf_offset = as->SWF0offset;
+                break;
+            case 5:
+                y_swf_offset = as->SWF5offset /* - 0 */;
+                break;
+            case 7:
+                y_swf_offset = as->SWF7offset /* + 0 */;
+                break;
+            case 9:
+                y_swf_offset = as->SWF9offset + ((app.bUnicode) ? 0 : -50);
+                break;
+            case 11:
+                y_swf_offset = as->SWF11offset /* - 0 */;
+                break;
+            default:
+                x_ratio = y_ratio = 1.0;
+                break;
             }
+            workPosX = (int)((float)(wPosX + offsetPosX               ) * x_ratio);
+            workPosY = (int)((float)(wPosY + offsetPosY + y_swf_offset) * y_ratio);
+            // Correction for workPosX.
+            workPosX = (workPosX > app.sidebar_size) ? workPosX - app.sidebar_size : 0;
 
-            PCAPTION_LINE pCapLine = new CAPTION_LINE();
+            if (!(app.bUnicode) && (it2->emCharSizeMode == STR_SMALL))
+                workPosY += (int)(10 * ratioY);
+        }
+
+        if (!pCapLine) {
+            pCapLine = new CAPTION_LINE();
             if (!pCapLine)
                 goto ERR_EXIT;
+        }
 
-            for (; it2 != it->CharList.end(); it2++) {
-                PLINE_STR pLineStr = new LINE_STR();
-                if (!pLineStr) {
-                    delete pCapLine;
-                    goto ERR_EXIT;
-                }
-
-                unsigned char workucR = it2->stCharColor.ucR;
-                unsigned char workucG = it2->stCharColor.ucG;
-                unsigned char workucB = it2->stCharColor.ucB;
-                BOOL workUnderLine    = it2->bUnderLine;
-                BOOL workShadow       = it2->bShadow;
-                BOOL workBold         = it2->bBold;
-                BOOL workItalic       = it2->bItalic;
-                BYTE workFlushMode    = it2->bFlushMode;
-                workHLC               = (it2->bHLC != 0) ? cp->HLCmode : it2->bHLC;
-
-                if (!(app.bUnicode) && (it2->emCharSizeMode == STR_MEDIUM))
-                    // 全角 -> 半角
-                    it2->strDecode = GetHalfChar(it2->strDecode);
-
-                if (log->active) {
-                    if (it2->bUnderLine)
-                        log->print("UnderLine : on\r\n");
-                    if (it2->bBold)
-                        log->print("Bold : on\r\n");
-                    if (it2->bItalic)
-                        log->print("Italic : on\r\n");
-                    if (it2->bHLC != 0)
-                        log->print("HLC : on\r\n");
-                    log->print("Color : %#.X   ", it2->stCharColor);
-                    log->print("Char M,W,H,HI,VI : %4d, %4d, %4d, %4d, %4d   ",
-                               it2->emCharSizeMode, it2->wCharW, it2->wCharH, it2->wCharHInterval, it2->wCharVInterval);
-                    log->print("%s\r\n", it2->strDecode.c_str());
-                }
-
-                CHAR  str_utf8[STRING_BUFFER_SIZE]  = { 0 };
-                WCHAR str_wchar[STRING_BUFFER_SIZE] = { 0 };
-
-                if ((cp->format == FORMAT_TAW) || (app.bUnicode))
-                    strcpy_s(str_utf8, STRING_BUFFER_SIZE, it2->strDecode.c_str());
-                else {
-                    // CP 932 to UTF-8
-                    MultiByteToWideChar(932, 0, it2->strDecode.c_str(), -1, str_wchar, STRING_BUFFER_SIZE);
-                    WideCharToMultiByte(CP_UTF8, 0, str_wchar, -1, str_utf8, STRING_BUFFER_SIZE, NULL, NULL);
-                }
-
-                // Push back the caption strings.
-                pLineStr->outCharColor.ucAlpha = 0x00;
-                pLineStr->outCharColor.ucR     = workucR;
-                pLineStr->outCharColor.ucG     = workucG;
-                pLineStr->outCharColor.ucB     = workucB;
-                pLineStr->outUnderLine         = workUnderLine;
-                pLineStr->outShadow            = workShadow;
-                pLineStr->outBold              = workBold;
-                pLineStr->outItalic            = workItalic;
-                pLineStr->outFlushMode         = workFlushMode;
-                pLineStr->str                  = str_utf8;
-
-                pCapLine->outStrings.push_back(pLineStr);
-            }
-
-            if (pCapLine->outStrings.empty()) {
+        int outStrW = 0;
+        for (; it2 != it->CharList.end(); it2++) {
+            PLINE_STR pLineStr = new LINE_STR();
+            if (!pLineStr) {
                 delete pCapLine;
-                continue;
+                pCapLine = NULL;
+                goto ERR_EXIT;
             }
 
-            // Push back the caption lines.
+            unsigned char workucR = it2->stCharColor.ucR;
+            unsigned char workucG = it2->stCharColor.ucG;
+            unsigned char workucB = it2->stCharColor.ucB;
+            BOOL workUnderLine    = it2->bUnderLine;
+            BOOL workShadow       = it2->bShadow;
+            BOOL workBold         = it2->bBold;
+            BOOL workItalic       = it2->bItalic;
+            BYTE workFlushMode    = it2->bFlushMode;
+            workHLC               = (it2->bHLC != 0) ? cp->HLCmode : it2->bHLC;
+
+            if (!(app.bUnicode) && (it2->emCharSizeMode == STR_MEDIUM))
+                // 全角 -> 半角
+                it2->strDecode = GetHalfChar(it2->strDecode);
+
+            if (log->active) {
+                if (it2->bUnderLine)
+                    log->print("UnderLine : on\r\n");
+                if (it2->bBold)
+                    log->print("Bold : on\r\n");
+                if (it2->bItalic)
+                    log->print("Italic : on\r\n");
+                if (it2->bHLC != 0)
+                    log->print("HLC : on\r\n");
+                log->print("Color : %#.X   ", it2->stCharColor);
+                log->print("Char M,W,H,HI,VI : %4d, %4d, %4d, %4d, %4d   ",
+                           it2->emCharSizeMode, it2->wCharW, it2->wCharH, it2->wCharHInterval, it2->wCharVInterval);
+                log->print("%s\r\n", it2->strDecode.c_str());
+            }
+
+            CHAR  str_utf8[STRING_BUFFER_SIZE]  = { 0 };
+            WCHAR str_wchar[STRING_BUFFER_SIZE] = { 0 };
+
+            if ((cp->format == FORMAT_TAW) || (app.bUnicode))
+                strcpy_s(str_utf8, STRING_BUFFER_SIZE, it2->strDecode.c_str());
+            else {
+                // CP 932 to UTF-8
+                MultiByteToWideChar(932, 0, it2->strDecode.c_str(), -1, str_wchar, STRING_BUFFER_SIZE);
+                WideCharToMultiByte(CP_UTF8, 0, str_wchar, -1, str_utf8, STRING_BUFFER_SIZE, NULL, NULL);
+            }
+            if (it2->emCharSizeMode != STR_SMALL) {
+                HALFCHAR_INFO hc = { 0 };
+                count_utf8_length(reinterpret_cast<const unsigned char *>(str_utf8), &hc);
+                outStrW += (hc.char_nums - hc.point_nums) * (workCharW + workCharHInterval) / 2;
+            }
+
+            // Push back the caption strings.
+            pLineStr->outCharColor.ucAlpha = 0x00;
+            pLineStr->outCharColor.ucR     = workucR;
+            pLineStr->outCharColor.ucG     = workucG;
+            pLineStr->outCharColor.ucB     = workucB;
+            pLineStr->outUnderLine         = workUnderLine;
+            pLineStr->outShadow            = workShadow;
+            pLineStr->outBold              = workBold;
+            pLineStr->outItalic            = workItalic;
+            pLineStr->outFlushMode         = workFlushMode;
+            pLineStr->str                  = str_utf8;
+
+            pCapLine->outStrings.push_back(pLineStr);
+        }
+
+        if (pCapLine->outStrings.empty()) {
+            delete pCapLine;
+            pCapLine = NULL;
+            continue;
+        }
+
+        // Push back the caption lines.
+        BOOL bPushBack = TRUE;
+        if (workCharSizeMode != STR_SMALL) {
+            std::vector<CAPTION_DATA>::iterator next = it + 1;
+            for( ; next != Captions.end(); next++ ) {
+                if (next->bClear)
+                    continue;
+                if (it->wPosY == next->wPosY && it->dwWaitTime == next->dwWaitTime) {
+                    std::vector<CAPTION_CHAR_DATA>::iterator it3 = next->CharList.begin();
+                    if (it3->emCharSizeMode != STR_SMALL && it->wPosX + outStrW == next->wPosX)
+                        bPushBack = FALSE;
+                }
+                break;
+            }
+        }
+        if (bPushBack) {
             pCapLine->index            = 0;     //useless
             pCapLine->startTime        = (PTS > app.startPCR) ? (DWORD)(PTS - app.startPCR) : 0;
             pCapLine->endTime          = 0;
@@ -1180,8 +1230,8 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
             pCapLine->outPosY          = workPosY;
 
             capList.push_back(pCapLine);
+            pCapLine = NULL;
         }
-
     }
     return 0;
 
