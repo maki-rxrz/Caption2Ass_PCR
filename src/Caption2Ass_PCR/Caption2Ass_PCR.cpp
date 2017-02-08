@@ -448,10 +448,10 @@ int ICaptionHandler::count_UTF8(const unsigned char *string)
                     --len; // 2バイト文字
                 if (string[0] == 0xef) {
                     if (string[1] == 0xbd)
-                        if ((string[2] >= 0xa1) && (string[2] == 0xbf))
+                        if ((string[2] >= 0xa1) && (string[2] <= 0xbf))
                             --len; // 2バイト文字
                     if (string[1] == 0xbe)
-                        if ((string[2] >= 0x80) && (string[2] == 0x9f))
+                        if ((string[2] >= 0x80) && (string[2] <= 0x9f))
                             --len; // 2バイト文字
                 }
             } else if (string[0] <= 0xf7) {
