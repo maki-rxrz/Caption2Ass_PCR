@@ -22,9 +22,10 @@
 *.exp
 *.ilk
 *.pdb
-*/ipch/*
-*/win32/*
-*/x64/*
+*/.vs/
+*/ipch/
+*/win32/
+*/x64/
 *.ts
 *.ass
 *.srt
