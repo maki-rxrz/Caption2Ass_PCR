@@ -82,6 +82,7 @@ typedef enum {
 typedef struct _HALFCHAR_INFO {
     int     char_nums;
     int     point_nums;
+    int     half_nums;
 } HALFCHAR_INFO, *PHALFCHAR_INFO;
 
 static int count_utf8_length(const unsigned char *string, PHALFCHAR_INFO hc);
@@ -902,6 +903,7 @@ static int count_utf8_length(const unsigned char *string, PHALFCHAR_INFO hc)
 {
     int len         = 0;
     int point_count = 0;
+    int half_count  = 0;
 
     while (*string) {
         if (string[0] == 0x00)
@@ -910,31 +912,43 @@ static int count_utf8_length(const unsigned char *string, PHALFCHAR_INFO hc)
         if (string[0] < 0x1f || string[0] == 0x7f)
             // 制御コード
             ;
-        else if (string[0] <= 0x7f)
+        else if (string[0] <= 0x7f) {
             // 1バイト文字
             ++len;              // 半角
+            ++half_count;
+        }
         else if (string[0] <= 0xbf)
             // 文字の続き
             ;
         else if (string[0] <= 0xdf) {
             // 2バイト文字
             len += 2;
-            if (string[0] == 0xc2 && string[1] == 0xa5)
+            if (string[0] == 0xc2 && string[1] == 0xa5) {
                 --len;          // 半角の￥
+                ++half_count;
+            }
         } else if (string[0] <= 0xef) {
             // 3バイト文字
             len += 2;
-            if (string[0] == 0xe2 && string[1] == 0x80 && string[2] == 0xbe)
+            if (string[0] == 0xe2 && string[1] == 0x80 && string[2] == 0xbe) {
                 --len;          // 半角の￣
+                ++half_count;
+            }
             else if (string[0] == 0xef) {
                 if (string[1] == 0xbd) {
-                    if (string[2] >= 0xa1 && string[2] <= 0xbf)
+                    if (string[2] >= 0xa1 && string[2] <= 0xbf) {
                         --len;  // 半角カナ 「。」～「ソ」
+                        ++half_count;
+                    }
                 } else if (string[1] == 0xbe) {
-                    if (string[2] >= 0x80 && string[2] <= 0x9f)
+                    if (string[2] >= 0x80 && string[2] <= 0x9f) {
                         --len;  // 半角カナ 「タ」～「゜」
-                    if (string[2] == 0x9e || string[2] == 0x9f)
+                        ++half_count;
+                    }
+                    if (string[2] == 0x9e || string[2] == 0x9f) {
                         ++point_count;  // 濁点・半濁点をカウント
+                        --half_count;
+                    }
                 }
             }
         } else if (string[0] <= 0xf7)
@@ -956,6 +970,7 @@ static int count_utf8_length(const unsigned char *string, PHALFCHAR_INFO hc)
     if (hc) {
         hc->char_nums  = len;
         hc->point_nums = point_count;
+        hc->half_nums  = half_count;
     }
     return len;
 }
@@ -1177,7 +1192,8 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
             if (it2->emCharSizeMode != STR_SMALL) {
                 HALFCHAR_INFO hc = { 0 };
                 count_utf8_length(reinterpret_cast<const unsigned char *>(str_utf8), &hc);
-                outStrW += (hc.char_nums - hc.point_nums) * (workCharW + workCharHInterval) / 2;
+                int char_nums = it2->emCharSizeMode == STR_MEDIUM ? hc.char_nums - (hc.char_nums - hc.half_nums) / 2 : hc.char_nums;
+                outStrW += (char_nums - hc.point_nums) * (workCharW + workCharHInterval) / 2;
             }
 
             // Push back the caption strings.
