@@ -126,21 +126,17 @@ extern VOID DbgString(IN  LPCTSTR tracemsg, ...)
 
 extern std::string GetHalfChar(std::string key)
 {
-//  std::string ret;
     CHAR ret[STRING_BUFFER_SIZE] = { 0 };
     BOOL bMatch = FALSE;
 
     // マッチしない文字は、そのまま使用
     const char *_p = key.c_str();
-//  const char *_pret = ret.c_str();
     char *p = (char *)key.c_str();
-//  char *pret = (char *)ret.c_str();
 
     while (p < _p + key.size()) {
         for (int i = 0; i < sizeof(HiraTable) / sizeof(HiraTable[0]) && p < _p + key.size(); i++) {
             bMatch = FALSE;
             if (memcmp(p, HiraTable[i], 2) == 0) {
-//              ret += HalfHiraTable[i];
                 strcat_s( ret, STRING_BUFFER_SIZE, HalfHiraTable[i] );
                 p += 2;
                 bMatch = TRUE;
@@ -151,7 +147,6 @@ extern std::string GetHalfChar(std::string key)
         for (int i = 0; i < sizeof(KanaTable) / sizeof(KanaTable[0]) && p < _p + key.size(); i++) {
             bMatch = FALSE;
             if (memcmp(p, KanaTable[i], 2) == 0) {
-//              ret += HalfKanaTable[i];
                 strcat_s(ret, STRING_BUFFER_SIZE, HalfKanaTable[i]);
                 p += 2;
                 bMatch = TRUE;
@@ -160,7 +155,6 @@ extern std::string GetHalfChar(std::string key)
         }
 
         if (p < _p + key.size()) {
-//          ret += strndup(p, 2);
             strncat_s(ret, STRING_BUFFER_SIZE, p, 2);
             p += 2;
         }
