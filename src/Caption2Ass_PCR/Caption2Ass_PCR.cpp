@@ -1018,6 +1018,7 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
     std::vector<CAPTION_DATA> Captions;
     int ret = capUtil.GetCaptionData(ucLangTag, &Captions);
 
+    int addSpaceNum = 0;
     PCAPTION_LINE pCapLine = NULL;
     std::vector<CAPTION_DATA>::iterator it = Captions.begin();
     for (; it != Captions.end(); it++) {
@@ -1181,17 +1182,24 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
 
             CHAR  str_utf8[STRING_BUFFER_SIZE]  = { 0 };
             WCHAR str_wchar[STRING_BUFFER_SIZE] = { 0 };
-
+            int   str_offset = addSpaceNum;
+            CHAR *str_utf8_p = str_utf8 + str_offset;
+            if (addSpaceNum > 0)
+            {
+                // Add 'space' x N
+                memset(str_utf8, 0x20, addSpaceNum);
+                addSpaceNum = 0;
+            }
             if ((cp->format == FORMAT_TAW) || (app.bUnicode))
-                strcpy_s(str_utf8, STRING_BUFFER_SIZE, it2->strDecode.c_str());
+                strcpy_s(str_utf8_p, STRING_BUFFER_SIZE - str_offset, it2->strDecode.c_str());
             else {
                 // CP 932 to UTF-8
                 MultiByteToWideChar(932, 0, it2->strDecode.c_str(), -1, str_wchar, STRING_BUFFER_SIZE);
-                WideCharToMultiByte(CP_UTF8, 0, str_wchar, -1, str_utf8, STRING_BUFFER_SIZE, NULL, NULL);
+                WideCharToMultiByte(CP_UTF8, 0, str_wchar, -1, str_utf8_p, STRING_BUFFER_SIZE - str_offset, NULL, NULL);
             }
             if (it2->emCharSizeMode != STR_SMALL) {
                 HALFCHAR_INFO hc = { 0 };
-                count_utf8_length(reinterpret_cast<const unsigned char *>(str_utf8), &hc);
+                count_utf8_length(reinterpret_cast<const unsigned char *>(str_utf8_p), &hc);
                 int char_nums = it2->emCharSizeMode == STR_MEDIUM ? hc.char_nums - (hc.char_nums - hc.half_nums) / 2 : hc.char_nums;
                 outStrW += (char_nums - hc.point_nums) * (workCharW + workCharHInterval) / 2;
             }
@@ -1226,8 +1234,12 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
                     continue;
                 if (it->wPosY == next->wPosY && it->dwWaitTime == next->dwWaitTime) {
                     std::vector<CAPTION_CHAR_DATA>::iterator it3 = next->CharList.begin();
-                    if (it3->emCharSizeMode != STR_SMALL && it->wPosX + outStrW == next->wPosX)
+                    int diffPosX = next->wPosX - (it->wPosX + outStrW);
+                    if (it3->emCharSizeMode != STR_SMALL && diffPosX >= 0) {
                         bPushBack = FALSE;
+                        if (diffPosX > 0)
+                            addSpaceNum = diffPosX * 2 / (workCharW + workCharHInterval);
+                    }
                 }
                 break;
             }
