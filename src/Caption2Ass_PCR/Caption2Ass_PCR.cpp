@@ -35,6 +35,7 @@ typedef struct _ASS_COLOR {
 } ASS_COLOR;
 
 typedef struct _LINE_STR {
+    BYTE            outHLC;     //must ignore low 4bits
     ASS_COLOR       outCharColor;
     BOOL            outUnderLine;
     BOOL            outShadow;
@@ -57,7 +58,6 @@ typedef struct _CAPTION_LINE {
     WORD            outCharVInterval;
     WORD            outPosX;
     WORD            outPosY;
-    BYTE            outHLC;     //must ignore low 4bits
     STRINGS_LIST    outStrings;
 } CAPTION_LINE, *PCAPTION_LINE;
 
@@ -599,7 +599,7 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
                           | (*it2)->outCharColor.ucG << 8
                           | (*it2)->outCharColor.ucR;
 
-        if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_box)) {
+        if (((*it)->outCharSizeMode != STR_SMALL) && ((*it2)->outHLC == HLC_box)) {
             int iHankaku;
             unsigned char usTmpUTF8[STRING_BUFFER_SIZE] = { 0 };
             memcpy_s(usTmpUTF8, STRING_BUFFER_SIZE, (*it2)->str.c_str(), (*it2)->str.size());
@@ -614,7 +614,7 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
             fwrite(utf8box, 3, 1, fp);
             fprintf(fp, "\r\n");
         }
-        if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_draw)) {
+        if (((*it)->outCharSizeMode != STR_SMALL) && ((*it2)->outHLC == HLC_draw)) {
             int iHankaku;
             unsigned char usTmpUTF8[STRING_BUFFER_SIZE] = { 0 };
             memcpy_s(usTmpUTF8, STRING_BUFFER_SIZE, (*it2)->str.c_str(), (*it2)->str.size());
@@ -646,17 +646,25 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
         if (((*it)->outCharSizeMode == STR_SMALL) && (this->norubi)) {
             fprintf(fp, "\\N");
         } else {
-            if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_kigou))
-                fprintf(fp, "[");
-
+            BOOL bHLC = FALSE;
             // Output strings.
             while (1) {
+                if (!bHLC && ((*it)->outCharSizeMode != STR_SMALL) && ((*it2)->outHLC == HLC_kigou)) {
+                    fprintf(fp, "[");
+                    bHLC = TRUE;
+                }
+
                 fwrite((*it2)->str.c_str(), (*it2)->str.size(), 1, fp);
 
                 PLINE_STR prev = *it2;
                 ++it2;
                 if (it2 == (*it)->outStrings.end())
                     break;
+
+                if (bHLC && (((*it)->outCharSizeMode == STR_SMALL) || ((*it2)->outHLC != HLC_kigou))) {
+                    fprintf(fp, "]");
+                    bHLC = FALSE;
+                }
 
                 UINT prevCharColor = outCharColor;
                 outCharColor = (*it2)->outCharColor.ucB << 16
@@ -681,8 +689,7 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
                     fprintf(fp, "}");
                 }
             }
-
-            if (((*it)->outCharSizeMode != STR_SMALL) && ((*it)->outHLC == HLC_kigou))
+            if (bHLC)
                 fprintf(fp, "]");
             fprintf(fp, "\\N");
         }
@@ -744,27 +751,37 @@ do {                            \
             fprintf(fp, "%d\r\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\r\n", this->index, sH, sM, sS, sMs, eH, eM, eS, eMs);
         }
 
+        STRINGS_LIST::iterator it2 = (*it)->outStrings.begin();
+
         // ‚Ó‚è‚ª‚È Skip
         if ((*it)->outCharSizeMode == STR_SMALL)
             continue;
         bNoSRT = FALSE;
 
-        STRINGS_LIST::iterator it2 = (*it)->outStrings.begin();
         BOOL bItalic = FALSE, bBold = FALSE, bUnderLine = FALSE, bCharColor = FALSE;
 
         if (this->ornament) {
             ORNAMENT_START(*it2);
         }
-        if ((*it)->outHLC != 0)
-            fprintf(fp, "[");
 
+        BOOL bHLC = FALSE;
         // Output strings.
         while (1) {
+            if (!bHLC && ((*it2)->outHLC != 0)) {
+                fprintf(fp, "[");
+                bHLC = TRUE;
+            }
+
             fwrite((*it2)->str.c_str(), (*it2)->str.size(), 1, fp);
 
             ++it2;
             if (it2 == (*it)->outStrings.end())
                 break;
+
+            if (bHLC && ((*it2)->outHLC == 0)) {
+                fprintf(fp, "]");
+                bHLC = FALSE;
+            }
 
             if (this->ornament) {
                 ORNAMENT_END();
@@ -772,8 +789,7 @@ do {                            \
                 ORNAMENT_START(*it2);
             }
         }
-
-        if ((*it)->outHLC != 0)
+        if (bHLC)
             fprintf(fp, "]");
         if (this->ornament) {
             ORNAMENT_END();
@@ -1205,6 +1221,7 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
             }
 
             // Push back the caption strings.
+            pLineStr->outHLC               = workHLC;
             pLineStr->outCharColor.ucAlpha = 0x00;
             pLineStr->outCharColor.ucR     = workucR;
             pLineStr->outCharColor.ucG     = workucG;
@@ -1253,7 +1270,6 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
             pCapLine->outCharH         = (WORD)(workCharH * ratioY);
             pCapLine->outCharHInterval = (WORD)(workCharHInterval * ratioX);
             pCapLine->outCharVInterval = (WORD)(workCharVInterval * ratioY);
-            pCapLine->outHLC           = workHLC;
             pCapLine->outPosX          = workPosX;
             pCapLine->outPosY          = workPosY;
 
