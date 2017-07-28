@@ -42,6 +42,7 @@ typedef struct _LINE_STR {
     BOOL            outBold;
     BOOL            outItalic;
     BYTE            outFlushMode;
+    int             outStrCount;
     std::string     str;
 } LINE_STR, *PLINE_STR;
 
@@ -599,32 +600,33 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
                           | (*it2)->outCharColor.ucG << 8
                           | (*it2)->outCharColor.ucR;
 
-        if (((*it)->outCharSizeMode != STR_SMALL) && ((*it2)->outHLC == HLC_box)) {
-            int iHankaku;
-            unsigned char usTmpUTF8[STRING_BUFFER_SIZE] = { 0 };
-            memcpy_s(usTmpUTF8, STRING_BUFFER_SIZE, (*it2)->str.c_str(), (*it2)->str.size());
-            iHankaku = this->count_UTF8(usTmpUTF8);
-            int iBoxPosX = (*it)->outPosX + (iHankaku * (((*it)->outCharW + (*it)->outCharHInterval) / 4)) - ((*it)->outCharHInterval / 4);
-            int iBoxPosY = (*it)->outPosY + ((*it)->outCharVInterval / 2);
-            int iBoxScaleX = (iHankaku + 1) * 50;
-            int iBoxScaleY = 100 * ((*it)->outCharH + (*it)->outCharVInterval) / (*it)->outCharH;
-            fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\fscx%d\\fscy%d\\3c&H%06x&}",
-                    sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, iBoxScaleX, iBoxScaleY, outCharColor);
-            static const unsigned char utf8box[] = { 0xE2, 0x96, 0xA0 };
-            fwrite(utf8box, 3, 1, fp);
-            fprintf(fp, "\r\n");
-        }
-        if (((*it)->outCharSizeMode != STR_SMALL) && ((*it2)->outHLC == HLC_draw)) {
-            int iHankaku;
-            unsigned char usTmpUTF8[STRING_BUFFER_SIZE] = { 0 };
-            memcpy_s(usTmpUTF8, STRING_BUFFER_SIZE, (*it2)->str.c_str(), (*it2)->str.size());
-            iHankaku = this->count_UTF8(usTmpUTF8);
-            int iBoxPosX = (*it)->outPosX + (iHankaku * (((*it)->outCharW + (*it)->outCharHInterval) / 4));
-            int iBoxPosY = (*it)->outPosY + ((*it)->outCharVInterval / 4);
-            int iBoxScaleX = iHankaku * 55;
-            int iBoxScaleY = 100;   //*((*it)->outCharH + (*it)->outCharVInterval) / (*it)->outCharH;
-            fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\3c&H%06x&\\p1}m 0 0 l %d 0 %d %d 0 %d{\\p0}\r\n",
-                    sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, outCharColor, iBoxScaleX, iBoxScaleX, iBoxScaleY, iBoxScaleY);
+        if (((*it)->outCharSizeMode != STR_SMALL) && (((*it2)->outHLC == HLC_box) || ((*it2)->outHLC == HLC_draw))) {
+            BYTE outHLC  = (*it2)->outHLC;
+            int iHankaku = (*it2)->outStrCount;
+            for (STRINGS_LIST::iterator it3 = it2 + 1; it3 != (*it)->outStrings.end(); it3++) {
+                if (outHLC != (*it3)->outHLC)
+                    break;
+                iHankaku += (*it3)->outStrCount;
+            }
+            // Output HLC.
+            if (outHLC == HLC_box) {
+                int iBoxPosX = (*it)->outPosX + (iHankaku * (((*it)->outCharW + (*it)->outCharHInterval) / 4)) - ((*it)->outCharHInterval / 4);
+                int iBoxPosY = (*it)->outPosY + ((*it)->outCharVInterval / 2);
+                int iBoxScaleX = (iHankaku + 1) * 50;
+                int iBoxScaleY = 100 * ((*it)->outCharH + (*it)->outCharVInterval) / (*it)->outCharH;
+                fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\fscx%d\\fscy%d\\3c&H%06x&}",
+                        sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, iBoxScaleX, iBoxScaleY, outCharColor);
+                static const unsigned char utf8box[] = { 0xE2, 0x96, 0xA0 };
+                fwrite(utf8box, 3, 1, fp);
+                fprintf(fp, "\r\n");
+            } else { /* outHLC == HLC_draw */
+                int iBoxPosX = (*it)->outPosX + (iHankaku * (((*it)->outCharW + (*it)->outCharHInterval) / 4));
+                int iBoxPosY = (*it)->outPosY + ((*it)->outCharVInterval / 4);
+                int iBoxScaleX = iHankaku * 55;
+                int iBoxScaleY = 100;   //*((*it)->outCharH + (*it)->outCharVInterval) / (*it)->outCharH;
+                fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Box,,0000,0000,0000,,{\\pos(%d,%d)\\3c&H%06x&\\p1}m 0 0 l %d 0 %d %d 0 %d{\\p0}\r\n",
+                        sH, sM, sS, sMs, eH, eM, eS, eMs, iBoxPosX, iBoxPosY, outCharColor, iBoxScaleX, iBoxScaleX, iBoxScaleY, iBoxScaleY);
+            }
         }
         if ((*it)->outCharSizeMode == STR_SMALL)
             fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Rubi,,0000,0000,0000,,{\\pos(%d,%d)",
@@ -1166,6 +1168,7 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
                 goto ERR_EXIT;
             }
 
+            int strCount          = 0;
             unsigned char workucR = it2->stCharColor.ucR;
             unsigned char workucG = it2->stCharColor.ucG;
             unsigned char workucB = it2->stCharColor.ucB;
@@ -1214,7 +1217,7 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
             }
             if (it2->emCharSizeMode != STR_SMALL) {
                 HALFCHAR_INFO hc = { 0 };
-                count_utf8_length(reinterpret_cast<const unsigned char *>(str_utf8_p), &hc);
+                strCount = count_utf8_length(reinterpret_cast<const unsigned char *>(str_utf8_p), &hc);
                 int char_nums = it2->emCharSizeMode == STR_MEDIUM ? hc.char_nums - (hc.char_nums - hc.half_nums) / 2 : hc.char_nums;
                 outStrW += (char_nums - hc.point_nums) * (workCharW + workCharHInterval) / 2;
             }
@@ -1230,6 +1233,7 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
             pLineStr->outBold              = workBold;
             pLineStr->outItalic            = workItalic;
             pLineStr->outFlushMode         = workFlushMode;
+            pLineStr->outStrCount          = strCount;
             pLineStr->str                  = str_utf8;
 
             pCapLine->outStrings.push_back(pLineStr);
