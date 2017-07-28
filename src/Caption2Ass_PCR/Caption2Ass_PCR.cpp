@@ -751,13 +751,12 @@ do {                            \
             fprintf(fp, "%d\r\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\r\n", this->index, sH, sM, sS, sMs, eH, eM, eS, eMs);
         }
 
-        STRINGS_LIST::iterator it2 = (*it)->outStrings.begin();
-
         // ‚Ó‚è‚ª‚È Skip
         if ((*it)->outCharSizeMode == STR_SMALL)
             continue;
         bNoSRT = FALSE;
 
+        STRINGS_LIST::iterator it2 = (*it)->outStrings.begin();
         BOOL bItalic = FALSE, bBold = FALSE, bUnderLine = FALSE, bCharColor = FALSE;
 
         if (this->ornament) {
