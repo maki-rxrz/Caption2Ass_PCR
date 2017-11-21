@@ -1202,8 +1202,7 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
             WCHAR str_wchar[STRING_BUFFER_SIZE] = { 0 };
             int   str_offset = addSpaceNum;
             CHAR *str_utf8_p = str_utf8 + str_offset;
-            if (addSpaceNum > 0)
-            {
+            if (addSpaceNum > 0) {
                 // Add 'space' x N
                 memset(str_utf8, 0x20, addSpaceNum);
                 addSpaceNum = 0;
