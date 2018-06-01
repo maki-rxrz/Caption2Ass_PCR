@@ -316,6 +316,9 @@ void CARIB8CharDecode::InitCaption(void)
     m_bFlushMode = 0;
     m_bHLC = 0;
 
+    m_wMaxPosX = 0;
+    m_wTmpPosX = 0;
+
     switch (m_wSWFMode) {
     case 7:
         //960x540‰¡
