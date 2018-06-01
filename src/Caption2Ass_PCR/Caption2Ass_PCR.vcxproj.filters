@@ -72,10 +72,10 @@
     <ClInclude Include="..\common\file_reader.h">
       <Filter>Header Files\common</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\packet_types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\targetver.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\packet_types.h">
       <Filter>Header Files\common</Filter>
     </ClInclude>
   </ItemGroup>

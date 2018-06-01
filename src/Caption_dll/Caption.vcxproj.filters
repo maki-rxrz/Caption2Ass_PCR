@@ -36,12 +36,9 @@
     <ClCompile Include="IniFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\common\CommRoutine.cpp">
+    <ClCompile Include="..\common\CommRoutine.cpp">
       <Filter>Source Files\common</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\common\packet_types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Caption.def">
@@ -70,16 +67,19 @@
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\common\Caption.h">
+    <ClInclude Include="..\common\Caption.h">
       <Filter>Header Files\common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\common\CaptionDef.h">
+    <ClInclude Include="..\common\CaptionDef.h">
       <Filter>Header Files\common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\common\CommRoutine.h">
+    <ClInclude Include="..\common\CommRoutine.h">
       <Filter>Header Files\common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\common\targetver.h">
+    <ClInclude Include="..\common\packet_types.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\targetver.h">
       <Filter>Header Files\common</Filter>
     </ClInclude>
   </ItemGroup>
