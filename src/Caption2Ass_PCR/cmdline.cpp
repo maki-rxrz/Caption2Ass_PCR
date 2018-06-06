@@ -34,6 +34,7 @@ static void usage(int argc)
         _T("    -hlc <string>               Sepcify HLC control type. {kigou|box|draw}"),
         _T("                                    Default: kigou"),
         _T("    -norubi                     Does not output the Rubi to ass-file."),
+        _T("    -nohalf                     Disable half-width character conversion."),
         _T(""),
         _T("Example:"),
         _T("    Caption2Ass_PCR.exe -format dual \"source.ts\""),
@@ -141,6 +142,8 @@ ERROR_PARAM:
                 goto ERROR_PARAM;
         } else if (_tcsicmp(argv[i], _T("-norubi")) == 0)
             cp->norubi = TRUE;
+        else if (_tcsicmp(argv[i], _T("-nohalf")) == 0)
+            cp->noHalf = TRUE;
         else if (_tcsicmp(argv[i], _T("-detect_length")) == 0) {
             i++;
             if (i > argc)

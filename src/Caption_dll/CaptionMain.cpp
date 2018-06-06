@@ -34,6 +34,7 @@ CCaptionMain::CCaptionMain(BOOL bUNICODE)
 
     IniFile objIniFile;
     m_bUnicode = bUNICODE;
+    m_bHalfConv = TRUE;
     if (bUNICODE) {
         objIniFile.ReadIniUNICODE();
         objIniFile.ReadIniARIBUNICODE();
@@ -596,4 +597,10 @@ DWORD CCaptionMain::GetCaptionData(unsigned char ucLangTag, CAPTION_DATA_DLL **p
         return dwRet;
     }
     return FALSE;
+}
+
+DWORD CCaptionMain::SetConvertOption(BOOL bHalfConv)
+{
+    m_bHalfConv = bHalfConv;
+    return TRUE;
 }

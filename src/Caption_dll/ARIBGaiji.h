@@ -29,4 +29,6 @@ EXTERN GAIJI_TABLE GaijiTbl2[ARIB_MAX2];
 
 EXTERN BOOL m_bUnicode;
 
+EXTERN BOOL m_bHalfConv;
+
 #endif // __ARIB_GAIJI_H__

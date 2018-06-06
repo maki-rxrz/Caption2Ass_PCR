@@ -1330,7 +1330,7 @@ BOOL CARIB8CharDecode::AddToString(const char *cDec, BOOL bGaiji)
     WCHAR str[256] = { 0 };
     CHAR strUTF8[256] = { 0 };
     string tmpcDec;
-    if (m_emStrSize == STR_MEDIUM)
+    if ((m_emStrSize == STR_MEDIUM) && (m_bHalfConv))
         // ‘SŠp -> ”¼Šp
         tmpcDec = GetHalfChar(cDec);
     else

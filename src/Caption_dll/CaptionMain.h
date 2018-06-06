@@ -43,6 +43,8 @@ public:
     DWORD GetTagInfo(LANG_TAG_INFO_DLL **ppList, DWORD *pdwListCount);
     DWORD GetCaptionData(unsigned char ucLangTag, CAPTION_DATA_DLL **ppList, DWORD *pdwListCount);
 
+    DWORD CCaptionMain::SetConvertOption(BOOL bHalfConv);
+
 protected:
     typedef struct _PAYLOAD_DATA {
         BYTE bBuff[188];

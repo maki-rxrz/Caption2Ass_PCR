@@ -95,3 +95,10 @@ DWORD WINAPI GetCaptionDataCP(unsigned char ucLangTag, CAPTION_DATA_DLL **ppList
         return ERR_NOT_INIT;
     return g_sys->GetCaptionData(ucLangTag, ppList, pdwListCount);
 }
+
+DWORD WINAPI SetConvertOptionCP(BOOL bHalfConv)
+{
+    if (!g_sys)
+        return ERR_NOT_INIT;
+    return g_sys->SetConvertOption(bHalfConv);
+}

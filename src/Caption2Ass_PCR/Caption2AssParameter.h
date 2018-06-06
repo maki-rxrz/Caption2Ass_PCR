@@ -19,6 +19,7 @@ typedef struct {
     BYTE        HLCmode;
     BOOL        srtornament;
     BOOL        norubi;
+    BOOL        noHalf;
     BOOL        LogMode;
     DWORD       LangType;
     DWORD       detectLength;

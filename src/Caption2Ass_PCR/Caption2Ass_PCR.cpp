@@ -893,6 +893,9 @@ static int initialize_caption_dll(CAppHandler& app, CCaptionDllUtil& capUtil)
             return -1;
         app.bUnicode = TRUE;
     }
+
+    capUtil.SetConvertOption(!(cp->noHalf));
+
     return 0;
 }
 
@@ -1179,7 +1182,7 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
             BYTE workFlushMode    = it2->bFlushMode;
             workHLC               = (it2->bHLC != 0) ? cp->HLCmode : it2->bHLC;
 
-            if (!(app.bUnicode) && (it2->emCharSizeMode == STR_MEDIUM))
+            if (!(app.bUnicode) && !(cp->noHalf) && (it2->emCharSizeMode == STR_MEDIUM))
                 // ‘SŠp -> ”¼Šp
                 it2->strDecode = GetHalfChar(it2->strDecode);
 

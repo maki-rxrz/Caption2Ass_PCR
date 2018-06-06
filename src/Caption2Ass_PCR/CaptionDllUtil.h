@@ -133,6 +133,7 @@ public:
     DWORD GetCaptionData(unsigned char ucLangTag, vector<CAPTION_DATA> *pList);
 
     unsigned char GetLangTag(DWORD dwLangType);
+    DWORD SetConvertOption(BOOL bHalfConv);
 
 protected:
     HMODULE m_hModule;
@@ -144,6 +145,7 @@ protected:
     ClearCP pfnClearCP;
     GetTagInfoCP pfnGetTagInfoCP;
     GetCaptionDataCP pfnGetCaptionDataCP;
+    SetConvertOptionCP pfnSetConvertOptionCP;
 
     DWORD m_dwListCount;
 

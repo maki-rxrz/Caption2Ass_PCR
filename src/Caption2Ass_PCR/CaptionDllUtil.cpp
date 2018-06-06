@@ -29,6 +29,7 @@ BOOL CCaptionDllUtil::LoadDll(void)
     pfnClearCP = NULL;
     pfnGetTagInfoCP = NULL;
     pfnGetCaptionDataCP = NULL;
+    pfnSetConvertOptionCP = NULL;
 
     m_hModule = ::LoadLibrary(_T("Caption.dll"));
     if (!m_hModule)
@@ -46,6 +47,7 @@ do {                                                                \
     GetProcAddr(ClearCP);
     GetProcAddr(GetTagInfoCP);
     GetProcAddr(GetCaptionDataCP);
+    GetProcAddr(SetConvertOptionCP);
 #undef GetProcAddr
 
     return TRUE;
@@ -216,4 +218,9 @@ unsigned char CCaptionDllUtil::GetLangTag(DWORD dwLangType)
 {
     dwLangType--;
     return (dwLangType < m_dwListCount) ? static_cast<unsigned char>(dwLangType) : 0;
+}
+
+DWORD CCaptionDllUtil::SetConvertOption(BOOL bHalfConv)
+{
+    return pfnSetConvertOptionCP(bHalfConv);
 }

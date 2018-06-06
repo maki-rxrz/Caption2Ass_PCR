@@ -11,3 +11,4 @@ EXPORTS
     GetTagInfoCP    @5
     GetCaptionDataCP    @6
     InitializeUNICODE   @7
+    SetConvertOptionCP  @8

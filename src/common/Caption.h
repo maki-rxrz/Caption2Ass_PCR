@@ -47,6 +47,11 @@ DWORD WINAPI GetTagInfoCP(LANG_TAG_INFO_DLL **ppList, DWORD *pdwListCount);
 __declspec(dllexport)
 DWORD WINAPI GetCaptionDataCP(unsigned char ucLangTag, CAPTION_DATA_DLL **ppList, DWORD *pdwListCount);
 
+//変換オプション設定
+//戻り値：エラーコード
+__declspec(dllexport)
+DWORD WINAPI SetConvertOptionCP(BOOL bHalfConv);
+
 #else /* CAPTION_EXPORTS */
 
 typedef DWORD (WINAPI *InitializeCP)(void);
@@ -62,6 +67,8 @@ typedef DWORD (WINAPI *ClearCP)(void);
 typedef DWORD (WINAPI *GetTagInfoCP)(LANG_TAG_INFO_DLL **ppList, DWORD *pdwListCount);
 
 typedef DWORD (WINAPI *GetCaptionDataCP)(unsigned char ucLangTag, CAPTION_DATA_DLL **ppList, DWORD *pdwListCount);
+
+typedef DWORD (WINAPI *SetConvertOptionCP)(BOOL bHalfConv);
 
 #endif /* CAPTION_EXPORTS */
 
