@@ -1082,14 +1082,14 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
             ratioY = (float)(as->PlayResY) / (float)(resolution[index].y);
         }
         if (app.bUnicode) {
-            if ((wPosX < 2000) || (wPosY < 2000)) {
+            if ((wPosX < UNICODE_OFFSET) || (wPosY < UNICODE_OFFSET)) {
                 offsetPosX = it->wClientX;
                 offsetPosY = it->wClientY;
             } else {
                 offsetPosX = 0;
                 offsetPosY = 0;
-                wPosX -= 2000;
-                wPosY -= 2000;
+                wPosX -= UNICODE_OFFSET;
+                wPosY -= UNICODE_OFFSET;
             }
         }
 

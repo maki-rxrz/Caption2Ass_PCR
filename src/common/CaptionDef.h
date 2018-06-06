@@ -25,6 +25,8 @@
 
 #define STRING_BUFFER_SIZE      (1024)
 
+#define UNICODE_OFFSET          (2000)
+
 typedef struct _CLUT_DAT_DLL {
     unsigned char ucR;
     unsigned char ucG;

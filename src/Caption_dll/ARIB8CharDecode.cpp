@@ -10,6 +10,7 @@
 #include "ColorDef.h"
 #include "ARIB8CharDecode.h"
 #include "ARIBGaiji.h"
+#include "CaptionDef.h"
 
 static const CLUT_DAT DefClut[] = {
     {   0,   0,   0, 255 }, //0
@@ -1676,8 +1677,8 @@ BOOL CARIB8CharDecode::CSI(const BYTE *pbSrc, DWORD *pdwReadSize)
             }
             m_wTmpPosX = m_wPosX;
             if (m_bUnicode) {
-                m_wPosX += 2000;
-                m_wPosY += 2000;
+                m_wPosX += UNICODE_OFFSET;
+                m_wPosY += UNICODE_OFFSET;
             }
         }
         break;
