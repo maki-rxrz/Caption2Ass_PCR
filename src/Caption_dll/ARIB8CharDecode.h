@@ -212,6 +212,7 @@ protected:
     //map<int, string> dicCharcode_Char_map;
     WORD m_wMaxPosX;
     WORD m_wTmpPosX;
+    WORD m_wLfPosX;
     // RPC‘Î‰ž
     BOOL m_bRPC;
     WORD m_wRPC;

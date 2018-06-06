@@ -319,6 +319,7 @@ void CARIB8CharDecode::InitCaption(void)
 
     m_wMaxPosX = 0;
     m_wTmpPosX = 0;
+    m_wLfPosX = 0;
 
     switch (m_wSWFMode) {
     case 7:
@@ -537,7 +538,7 @@ BOOL CARIB8CharDecode::C0(const BYTE *pbSrc, DWORD *pdwReadSize)
             m_strDecode += "\r\n";
         else {
             CheckModify();
-            m_wPosX = 0;
+            m_wPosX = m_wLfPosX;
             m_wPosY += (m_wCharH + m_wCharVInterval);
             m_wTmpPosX = m_wClientX;
         }
@@ -620,6 +621,7 @@ BOOL CARIB8CharDecode::C0(const BYTE *pbSrc, DWORD *pdwReadSize)
                 m_wPosY = m_wPosY / 2;
         }
         m_wTmpPosX = m_wClientX + m_wPosX;
+        m_wLfPosX = m_wPosX;
 
         dwReadSize = 3;
         break;
@@ -1356,14 +1358,14 @@ BOOL CARIB8CharDecode::AddToString(const char *cDec, BOOL bGaiji)
                 m_wTmpPosX += m_wTmpCharW;
             }
             CheckModify();
-            m_wPosX = 0;
+            m_wPosX = m_wLfPosX;
             m_wPosY += (m_wCharH + m_wCharVInterval);
             m_wTmpPosX = m_wClientX;
         } else {
             for (WORD i = 1; i <= m_wRPC; i++) {
                 if (m_wTmpPosX > (m_wMaxPosX - m_wTmpCharW)) {
                     CheckModify();
-                    m_wPosX = 0;
+                    m_wPosX = m_wLfPosX;
                     m_wPosY += (m_wCharH + m_wCharVInterval);
                     m_wTmpPosX = m_wClientX;
                 }
@@ -1374,7 +1376,7 @@ BOOL CARIB8CharDecode::AddToString(const char *cDec, BOOL bGaiji)
     } else {
         if (m_wTmpPosX > (m_wMaxPosX - m_wTmpCharW)) {
             CheckModify();
-            m_wPosX = 0;
+            m_wPosX = m_wLfPosX;
             m_wPosY += (m_wCharH + m_wCharVInterval);
             m_wTmpPosX = m_wClientX;
         }
@@ -1676,9 +1678,11 @@ BOOL CARIB8CharDecode::CSI(const BYTE *pbSrc, DWORD *pdwReadSize)
                     wParam = wParam * 10 + (pbSrc[i] & 0x0F);
             }
             m_wTmpPosX = m_wPosX;
+            m_wLfPosX = m_wClientX;
             if (m_bUnicode) {
                 m_wPosX += UNICODE_OFFSET;
                 m_wPosY += UNICODE_OFFSET;
+                m_wLfPosX += UNICODE_OFFSET;
             }
         }
         break;
