@@ -587,7 +587,7 @@ BOOL CARIB8CharDecode::C0(const BYTE *pbSrc, DWORD *pdwReadSize)
             WORD CTLtmp;
             CTLtmp = (pbSrc[1] & 0x7F) - 0x40;
             for (WORD i = 1; i <= CTLtmp; i++) {
-                if (m_wTmpPosX > (m_wMaxPosX - m_wTmpCharW)) {
+                if ((m_wMaxPosX || i == 1) && m_wTmpPosX > (m_wMaxPosX - m_wTmpCharW)) {
                     CheckModify();
                     m_wPosX = 0;
                     m_wPosY += (m_wCharH + m_wCharVInterval);
