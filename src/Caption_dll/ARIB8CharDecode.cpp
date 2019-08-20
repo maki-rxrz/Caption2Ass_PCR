@@ -621,7 +621,7 @@ BOOL CARIB8CharDecode::C0(const BYTE *pbSrc, DWORD *pdwReadSize)
                 m_wPosY = m_wPosY / 2;
         }
         m_wTmpPosX = m_wClientX + m_wPosX;
-        m_wLfPosX = m_wPosX;
+        m_wLfPosX = 0;
 
         dwReadSize = 3;
         break;
