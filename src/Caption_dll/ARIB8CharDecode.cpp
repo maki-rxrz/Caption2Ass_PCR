@@ -1728,6 +1728,7 @@ BOOL CARIB8CharDecode::CSI(const BYTE *pbSrc, DWORD *pdwReadSize)
                 } else
                     wParam = wParam * 10 + (pbSrc[i] & 0x0F);
             }
+            m_wTmpPosX = m_wClientX;
         }
         break;
     case 0x57:
