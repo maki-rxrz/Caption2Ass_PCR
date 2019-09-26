@@ -1220,7 +1220,8 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
             if (it2->emCharSizeMode != STR_SMALL) {
                 HALFCHAR_INFO hc = { 0 };
                 strCount = count_utf8_length(reinterpret_cast<const unsigned char *>(str_utf8_p), &hc);
-                int char_nums = it2->emCharSizeMode == STR_MEDIUM ? hc.char_nums - (hc.char_nums - hc.half_nums) / 2 : hc.char_nums;
+                int char_nums = (it2->emCharSizeMode != STR_MEDIUM) || (hc.char_nums == hc.half_nums + hc.point_nums)
+                              ? hc.char_nums : hc.char_nums - (hc.char_nums - hc.half_nums) / 2;
                 outStrW += (char_nums - hc.point_nums) * (workCharW + workCharHInterval) / 2;
             }
 
