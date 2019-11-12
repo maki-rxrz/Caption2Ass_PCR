@@ -1257,11 +1257,11 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
                     continue;
                 if (it->wPosY == next->wPosY && it->dwWaitTime == next->dwWaitTime) {
                     std::vector<CAPTION_CHAR_DATA>::iterator it3 = next->CharList.begin();
-                    int diffPosX = next->wPosX - (it->wPosX + outStrW);
                     if (it3->emCharSizeMode != STR_SMALL) {
-                        bPushBack = FALSE;
+                        int diffPosX = next->wPosX - (it->wPosX + outStrW);
                         if (diffPosX > 0)
                             addSpaceNum = diffPosX * 2 / (workCharW + workCharHInterval);
+                        bPushBack = FALSE;
                     }
                 }
                 break;
