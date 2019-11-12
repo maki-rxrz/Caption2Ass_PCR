@@ -1269,6 +1269,8 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
                         int diffPosX = next->wPosX - (it->wPosX + outStrW);
                         if (diffPosX > 0)
                             addSpaceNum = diffPosX * 2 / (workCharW + workCharHInterval);
+                        else if (diffPosX < 0)
+                            addSpaceNum = 2;
                         bPushBack = FALSE;
                     }
                 }
