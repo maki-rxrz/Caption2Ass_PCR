@@ -122,6 +122,8 @@ public:
     BOOL            bCreateOutput;
     BOOL            bUnicode;
     int             sidebar_size;   // ASS only
+    long            in_PlayResX;    // ASS only
+    long            in_PlayResY;    // ASS only
     size_t          string_length;
 
 protected:
@@ -135,6 +137,8 @@ protected:
         this->bCreateOutput = FALSE;
         this->bUnicode      = FALSE;
         this->sidebar_size  = 0;
+        this->in_PlayResX   = 0;
+        this->in_PlayResY   = 0;
         this->string_length = 0;
         this->param         = NULL;
     }
@@ -560,9 +564,11 @@ int CAssHandler::Setup(void)
 
     // Check the resolution conversion.
     if ((as->PlayResX * 3) == (as->PlayResY * 4)) {
-        this->app->sidebar_size = (((as->PlayResY * 16) / 9) - as->PlayResX) / 2;
-        as->PlayResX = (as->PlayResY * 16) / 9;
-    }
+        this->app->in_PlayResX  = as->PlayResY * 16 / 9;
+        this->app->sidebar_size = (this->app->in_PlayResX - as->PlayResX) / 2;
+    } else
+        this->app->in_PlayResX = as->PlayResX;
+    this->app->in_PlayResY  = as->PlayResY;
 
     // Setup ass settings.
     this->as = as;
@@ -1081,8 +1087,8 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
                       : (wLastSWFMode ==  9) ? 1
                       : (wLastSWFMode == 11) ? 2
                       :                        3;
-            ratioX = (float)(as->PlayResX) / (float)(resolution[index].x);
-            ratioY = (float)(as->PlayResY) / (float)(resolution[index].y);
+            ratioX = (float)(app.in_PlayResX) / (float)(resolution[index].x);
+            ratioY = (float)(app.in_PlayResY) / (float)(resolution[index].y);
         }
         if (app.bUnicode) {
             if ((wPosX < UNICODE_OFFSET) || (wPosY < UNICODE_OFFSET)) {
