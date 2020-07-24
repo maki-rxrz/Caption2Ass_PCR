@@ -98,6 +98,7 @@ public:
     long long       basePCR;
     long long       basePTS;
     long long       correctTS;
+    long long       maxPCR;
 
 public:
     void init_timestamp(void)
@@ -108,6 +109,7 @@ public:
         this->basePCR   = 0;
         this->basePTS   = 0;
         this->correctTS = 0;
+        this->maxPCR    = 0;
     }
     virtual void initialize(void)
     {
@@ -1431,8 +1433,10 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
                 }
             }
 
-            // Update lastPCR.
+            // Update lastPCR & maxPCR.
             app.lastPCR = PCR;
+            if (app.maxPCR < PCR)
+                app.maxPCR = PCR;
 
             continue; // next packet
         }
@@ -1465,9 +1469,9 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
 
                 // Check wrap-around.
                 // [case]
-                //   lastPCR:  Detection on the 1st packet.             [1st PCR  >>> w-around >>> 1st PTS]
-                //   lastPTS:  Detection on the packet of 2nd or later. [prev PTS >>> w-around >>> now PTS]
-                long long checkTS = (app.lastPTS == TIMESTAMP_INVALID_VALUE) ? app.lastPCR : app.lastPTS;
+                //    maxPCR:  Detection on the 1st packet.    [1st ... Nth(=max) PCR >>> w-around >>> Nth(=min) PCR >>> 1st PTS]
+                //   lastPTS:  Detection on the packet of 2nd or later. [previous PTS >>> w-around >>> now PTS]
+                long long checkTS = (app.lastPTS == TIMESTAMP_INVALID_VALUE) ? app.maxPCR : app.lastPTS;
                 if ((PTS < checkTS) && ((checkTS - PTS) > (WRAP_AROUND_CHECK_VALUE / 90)))
                     app.basePTS += WRAP_AROUND_VALUE / 90;
 
