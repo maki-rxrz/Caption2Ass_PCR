@@ -139,7 +139,7 @@ BOOL IniFile::ReadIniUNICODE(void)
         str[len - 2] = 0;
         WideCharToMultiByte(CP_THREAD_ACP, 0, str, -1, strSJIS, STRING_BUFFER_SIZE, NULL, NULL);
         tmprl = strSJIS;
-    } while ((tmprl != "[外字代用字]") && (!feof(fpini)));
+    } while (wcscmp(str, L"[外字代用字]") && (!feof(fpini)));
 
     do {
         fgetws(str, STRING_BUFFER_SIZE, fpini);
@@ -156,7 +156,7 @@ BOOL IniFile::ReadIniUNICODE(void)
                 string tmpArg = tmpUTF8.substr(iPos + 1);
                 ARIB8CharDecode.Add_dicHash_Char(tmpKey,  tmpArg);
             }
-    } while ((tmprl != "[外字出力]") && (!feof(fpini)));
+    } while (wcscmp(str, L"[外字出力]") && (!feof(fpini)));
     fclose(fpini);
     return TRUE;
 }
@@ -191,7 +191,7 @@ BOOL IniFile::ReadIniARIBUNICODE(void)
         str[len - 2] = 0;
         WideCharToMultiByte(CP_THREAD_ACP, 0, str, -1, strSJIS, STRING_BUFFER_SIZE, NULL, NULL);
         tmprl = strSJIS;
-    } while ((tmprl != "[ARIB外字代用字]") && (!feof(fpini)));
+    } while (wcscmp(str, L"[ARIB外字代用字]") && (!feof(fpini)));
     int iGaijiCtr = 0;
     do {
         fgetws(str, STRING_BUFFER_SIZE, fpini);
@@ -208,7 +208,7 @@ BOOL IniFile::ReadIniARIBUNICODE(void)
                 GaijiTable[iGaijiCtr].strChar = tmpUTF8.substr(iPos + 1);
                 iGaijiCtr += 1;
             }
-    } while ((tmprl != "[ARIB外字出力]") && (!feof(fpini)));
+    } while (wcscmp(str, L"[ARIB外字出力]") && (!feof(fpini)));
     fclose(fpini);
     fpini = NULL;
 
@@ -233,7 +233,7 @@ BOOL IniFile::ReadIniARIBUNICODE(void)
         str[len - 2] = 0;
         WideCharToMultiByte(CP_THREAD_ACP, 0, str, -1, strSJIS, STRING_BUFFER_SIZE, NULL, NULL);
         tmprl = strSJIS;
-    } while ((tmprl != "[ARIB外字2代用字]") && (!feof(fpini)));
+    } while (wcscmp(str, L"[ARIB外字2代用字]") && (!feof(fpini)));
     int iGaijiCtr2 = 0;
     do {
         fgetws(str, STRING_BUFFER_SIZE, fpini);
@@ -251,7 +251,7 @@ BOOL IniFile::ReadIniARIBUNICODE(void)
                 GaijiTbl2[iGaijiCtr2].strChar = tmpUTF8.substr(iPos + 1);
                 iGaijiCtr2 += 1;
             }
-    } while ((tmprl != "[ARIB外字2出力]") && (!feof(fpini)));
+    } while (wcscmp(str, L"[ARIB外字2出力]") && (!feof(fpini)));
     fclose(fpini);
     return TRUE;
 }
